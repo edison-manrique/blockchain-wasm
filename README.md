@@ -6,6 +6,11 @@
 
 Biblioteca criptográfica de alto rendimiento que compila primitivas criptográficas avanzadas escritas en **AssemblyScript** a un binario **WebAssembly (WASM)** altamente optimizado.
 
+Disponible en el registro de paquetes npm y listo para usar en Node.js, Bun y navegadores web:
+```bash
+npm install blockchain-wasm
+```
+
 Incluye un wrapper TypeScript con un asignador de memoria estático personalizado (*scratchpad*) para intercomunicar datos (`Uint8Array` y `string`) a través de la memoria lineal de WASM, sin depender de los bindings/loader de `asc` ni de exports `__new`, usando un runtime minimalista de máximo rendimiento.
 
 ## Instalación

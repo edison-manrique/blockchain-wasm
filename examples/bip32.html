@@ -142,22 +142,46 @@
         </div>
       </div>
 
-      <div style="margin-top:12px">
-        <div class="output-label">Dirección Bitcoin P2PKH</div>
-        <div class="output-box" style="position:relative">
-          <button class="copy-btn">Copiar</button>
-          <span id="bip32-addr"></span>
+      <div class="row" style="margin-top:12px">
+        <div>
+          <div class="output-label">Bitcoin P2PKH (Legacy)</div>
+          <div class="output-box" style="position:relative; margin-bottom: 8px">
+            <button class="copy-btn">Copiar</button>
+            <span id="bip32-addr-p2pkh"></span>
+          </div>
+          <div class="output-label">Bitcoin P2SH (Nested SegWit)</div>
+          <div class="output-box" style="position:relative; margin-bottom: 8px">
+            <button class="copy-btn">Copiar</button>
+            <span id="bip32-addr-p2sh"></span>
+          </div>
+          <div class="output-label">Bitcoin P2WPKH (Native SegWit)</div>
+          <div class="output-box" style="position:relative">
+            <button class="copy-btn">Copiar</button>
+            <span id="bip32-addr-p2wpkh"></span>
+          </div>
+        </div>
+        <div>
+          <div class="output-label">Bitcoin P2TR (Taproot)</div>
+          <div class="output-box" style="position:relative; margin-bottom: 8px">
+            <button class="copy-btn">Copiar</button>
+            <span id="bip32-addr-p2tr"></span>
+          </div>
+          <div class="output-label">Ethereum EIP-55</div>
+          <div class="output-box" style="position:relative">
+            <button class="copy-btn">Copiar</button>
+            <span id="bip32-addr-eth"></span>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ── Derivación en lote ── -->
-  <div class="section">
+  <div class="section full">
     <div class="section-title">Derivación en lote — Tabla de direcciones</div>
 
     <div class="info-box">
-      Deriva las primeras <strong>N</strong> direcciones externas (índice 0…N-1) para una ruta de cuenta dada.
+      Deriva las primeras <strong>N</strong> direcciones externas (índice 0…N-1) para una ruta de cuenta dada. Muestra las 4 variantes de BTC y la de Ethereum para cada llave.
     </div>
 
     <div class="row">
@@ -186,9 +210,12 @@
             <tr>
               <th>#</th>
               <th>Ruta</th>
-              <th>Llave privada</th>
-              <th>Llave pública</th>
-              <th>Dirección BTC</th>
+              <th>Llave Privada</th>
+              <th>P2PKH (Legacy)</th>
+              <th>P2SH (Nested)</th>
+              <th>P2WPKH (Native)</th>
+              <th>P2TR (Taproot)</th>
+              <th>Ethereum</th>
             </tr>
           </thead>
           <tbody id="batch-body"></tbody>
@@ -224,16 +251,21 @@ document.getElementById('btn-bip32-derive').addEventListener('click', withWasm('
 
   const privKey = wasm.bip32DerivePath(seed, path)
   const pubKey  = wasm.bip32GetPublicKey(seed, path)
+  const pubKeyUncomp = wasm.getPublicKeyUncompressed(privKey)
 
   document.getElementById('bip32-privkey').textContent = `0x${bytesToHex(privKey)}`
   document.getElementById('bip32-pubkey').textContent  = `0x${bytesToHex(pubKey)}`
 
-  try {
-    const addr = wasm.getBitcoinAddress(pubKey)
-    document.getElementById('bip32-addr').textContent = addr
-  } catch {
-    document.getElementById('bip32-addr').textContent = 'N/A'
-  }
+  // P2PKH
+  try { document.getElementById('bip32-addr-p2pkh').textContent = wasm.getBitcoinAddress(pubKey) } catch { document.getElementById('bip32-addr-p2pkh').textContent = 'N/A' }
+  // P2SH
+  try { document.getElementById('bip32-addr-p2sh').textContent = wasm.getBitcoinP2SHAddress(pubKey) } catch { document.getElementById('bip32-addr-p2sh').textContent = 'N/A' }
+  // P2WPKH
+  try { document.getElementById('bip32-addr-p2wpkh').textContent = wasm.getBitcoinP2WPKHAddress(pubKey) } catch { document.getElementById('bip32-addr-p2wpkh').textContent = 'N/A' }
+  // P2TR
+  try { document.getElementById('bip32-addr-p2tr').textContent = wasm.getBitcoinP2TRAddress(pubKey) } catch { document.getElementById('bip32-addr-p2tr').textContent = 'N/A' }
+  // ETH
+  try { document.getElementById('bip32-addr-eth').textContent = wasm.getEthereumAddress(pubKeyUncomp) } catch { document.getElementById('bip32-addr-eth').textContent = 'N/A' }
 
   document.getElementById('out-bip32').classList.add('visible')
   initCopyButtons()
@@ -252,16 +284,25 @@ document.getElementById('btn-batch').addEventListener('click', withWasm('btn-bat
     const path    = `${base}/${i}`
     const privKey = wasm.bip32DerivePath(seed, path)
     const pubKey  = wasm.bip32GetPublicKey(seed, path)
-    let addr = ''
-    try { addr = wasm.getBitcoinAddress(pubKey) } catch { addr = 'N/A' }
+    const pubKeyUncomp = wasm.getPublicKeyUncompressed(privKey)
+
+    let p2pkh = '', p2sh = '', p2wpkh = '', p2tr = '', eth = ''
+    try { p2pkh = wasm.getBitcoinAddress(pubKey) } catch { p2pkh = 'N/A' }
+    try { p2sh = wasm.getBitcoinP2SHAddress(pubKey) } catch { p2sh = 'N/A' }
+    try { p2wpkh = wasm.getBitcoinP2WPKHAddress(pubKey) } catch { p2wpkh = 'N/A' }
+    try { p2tr = wasm.getBitcoinP2TRAddress(pubKey) } catch { p2tr = 'N/A' }
+    try { eth = wasm.getEthereumAddress(pubKeyUncomp) } catch { eth = 'N/A' }
 
     const tr = document.createElement('tr')
     tr.innerHTML = `
       <td>${i}</td>
       <td class="path-col">${path}</td>
-      <td class="key-col">${bytesToHex(privKey).slice(0, 16)}…</td>
-      <td class="pub-col">${bytesToHex(pubKey).slice(0, 16)}…</td>
-      <td style="color:var(--accent4)">${addr}</td>
+      <td class="key-col" title="0x${bytesToHex(privKey)}">${bytesToHex(privKey).slice(0, 10)}…</td>
+      <td style="color:var(--accent4)">${p2pkh}</td>
+      <td style="color:var(--accent2)">${p2sh}</td>
+      <td style="color:var(--accent)">${p2wpkh}</td>
+      <td style="color:var(--accent6)">${p2tr}</td>
+      <td style="color:var(--accent3)">${eth.slice(0, 12)}…</td>
     `
     tbody.appendChild(tr)
   }
