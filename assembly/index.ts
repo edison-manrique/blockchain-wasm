@@ -6,10 +6,22 @@
  */
 
 import { Sha256, Sha512 } from "./sha2"
-import { keccak256 as internalKeccak } from "./keccak256"
-import { ECDH as internalECDH } from "./crypto/ecdh"
-import { ECDSA, EcdsaSignature, SignatureFormat, getMessageHash as internalGetMessageHash } from "./crypto/ecdsa"
-import { HDKey } from "./crypto/bip32"
+import { ECDH } from "./crypto/ecdh"
+import { ECDSA, EcdsaSignature, SignatureFormat, getMessageHash } from "./crypto/ecdsa"
+import { HDKey } from "./bip32"
+export { keccak256 } from "./keccak256"
+export {
+  bip44DeriveLeafKeys,
+  bip44AccountXpub,
+  bip44AccountXprv,
+  bip44DerivePrivateKey,
+  bip44DerivePublicKey,
+  bip44SeedFromMnemonic,
+  bip44ValidateMnemonic,
+  bip44EntropyToMnemonic,
+  bip44FromMnemonicDeriveKeys,
+  bip44FromMnemonicAccountXpub
+} from "./bip44"
 
 // ── HASHING ──
 
@@ -25,14 +37,10 @@ export function hmac_sha512(key: Uint8Array, data: Uint8Array): Uint8Array {
   return Sha512.hmac(data, key)
 }
 
-export function keccak(data: Uint8Array): Uint8Array {
-  return internalKeccak(data)
-}
-
 // ── ECDSA (Functional) ──
 
 export function get_message_hash(message: string, format: i32 = 0): Uint8Array {
-  return internalGetMessageHash(message, <SignatureFormat>format)
+  return getMessageHash(message, <SignatureFormat>format)
 }
 
 /**
@@ -63,12 +71,12 @@ export function ecdsa_verify(hash: Uint8Array, signature: Uint8Array, pubKey: Ui
  * Returns 65-byte signature [R|S|V]
  */
 export function sign_text_message(message: string, privKey: Uint8Array, format: i32 = 0): Uint8Array {
-  const hash = internalGetMessageHash(message, <SignatureFormat>format)
+  const hash = getMessageHash(message, <SignatureFormat>format)
   return ecdsa_sign(hash, privKey)
 }
 
 export function verify_text_message(message: string, signature: Uint8Array, pubKey: Uint8Array, format: i32 = 0): bool {
-  const hash = internalGetMessageHash(message, <SignatureFormat>format)
+  const hash = getMessageHash(message, <SignatureFormat>format)
   return ecdsa_verify(hash, signature, pubKey)
 }
 
@@ -79,7 +87,7 @@ export { signSchnorr, verifySchnorr, getSchnorrPublicKey } from "./crypto/schnor
 // ── ECDH ──
 
 export function shared_secret(privKey: Uint8Array, pubKey: Uint8Array): Uint8Array {
-  return internalECDH.sharedSecret(privKey, pubKey)
+  return ECDH.sharedSecret(privKey, pubKey)
 }
 
 // ── ADDRESSES ──

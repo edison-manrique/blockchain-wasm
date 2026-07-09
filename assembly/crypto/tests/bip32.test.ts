@@ -6,7 +6,7 @@
  * = c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04
  */
 
-import { HDKey, derivePrivateKey, derivePublicKey } from "../bip32"
+import { HDKey, derivePrivateKey, derivePublicKey } from "../../bip32/bip32"
 import { hexToBytes, bytesToHex } from "../../utils"
 
 // ── Shared seed constant ──

@@ -1,6 +1,6 @@
 {
   "name": "blockchain-wasm",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Biblioteca criptográfica de alto rendimiento: SHA-256, Keccak-256, ECDSA, Schnorr, ECDH, BIP-32 y más — compilada en AssemblyScript/WASM con un wrapper TypeScript.",
   "author": "Edison Manrique",
   "license": "MIT",
@@ -15,7 +15,6 @@
   },
   "files": [
     "dist/",
-    "assembly/",
     "README.md",
     "LICENSE"
   ],

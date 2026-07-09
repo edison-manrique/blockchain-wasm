@@ -224,29 +224,3 @@ export function validateMnemonic(mnemonic: string): bool {
   const mask: u8 = <u8>((<i32>0xff) << (8 - checksumBits))
   return (providedChecksumByte & mask) == (expectedChecksumByte & mask)
 }
-
-// ═══════════════════════════════════════════════════════
-// GENERATION
-// ═══════════════════════════════════════════════════════
-
-/**
- * Generates a random BIP39 mnemonic.
- * Uses Math.random() for entropy (CSPRNG should be seeded externally).
- *
- * @param wordCount - Number of words: 12, 15, 18, 21, or 24. Default: 12.
- * @returns A random mnemonic phrase.
- */
-export function generateMnemonic(wordCount: i32 = 12): string {
-  // entropyBytes = wordCount * 32 / 3 / 8 = wordCount * 4 / 3
-  const entropyBytes: i32 = (wordCount * 4) / 3
-  if (entropyBytes < 16 || entropyBytes > 32 || (entropyBytes & 3) != 0) {
-    throw new Error("Invalid word count: must be 12, 15, 18, 21, or 24")
-  }
-
-  const entropy = new Uint8Array(entropyBytes)
-  for (let i = 0; i < entropyBytes; i++) {
-    entropy[i] = (<u8>(Math.random() * 256.0)) & 0xff
-  }
-
-  return entropyToMnemonic(entropy)
-}

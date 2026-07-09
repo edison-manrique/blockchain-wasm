@@ -1,365 +1,458 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BlockchainWasm · Primitivas Criptográficas en WebAssembly</title>
-  <meta name="description" content="Demos interactivas para BlockchainWasm — SHA-256, Keccak-256, ECDSA, Schnorr, ECDH, BIP-32, direcciones y más, ejecutándose en WebAssembly nativo." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BlockchainWasm · Primitivas Criptográficas en WebAssembly</title>
+    <meta
+      name="description"
+      content="Demos interactivas para BlockchainWasm — SHA-256, Keccak-256, ECDSA, Schnorr, ECDH, BIP-32, direcciones y más, ejecutándose en WebAssembly nativo."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="shared.css" />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-    :root {
-      --bg:       #080c14;
-      --bg2:      #0e1420;
-      --bg3:      #141c2e;
-      --border:   rgba(99,179,237,0.12);
-      --glow:     rgba(99,179,237,0.25);
-      --accent:   #63b3ed;
-      --accent2:  #9f7aea;
-      --accent3:  #68d391;
-      --accent4:  #f6ad55;
-      --accent5:  #fc8181;
-      --text:     #e2e8f0;
-      --muted:    #718096;
-      --mono:     'JetBrains Mono', monospace;
-    }
+      :root {
+        --bg: #080c14;
+        --bg2: #0e1420;
+        --bg3: #141c2e;
+        --border: rgba(99, 179, 237, 0.12);
+        --glow: rgba(99, 179, 237, 0.25);
+        --accent: #63b3ed;
+        --accent2: #9f7aea;
+        --accent3: #68d391;
+        --accent4: #f6ad55;
+        --accent5: #fc8181;
+        --text: #e2e8f0;
+        --muted: #718096;
+        --mono: "JetBrains Mono", monospace;
+      }
 
-    html, body { width: 100%; height: 100%; overflow-x: hidden; }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow-x: hidden;
+      }
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
+      body {
+        font-family: "Inter", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+      }
 
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 80% 50% at 20% 20%, rgba(99,179,237,0.06) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 40% at 80% 70%, rgba(159,122,234,0.06) 0%, transparent 60%);
-      pointer-events: none;
-      z-index: 0;
-    }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(ellipse 80% 50% at 20% 20%, rgba(99, 179, 237, 0.06) 0%, transparent 60%),
+          radial-gradient(ellipse 60% 40% at 80% 70%, rgba(159, 122, 234, 0.06) 0%, transparent 60%);
+        pointer-events: none;
+        z-index: 0;
+      }
 
-    body::after {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(99,179,237,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(99,179,237,0.025) 1px, transparent 1px);
-      background-size: 40px 40px;
-      pointer-events: none;
-      z-index: 0;
-    }
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(99, 179, 237, 0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(99, 179, 237, 0.025) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+      }
 
-    main { position: relative; z-index: 1; }
+      main {
+        position: relative;
+        z-index: 1;
+      }
 
-    /* ── Hero compacto ── */
-    .hero {
-      text-align: center;
-      padding: 48px 16px 28px;
-    }
+      /* ── Hero compacto ── */
+      .hero {
+        text-align: center;
+        padding: 48px 16px 28px;
+      }
 
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(99,179,237,0.08);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 4px 14px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 18px;
-      animation: fadeUp 0.5s ease both;
-    }
+      .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(99, 179, 237, 0.08);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 4px 14px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 18px;
+        animation: fadeUp 0.5s ease both;
+      }
 
-    .hero-badge::before {
-      content: '';
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--accent3);
-      box-shadow: 0 0 7px var(--accent3);
-      animation: pulse 2s ease infinite;
-    }
+      .hero-badge::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent3);
+        box-shadow: 0 0 7px var(--accent3);
+        animation: pulse 2s ease infinite;
+      }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%       { opacity: 0.5; transform: scale(1.4); }
-    }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.5;
+          transform: scale(1.4);
+        }
+      }
 
-    h1 {
-      font-size: clamp(2rem, 5vw, 3.8rem);
-      font-weight: 900;
-      line-height: 1.05;
-      letter-spacing: -0.04em;
-      margin-bottom: 14px;
-      animation: fadeUp 0.5s 0.08s ease both;
-    }
+      h1 {
+        font-size: clamp(2rem, 5vw, 3.8rem);
+        font-weight: 900;
+        line-height: 1.05;
+        letter-spacing: -0.04em;
+        margin-bottom: 14px;
+        animation: fadeUp 0.5s 0.08s ease both;
+      }
 
-    h1 span.grad {
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
+      h1 span.grad {
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
 
-    .hero-sub {
-      max-width: 520px;
-      margin: 0 auto 12px;
-      font-size: 0.95rem;
-      line-height: 1.65;
-      color: var(--muted);
-      animation: fadeUp 0.5s 0.14s ease both;
-    }
+      .hero-sub {
+        max-width: 520px;
+        margin: 0 auto 12px;
+        font-size: 0.95rem;
+        line-height: 1.65;
+        color: var(--muted);
+        animation: fadeUp 0.5s 0.14s ease both;
+      }
 
-    /* ── Install badge ── */
-    .install-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 8px 16px;
-      margin-bottom: 28px;
-      font-family: var(--mono);
-      font-size: 0.82rem;
-      color: var(--accent3);
-      animation: fadeUp 0.5s 0.2s ease both;
-      cursor: pointer;
-      transition: border-color 0.2s;
-    }
-    .install-badge:hover { border-color: rgba(99,179,237,0.3); }
-    .install-badge span { color: var(--muted); font-size: 0.72rem; }
+      /* ── Install badge ── */
+      .install-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 16px;
+        margin-bottom: 28px;
+        font-family: var(--mono);
+        font-size: 0.82rem;
+        color: var(--accent3);
+        animation: fadeUp 0.5s 0.2s ease both;
+        cursor: pointer;
+        transition: border-color 0.2s;
+      }
+      .install-badge:hover {
+        border-color: rgba(99, 179, 237, 0.3);
+      }
+      .install-badge span {
+        color: var(--muted);
+        font-size: 0.72rem;
+      }
 
-    /* ── Cards grid ── */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 12px;
-      width: 100%;
-      padding: 0 16px 32px;
-    }
+      /* ── Cards grid ── */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 12px;
+        width: 100%;
+        padding: 0 16px 32px;
+      }
 
-    .card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 18px 18px 16px;
-      text-decoration: none;
-      color: inherit;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      transition: transform 0.22s, box-shadow 0.22s, border-color 0.22s;
-      animation: fadeUp 0.4s ease both;
-      position: relative;
-      overflow: hidden;
-    }
+      .card {
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px 18px 16px;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        transition:
+          transform 0.22s,
+          box-shadow 0.22s,
+          border-color 0.22s;
+        animation: fadeUp 0.4s ease both;
+        position: relative;
+        overflow: hidden;
+      }
 
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 16px 48px -10px rgba(0,0,0,0.55), 0 0 0 1px var(--card-accent);
-      border-color: var(--card-accent);
-    }
+      .card:hover {
+        transform: translateY(-4px);
+        box-shadow:
+          0 16px 48px -10px rgba(0, 0, 0, 0.55),
+          0 0 0 1px var(--card-accent);
+        border-color: var(--card-accent);
+      }
 
-    .card-icon {
-      width: 40px; height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.06);
-    }
+      .card-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
 
-    .card h2 {
-      font-size: 0.95rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
+      .card h2 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
 
-    .card p {
-      font-size: 0.78rem;
-      color: var(--muted);
-      line-height: 1.55;
-      flex: 1;
-    }
+      .card p {
+        font-size: 0.78rem;
+        color: var(--muted);
+        line-height: 1.55;
+        flex: 1;
+      }
 
-    .card-tag {
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--card-accent);
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--card-accent);
-      border-radius: 5px;
-      padding: 2px 8px;
-      width: fit-content;
-      opacity: 0.85;
-    }
+      .card-tag {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--card-accent);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--card-accent);
+        border-radius: 5px;
+        padding: 2px 8px;
+        width: fit-content;
+        opacity: 0.85;
+      }
 
-    .card-arrow {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      opacity: 0;
-      transform: translateX(-5px);
-      transition: opacity 0.2s, transform 0.2s;
-      color: var(--card-accent);
-      font-size: 16px;
-    }
-    .card:hover .card-arrow { opacity: 1; transform: translateX(0); }
+      .card-arrow {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        opacity: 0;
+        transform: translateX(-5px);
+        transition:
+          opacity 0.2s,
+          transform 0.2s;
+        color: var(--card-accent);
+        font-size: 16px;
+      }
+      .card:hover .card-arrow {
+        opacity: 1;
+        transform: translateX(0);
+      }
 
-    .c-blue  { --card-accent: #63b3ed; }
-    .c-purple{ --card-accent: #9f7aea; }
-    .c-green { --card-accent: #68d391; }
-    .c-orange{ --card-accent: #f6ad55; }
-    .c-pink  { --card-accent: #fc8181; }
-    .c-teal  { --card-accent: #4fd1c5; }
+      .c-blue {
+        --card-accent: #63b3ed;
+      }
+      .c-purple {
+        --card-accent: #9f7aea;
+      }
+      .c-green {
+        --card-accent: #68d391;
+      }
+      .c-orange {
+        --card-accent: #f6ad55;
+      }
+      .c-pink {
+        --card-accent: #fc8181;
+      }
+      .c-teal {
+        --card-accent: #4fd1c5;
+      }
 
-    footer {
-      text-align: center;
-      padding: 20px 16px;
-      color: var(--muted);
-      font-size: 0.75rem;
-      border-top: 1px solid var(--border);
-      position: relative;
-      z-index: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
+      footer {
+        text-align: center;
+        padding: 20px 16px;
+        color: var(--muted);
+        font-size: 0.75rem;
+        border-top: 1px solid var(--border);
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
 
-    footer code {
-      font-family: var(--mono);
-      background: var(--bg3);
-      padding: 2px 7px;
-      border-radius: 5px;
-      font-size: 0.7rem;
-      color: var(--accent);
-    }
+      footer code {
+        font-family: var(--mono);
+        background: var(--bg3);
+        padding: 2px 7px;
+        border-radius: 5px;
+        font-size: 0.7rem;
+        color: var(--accent);
+      }
 
-    footer a { color: var(--muted); text-decoration: none; }
-    footer a:hover { color: var(--accent); }
+      footer a {
+        color: var(--muted);
+        text-decoration: none;
+      }
+      footer a:hover {
+        color: var(--accent);
+      }
 
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-    .card:nth-child(1) { animation-delay: 0.15s; }
-    .card:nth-child(2) { animation-delay: 0.20s; }
-    .card:nth-child(3) { animation-delay: 0.25s; }
-    .card:nth-child(4) { animation-delay: 0.30s; }
-    .card:nth-child(5) { animation-delay: 0.35s; }
-    .card:nth-child(6) { animation-delay: 0.40s; }
-    .card:nth-child(7) { animation-delay: 0.45s; }
-  </style>
-</head>
-<body>
-<main>
-  <section class="hero">
-    <div class="hero-badge">WebAssembly · AssemblyScript · secp256k1</div>
-    <h1>Blockchain<span class="grad">Wasm</span></h1>
-    <p class="hero-sub">
-      Primitivas criptográficas ultra-optimizadas compiladas a WebAssembly.
-      Hashing, firmas y derivación de llaves, corriendo nativamente en el navegador.
-    </p>
-    <div class="install-badge" id="install-cmd" title="Haz clic para copiar">
-      <span>$</span> npm i blockchain-wasm
-      <span id="copy-hint">· copiar</span>
-    </div>
-  </section>
+      .card:nth-child(1) {
+        animation-delay: 0.15s;
+      }
+      .card:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .card:nth-child(3) {
+        animation-delay: 0.25s;
+      }
+      .card:nth-child(4) {
+        animation-delay: 0.3s;
+      }
+      .card:nth-child(5) {
+        animation-delay: 0.35s;
+      }
+      .card:nth-child(6) {
+        animation-delay: 0.4s;
+      }
+      .card:nth-child(7) {
+        animation-delay: 0.45s;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div class="hero-badge">WebAssembly · AssemblyScript · secp256k1</div>
+        <h1>Blockchain<span class="grad">Wasm</span></h1>
+        <p class="hero-sub">
+          Primitivas criptográficas ultra-optimizadas compiladas a WebAssembly. Hashing, firmas y derivación de llaves,
+          corriendo nativamente en el navegador.
+        </p>
+        <div class="install-badge" id="install-cmd" title="Haz clic para copiar">
+          <span>$</span> npm i blockchain-wasm
+          <span id="copy-hint">· copiar</span>
+        </div>
+      </section>
 
-  <div class="grid">
-    <a class="card c-blue" href="hashing.html" id="card-hashing">
-      <span class="card-arrow">→</span>
-      <div class="card-icon">🔐</div>
-      <div class="card-tag">Hashing</div>
-      <h2>SHA-256 y Keccak-256</h2>
-      <p>Calcula hashes SHA-256, HMAC-SHA-256/512 y Keccak-256 a partir de texto o entrada hexadecimal.</p>
-    </a>
+      <div class="grid">
+        <a class="card c-blue" href="hashing.html" id="card-hashing">
+          <span class="card-arrow">→</span>
+          <div class="card-icon">🔐</div>
+          <div class="card-tag">Hashing</div>
+          <h2>SHA-256 y Keccak-256</h2>
+          <p>Calcula hashes SHA-256, HMAC-SHA-256/512 y Keccak-256 a partir de texto o entrada hexadecimal.</p>
+        </a>
 
-    <a class="card c-purple" href="ecdsa.html" id="card-ecdsa">
-      <span class="card-arrow">→</span>
-      <div class="card-icon">✍️</div>
-      <div class="card-tag">Firmas</div>
-      <h2>Firma y Verifica ECDSA</h2>
-      <p>Firma mensajes con ECDSA secp256k1. Verifica firmas y descompón los componentes R, S, V.</p>
-    </a>
+        <a class="card c-purple" href="ecdsa.html" id="card-ecdsa">
+          <span class="card-arrow">→</span>
+          <div class="card-icon">✍️</div>
+          <div class="card-tag">Firmas</div>
+          <h2>Firma y Verifica ECDSA</h2>
+          <p>Firma mensajes con ECDSA secp256k1. Verifica firmas y descompón los componentes R, S, V.</p>
+        </a>
 
-    <a class="card c-teal" href="schnorr.html" id="card-schnorr">
-      <span class="card-arrow">→</span>
-      <div class="card-icon">⚡</div>
-      <div class="card-tag">Schnorr</div>
-      <h2>Firmas Schnorr</h2>
-      <p>Firma y verifica Schnorr BIP-340 — el algoritmo detrás de Bitcoin Taproot.</p>
-    </a>
+        <a class="card c-teal" href="schnorr.html" id="card-schnorr">
+          <span class="card-arrow">→</span>
+          <div class="card-icon">⚡</div>
+          <div class="card-tag">Schnorr</div>
+          <h2>Firmas Schnorr</h2>
+          <p>Firma y verifica Schnorr BIP-340 — el algoritmo detrás de Bitcoin Taproot.</p>
+        </a>
 
-    <a class="card c-green" href="addresses.html" id="card-addresses">
-      <span class="card-arrow">→</span>
-      <div class="card-icon">🏦</div>
-      <div class="card-tag">Direcciones</div>
-      <h2>Direcciones BTC y ETH</h2>
-      <p>Deriva direcciones Bitcoin (Legacy, P2SH, SegWit, Taproot) y Ethereum a partir de una llave privada.</p>
-    </a>
+        <a class="card c-green" href="addresses.html" id="card-addresses">
+          <span class="card-arrow">→</span>
+          <div class="card-icon">🏦</div>
+          <div class="card-tag">Direcciones</div>
+          <h2>Direcciones BTC y ETH</h2>
+          <p>Deriva direcciones Bitcoin (Legacy, P2SH, SegWit, Taproot) y Ethereum a partir de una llave privada.</p>
+        </a>
 
-    <a class="card c-orange" href="bip32.html" id="card-bip32">
-      <span class="card-arrow">→</span>
-      <div class="card-icon">🌳</div>
-      <div class="card-tag">BIP-32</div>
-      <h2>Derivación de Llaves HD</h2>
-      <p>Deriva llaves hijas jerárquicas-deterministas utilizando rutas de derivación BIP-32.</p>
-    </a>
+        <a class="card c-orange" href="bip32.html" id="card-bip32">
+          <span class="card-arrow">→</span>
+          <div class="card-icon">🌳</div>
+          <div class="card-tag">BIP-32</div>
+          <h2>Derivación de Llaves HD</h2>
+          <p>Deriva llaves hijas jerárquicas-deterministas utilizando rutas de derivación BIP-32.</p>
+        </a>
 
-    <a class="card c-pink" href="ecdh.html" id="card-ecdh">
-      <span class="card-arrow">→</span>
-      <div class="card-icon">🤝</div>
-      <div class="card-tag">ECDH</div>
-      <h2>Secreto Compartido (ECDH)</h2>
-      <p>Calcula un secreto compartido Diffie-Hellman entre dos pares de llaves secp256k1.</p>
-    </a>
+        <a class="card c-purple" href="bip44.html" id="card-bip44">
+          <span class="card-arrow">→</span>
+          <div class="card-icon">🔑</div>
+          <div class="card-tag">BIP-39 / BIP-44</div>
+          <h2>Mnemónicos y Cuentas HD</h2>
+          <p>Genera frases mnemónicas, valida semillas y deriva cuentas/direcciones jerárquicas multi-activo.</p>
+        </a>
 
-    <a class="card c-blue" href="utils.html" id="card-utils">
-      <span class="card-arrow">→</span>
-      <div class="card-icon">🛠️</div>
-      <div class="card-tag">Utilidades</div>
-      <h2>Codificación y Utils</h2>
-      <p>Conversión Hex ↔ bytes, Base64 ↔ bytes, PBKDF2-SHA512 y codificación/decodificación WIF.</p>
-    </a>
-  </div>
-</main>
+        <a class="card c-pink" href="ecdh.html" id="card-ecdh">
+          <span class="card-arrow">→</span>
+          <div class="card-icon">🤝</div>
+          <div class="card-tag">ECDH</div>
+          <h2>Secreto Compartido (ECDH)</h2>
+          <p>Calcula un secreto compartido Diffie-Hellman entre dos pares de llaves secp256k1.</p>
+        </a>
 
-<footer>
-  <span>Desarrollado con <code>blockchain-wasm</code> · AssemblyScript → WebAssembly</span>
-  <a href="https://www.npmjs.com/package/blockchain-wasm" target="_blank">npm</a>
-  <a href="https://github.com/edison-manrique/blockchain-wasm" target="_blank">GitHub</a>
-</footer>
+        <a class="card c-blue" href="utils.html" id="card-utils">
+          <span class="card-arrow">→</span>
+          <div class="card-icon">🛠️</div>
+          <div class="card-tag">Utilidades</div>
+          <h2>Codificación y Utils</h2>
+          <p>Conversión Hex ↔ bytes, Base64 ↔ bytes, PBKDF2-SHA512 y codificación/decodificación WIF.</p>
+        </a>
+      </div>
+    </main>
 
-<script>
-  document.getElementById('install-cmd').addEventListener('click', () => {
-    navigator.clipboard.writeText('npm i blockchain-wasm').then(() => {
-      const hint = document.getElementById('copy-hint')
-      hint.textContent = '· ¡copiado!'
-      hint.style.color = '#68d391'
-      setTimeout(() => { hint.textContent = '· copiar'; hint.style.color = ''; }, 2000)
-    })
-  })
-</script>
-</body>
+    <footer>
+      <span>Desarrollado con <code>blockchain-wasm</code> · AssemblyScript → WebAssembly</span>
+      <a href="https://www.npmjs.com/package/blockchain-wasm" target="_blank">npm</a>
+      <a href="https://github.com/edison-manrique/blockchain-wasm" target="_blank">GitHub</a>
+    </footer>
+
+    <script>
+      document.getElementById("install-cmd").addEventListener("click", () => {
+        navigator.clipboard.writeText("npm i blockchain-wasm").then(() => {
+          const hint = document.getElementById("copy-hint")
+          hint.textContent = "· ¡copiado!"
+          hint.style.color = "#68d391"
+          setTimeout(() => {
+            hint.textContent = "· copiar"
+            hint.style.color = ""
+          }, 2000)
+        })
+      })
+    </script>
+  </body>
 </html>

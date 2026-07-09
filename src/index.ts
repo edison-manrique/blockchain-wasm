@@ -19,7 +19,7 @@ interface AsmExports extends WebAssembly.Exports {
   sha256: (dataPtr: number) => number
   hmac_sha256: (keyPtr: number, dataPtr: number) => number
   hmac_sha512: (keyPtr: number, dataPtr: number) => number
-  keccak: (dataPtr: number) => number
+  keccak256: (dataPtr: number) => number
 
   // ── ECDSA ──────────────────────────────────────────────────────────────
   get_message_hash: (messagePtr: number, format: number) => number
@@ -50,6 +50,51 @@ interface AsmExports extends WebAssembly.Exports {
   // ── BIP32 ──────────────────────────────────────────────────────────────
   bip32_derive_path: (seedPtr: number, pathPtr: number) => number
   bip32_get_pubkey: (seedPtr: number, pathPtr: number) => number
+  bip44DeriveLeafKeys: (
+    seedPtr: number,
+    purpose: number,
+    coinType: number,
+    account: number,
+    change: number,
+    addressIndex: number
+  ) => number
+  bip44AccountXpub: (seedPtr: number, purpose: number, coinType: number, account: number) => number
+  bip44AccountXprv: (seedPtr: number, purpose: number, coinType: number, account: number) => number
+  bip44DerivePrivateKey: (
+    seedPtr: number,
+    purpose: number,
+    coinType: number,
+    account: number,
+    change: number,
+    addressIndex: number
+  ) => number
+  bip44DerivePublicKey: (
+    seedPtr: number,
+    purpose: number,
+    coinType: number,
+    account: number,
+    change: number,
+    addressIndex: number
+  ) => number
+  bip44SeedFromMnemonic: (mnemonicPtr: number, passphrasePtr: number) => number
+  bip44ValidateMnemonic: (mnemonicPtr: number) => number
+  bip44EntropyToMnemonic: (entropyPtr: number) => number
+  bip44FromMnemonicDeriveKeys: (
+    mnemonicPtr: number,
+    passphrasePtr: number,
+    purpose: number,
+    coinType: number,
+    account: number,
+    change: number,
+    addressIndex: number
+  ) => number
+  bip44FromMnemonicAccountXpub: (
+    mnemonicPtr: number,
+    passphrasePtr: number,
+    purpose: number,
+    coinType: number,
+    account: number
+  ) => number
 
   // ── WIF ────────────────────────────────────────────────────────────────
   toWIF: (privKeyPtr: number) => number
@@ -352,7 +397,7 @@ export class BlockchainWasm {
   /** Calcula el hash Keccak-256 (estilo Ethereum) de los bytes de entrada */
   keccak256(data: Uint8Array): Uint8Array {
     this.call(1)
-    return this.allocator.readBytes(this.exp.keccak(this.allocator.writeBytes(data)))
+    return this.allocator.readBytes(this.exp.keccak256(this.allocator.writeBytes(data)))
   }
 
   // ── ECDSA ────────────────────────────────────────────────────────────────
@@ -523,6 +568,235 @@ export class BlockchainWasm {
     this.call(2)
     return this.allocator.readBytes(
       this.exp.bip32_get_pubkey(this.allocator.writeBytes(seed), this.allocator.writeString(path))
+    )
+  }
+
+  // ── BIP44 ────────────────────────────────────────────────────────────────
+
+  /**
+   * Resuelve el `purpose` y `coinType` correctos según el formato de dirección.
+   *
+   * Estándares:
+   *  - ETH:    purpose=44, coinType=60  (BIP44)
+   *  - BTC:    purpose=44, coinType=0   (BIP44 Legacy P2PKH)
+   *  - P2SH:   purpose=49, coinType=0   (BIP49 Nested SegWit)
+   *  - P2WPKH: purpose=84, coinType=0   (BIP84 Native SegWit)
+   *  - P2TR:   purpose=86, coinType=0   (BIP86 Taproot)
+   */
+  private resolveDerivationParams(symbol: string): { purpose: number; coinType: number } {
+    const sym = symbol.toUpperCase()
+    switch (sym) {
+      case "P2SH":
+      case "BTC-P2SH":
+        return { purpose: 49, coinType: 0 }
+      case "P2WPKH":
+      case "BTC-P2WPKH":
+        return { purpose: 84, coinType: 0 }
+      case "P2TR":
+      case "BTC-P2TR":
+      case "TAPROOT":
+        return { purpose: 86, coinType: 0 }
+      case "BTC":
+      case "P2PKH":
+      case "BTC-P2PKH":
+        return { purpose: 44, coinType: 0 }
+      case "ETH":
+        return { purpose: 44, coinType: 60 }
+      default:
+        // Para otros activos, el caller debe proveer purpose y coinType manualmente
+        return { purpose: 44, coinType: 0 }
+    }
+  }
+
+  /**
+   * Deriva la dirección final para la ruta BIP44/49/84/86 correcta según el formato.
+   *
+   * El `purpose` y `coinType` se resuelven automáticamente a partir de `symbol`
+   * para garantizar que la ruta de derivación sea siempre la correcta según el
+   * estándar correspondiente (BIP44/49/84/86). Los parámetros `purpose` y `coinType`
+   * se ignoran y solo se mantienen por compatibilidad de firma.
+   */
+  bip44DeriveAddress(
+    seed: Uint8Array,
+    _purpose: number,
+    _coinType: number,
+    account: number,
+    change: number,
+    addressIndex: number,
+    symbol: string
+  ): string {
+    const sym = symbol.toUpperCase()
+    // Siempre resolver purpose y coinType desde el símbolo — nunca confiar en los parámetros externos
+    const { purpose, coinType } = this.resolveDerivationParams(sym)
+    const keys = this.bip44DeriveKeys(seed, purpose, coinType, account, change, addressIndex)
+
+    if (sym === "ETH") {
+      const uncompressed = this.uncompressPublicKey(keys.publicKey)
+      return this.getEthereumAddress(uncompressed)
+    } else if (sym === "BTC" || sym === "P2PKH" || sym === "BTC-P2PKH") {
+      return this.getBitcoinAddress(keys.publicKey)
+    } else if (sym === "P2SH" || sym === "BTC-P2SH") {
+      return this.getBitcoinP2SHAddress(keys.publicKey)
+    } else if (sym === "P2WPKH" || sym === "BTC-P2WPKH") {
+      return this.getBitcoinP2WPKHAddress(keys.publicKey)
+    } else if (sym === "P2TR" || sym === "BTC-P2TR" || sym === "TAPROOT") {
+      return this.getBitcoinP2TRAddress(keys.publicKey)
+    } else {
+      throw new Error(`Unsupported coin symbol or address format: ${symbol}`)
+    }
+  }
+
+  /**
+   * Deriva la clave privada y pública para un nodo BIP44 final.
+   * Retorna { privateKey: 32 bytes, publicKey: 33 bytes (compressed) }
+   */
+  bip44DeriveKeys(
+    seed: Uint8Array,
+    purpose: number,
+    coinType: number,
+    account: number,
+    change: number,
+    addressIndex: number
+  ): { privateKey: Uint8Array; publicKey: Uint8Array } {
+    this.call(6)
+    const result = this.allocator.readBytes(
+      this.exp.bip44DeriveLeafKeys(this.allocator.writeBytes(seed), purpose, coinType, account, change, addressIndex)
+    )
+    return {
+      privateKey: result.slice(0, 32),
+      publicKey: result.slice(32, 65)
+    }
+  }
+
+  /**
+   * Returns the xpub for the BIP44 account level.
+   */
+  bip44AccountXpub(seed: Uint8Array, purpose: number, coinType: number, account: number): string {
+    this.call(4)
+    return this.allocator.readString(
+      this.exp.bip44AccountXpub(this.allocator.writeBytes(seed), purpose, coinType, account)
+    )
+  }
+
+  /**
+   * Returns the xprv for the BIP44 account level.
+   */
+  bip44AccountXprv(seed: Uint8Array, purpose: number, coinType: number, account: number): string {
+    this.call(4)
+    return this.allocator.readString(
+      this.exp.bip44AccountXprv(this.allocator.writeBytes(seed), purpose, coinType, account)
+    )
+  }
+
+  /**
+   * Derives the private key only (32 bytes) for a BIP44 leaf node.
+   */
+  bip44DerivePrivateKey(
+    seed: Uint8Array,
+    purpose: number,
+    coinType: number,
+    account: number,
+    change: number,
+    addressIndex: number
+  ): Uint8Array {
+    this.call(6)
+    return this.allocator.readBytes(
+      this.exp.bip44DerivePrivateKey(this.allocator.writeBytes(seed), purpose, coinType, account, change, addressIndex)
+    )
+  }
+
+  /**
+   * Derives the compressed public key (33 bytes) for a BIP44 leaf node.
+   */
+  bip44DerivePublicKey(
+    seed: Uint8Array,
+    purpose: number,
+    coinType: number,
+    account: number,
+    change: number,
+    addressIndex: number
+  ): Uint8Array {
+    this.call(6)
+    return this.allocator.readBytes(
+      this.exp.bip44DerivePublicKey(this.allocator.writeBytes(seed), purpose, coinType, account, change, addressIndex)
+    )
+  }
+
+  /**
+   * Converts a BIP39 mnemonic phrase to a 64-byte seed.
+   */
+  bip44SeedFromMnemonic(mnemonic: string, passphrase = ""): Uint8Array {
+    this.call(2)
+    return this.allocator.readBytes(
+      this.exp.bip44SeedFromMnemonic(this.allocator.writeString(mnemonic), this.allocator.writeString(passphrase))
+    )
+  }
+
+  /**
+   * Validates a BIP39 mnemonic phrase.
+   */
+  bip44ValidateMnemonic(mnemonic: string): boolean {
+    this.call(1)
+    return this.exp.bip44ValidateMnemonic(this.allocator.writeString(mnemonic)) !== 0
+  }
+
+  /**
+   * Converts raw entropy bytes to a BIP39 mnemonic phrase.
+   */
+  bip44EntropyToMnemonic(entropy: Uint8Array): string {
+    this.call(1)
+    return this.allocator.readString(this.exp.bip44EntropyToMnemonic(this.allocator.writeBytes(entropy)))
+  }
+
+  /**
+   * Full pipeline: mnemonic → seed → BIP44 leaf key derivation.
+   */
+  bip44FromMnemonicDeriveKeys(
+    mnemonic: string,
+    passphrase: string,
+    purpose: number,
+    coinType: number,
+    account: number,
+    change: number,
+    addressIndex: number
+  ): { privateKey: Uint8Array; publicKey: Uint8Array } {
+    this.call(7)
+    const result = this.allocator.readBytes(
+      this.exp.bip44FromMnemonicDeriveKeys(
+        this.allocator.writeString(mnemonic),
+        this.allocator.writeString(passphrase),
+        purpose,
+        coinType,
+        account,
+        change,
+        addressIndex
+      )
+    )
+    return {
+      privateKey: result.slice(0, 32),
+      publicKey: result.slice(32, 65)
+    }
+  }
+
+  /**
+   * Full pipeline: mnemonic → seed → account xpub.
+   */
+  bip44FromMnemonicAccountXpub(
+    mnemonic: string,
+    passphrase: string,
+    purpose: number,
+    coinType: number,
+    account: number
+  ): string {
+    this.call(5)
+    return this.allocator.readString(
+      this.exp.bip44FromMnemonicAccountXpub(
+        this.allocator.writeString(mnemonic),
+        this.allocator.writeString(passphrase),
+        purpose,
+        coinType,
+        account
+      )
     )
   }
 

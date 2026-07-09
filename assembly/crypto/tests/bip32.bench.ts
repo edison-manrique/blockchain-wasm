@@ -1,4 +1,4 @@
-import { HDKey, derivePrivateKey } from "../bip32"
+import { HDKey, derivePrivateKey } from "../../bip32"
 import { hexToBytes } from "../../utils"
 export * from "./bip32.test"
 

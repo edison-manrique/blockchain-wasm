@@ -1,8 +1,7 @@
 import { SHA256_K, SHA256_IV, SHA256_HASH_BYTES } from "./constants"
+// prettier-ignore
 import {
-  load32_be,
   store32_be,
-  store64_be_arr,
   sigma0_256,
   sigma1_256,
   Sigma0_256,

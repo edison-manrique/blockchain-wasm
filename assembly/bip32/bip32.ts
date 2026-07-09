@@ -10,14 +10,14 @@
 
 import { Sha512, Sha256 } from "../sha2"
 import { hash as ripemd160_hash } from "../ripemd160"
-import { BigInt256, Scalar256, GeneratorTable, Point } from "./utils"
+import { BigInt256, Scalar256, GeneratorTable, Point } from "../crypto/utils"
 import { Memory } from "../utils/Memory"
 
 // ═══════════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════════
 
-const HARDENED_OFFSET: u32 = 0x80000000
+export const HARDENED_OFFSET: u32 = 0x80000000
 
 // "Bitcoin seed" as static bytes — no allocation
 const BITCOIN_SEED: StaticArray<u8> = [66, 105, 116, 99, 111, 105, 110, 32, 115, 101, 101, 100]

@@ -3,15 +3,13 @@
  * Granular tests for debugging and verification
  */
 
-import { Point } from "../utils/point"
-import { BigInt256 } from "../bigint256"
-import { Scalar256 } from "../utils/scalar256"
+import { Point, Scalar256, BigInt256 } from "../utils"
 import { ECDSA, signMessage, EcdsaSignature, SignatureFormat } from "../ecdsa"
 import { ECDH } from "../ecdh"
 import { toWIF, fromWIF } from "../wif"
 import { getPublicKeyUncompressed } from "../address"
-import { Sha256 } from "../../../../assembly/sha2/sha256"
-import { hexToBytes } from "../../../../assembly/lib"
+import { Sha256 } from "../../sha2/sha256"
+import { hexToBytes } from "../../utils"
 
 // ==========================================================
 // HELPERS

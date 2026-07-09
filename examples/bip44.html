@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BIP-39 & BIP-44: Mnemónicos y Derivación HD · BlockchainWasm</title>
+  <meta name="description" content="Genera mnemónicos BIP-39, valida frases y deriva claves y direcciones BIP-44 usando WebAssembly." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    :root { --page-accent: #9f7aea; --page-accent2: #805ad5; }
+
+    .len-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .preset-btn {
+      background: rgba(159,122,234,0.08);
+      border: 1px solid rgba(159,122,234,0.2);
+      border-radius: 8px;
+      color: var(--accent2);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .preset-btn:hover { background: rgba(159,122,234,0.16); }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    .status-badge.valid { background: rgba(104,211,145,0.1); border: 1px solid rgba(104,211,145,0.3); color: var(--accent3); }
+    .status-badge.invalid { background: rgba(252,129,129,0.1); border: 1px solid rgba(252,129,129,0.3); color: var(--accent5); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html"><span class="nav-brand-dot"></span>BlockchainWasm</a>
+  <div class="nav-links">
+    <a href="hashing.html">Hashing</a>
+    <a href="ecdsa.html">ECDSA</a>
+    <a href="schnorr.html">Schnorr</a>
+    <a href="addresses.html">Direcciones</a>
+    <a href="bip32.html">BIP-32</a>
+    <a href="bip44.html" class="active">BIP-39/44</a>
+    <a href="ecdh.html">ECDH</a>
+    <a href="utils.html">Utils</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-badge">🔐 BIP-39 & BIP-44</div>
+    <h1>Mnemónicos y <span class="grad">Multi-Cuentas HD</span></h1>
+    <p>Genera frases semilla mnemónicas compatibles con BIP-39 y deriva cuentas jerárquicas jerárquicas-deterministas multiactivo utilizando el estándar BIP-44 en WebAssembly.</p>
+  </div>
+
+  <!-- ── Frase Mnemónica BIP-39 ── -->
+  <div class="section">
+    <div class="section-title">1. Frase Mnemónica y Generación de Semilla (BIP-39)</div>
+    
+    <div class="field">
+      <label>Longitud de frase mnemónica para generar</label>
+      <div class="len-presets">
+        <button class="preset-btn" data-words="12">12 Palabras (16 bytes entropía)</button>
+        <button class="preset-btn" data-words="15">15 Palabras (20 bytes entropía)</button>
+        <button class="preset-btn" data-words="18">18 Palabras (24 bytes entropía)</button>
+        <button class="preset-btn" data-words="24">24 Palabras (32 bytes entropía)</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="mnemonic-input">Frase Mnemónica BIP-39 (Español/Inglés/etc.)</label>
+      <textarea id="mnemonic-input" rows="3" placeholder="Ingresa o genera una frase de 12 a 24 palabras…">abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about</textarea>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="passphrase-input">Contraseña de Mnemónico / Sal (Opcional - BIP-39 Passphrase)</label>
+        <input type="text" id="passphrase-input" placeholder="TREZOR, contraseña..." />
+      </div>
+      <div class="field" style="display:flex; align-items:flex-end;">
+        <button class="btn btn-ghost" id="btn-validate" style="width:100%">🔍 Validar Mnemónico</button>
+      </div>
+    </div>
+
+    <div style="margin-top: 10px; margin-bottom: 14px;" id="mnemonic-status-wrapper">
+      <span class="status-badge" id="mnemonic-status">Sin Validar</span>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-generate-seed">
+        <span class="spinner"></span>
+        🔑 Generar Semilla de 64 bytes
+      </button>
+    </div>
+
+    <div class="output" id="out-seed">
+      <div class="output-label">Semilla Derivada (BIP-39 Seed)</div>
+      <div class="output-box" style="position:relative">
+        <button class="copy-btn">Copiar</button>
+        <span id="derived-seed" class="text-break"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Derivación de Cuenta BIP-44 ── -->
+  <div class="section">
+    <div class="section-title">2. Derivación de Cuenta (BIP-44 Extended Keys)</div>
+    <div class="info-box">
+      El estándar BIP-44 sigue la ruta: <code>m / purpose' / coin_type' / account'</code>.
+      Deriva la clave pública extendida (<strong>xpub</strong>) y privada (<strong>xprv</strong>) a nivel de cuenta. Las xpub permiten generar direcciones sin comprometer las claves privadas.
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="bip44-purpose">Purpose — auto según formato</label>
+        <input type="number" id="bip44-purpose" value="44" min="0" readonly
+          style="opacity:0.6; cursor:not-allowed;"
+          title="Se actualiza automáticamente según el Formato de Dirección" />
+      </div>
+      <div class="field">
+        <label for="bip44-coin">Coin Type (Activo)</label>
+        <select id="bip44-coin">
+          <option value="0">0 - Bitcoin (BTC)</option>
+          <option value="60" selected>60 - Ethereum (ETH)</option>
+          <option value="195">195 - TRON (TRX)</option>
+          <option value="1">1 - Testnet (General)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="bip44-account">Account Index (Cuenta)</label>
+        <input type="number" id="bip44-account" value="0" min="0" />
+      </div>
+    </div>
+    <div class="info-box" id="derived-path-box" style="font-family:var(--mono); font-size:0.82rem;">
+      Ruta derivada: <strong id="derived-path-display">m/44&#x27;/60&#x27;/0&#x27;</strong>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-derive-account">
+        <span class="spinner"></span>
+        Derivar Cuenta Extendida
+      </button>
+    </div>
+
+    <div class="output" id="out-account">
+      <div class="output-row">
+        <div>
+          <div class="output-label">Extended Public Key (xpub - Cuenta)</div>
+          <div class="output-box" style="position:relative">
+            <button class="copy-btn">Copiar</button>
+            <span id="account-xpub" class="text-break"></span>
+          </div>
+        </div>
+        <div>
+          <div class="output-label">Extended Private Key (xprv - Cuenta)</div>
+          <div class="output-box" style="position:relative">
+            <button class="copy-btn">Copiar</button>
+            <span id="account-xprv" class="text-break"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Derivación de Hoja BIP-44 (Direcciones) ── -->
+  <div class="section">
+    <div class="section-title">3. Derivación de Hojas y Direcciones Finales</div>
+    <div class="info-box">
+      Deriva claves individuales a nivel de hoja usando la ruta: <code>m / purpose' / coin_type' / account' / change / address_index</code>.
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="bip44-change">Change (0 = Recibo, 1 = Cambio)</label>
+        <select id="bip44-change">
+          <option value="0" selected>0 - Recibir (External)</option>
+          <option value="1">1 - Cambio (Internal)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="bip44-address-index">Address Index (Índice)</label>
+        <input type="number" id="bip44-address-index" value="0" min="0" />
+      </div>
+      <div class="field">
+        <label for="bip44-symbol">Formato de Dirección</label>
+        <select id="bip44-symbol">
+          <option value="ETH" selected>Ethereum (EIP-55) — m/44&#x27;/60&#x27;</option>
+          <option value="BTC">Bitcoin Legacy P2PKH — m/44&#x27;/0&#x27;</option>
+          <option value="P2SH">Bitcoin Nested SegWit P2SH — m/49&#x27;/0&#x27;</option>
+          <option value="P2WPKH">Bitcoin Native SegWit P2WPKH — m/84&#x27;/0&#x27;</option>
+          <option value="P2TR">Bitcoin Taproot P2TR — m/86&#x27;/0&#x27;</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-derive-leaf">
+        <span class="spinner"></span>
+        Derivar Llaves de Hoja y Dirección
+      </button>
+    </div>
+
+    <div class="output" id="out-leaf">
+      <div class="row">
+        <div>
+          <div class="output-label">Clave Privada Derivada (32 bytes)</div>
+          <div class="output-box" style="position:relative; margin-bottom: 8px">
+            <button class="copy-btn">Copiar</button>
+            <span id="leaf-privkey"></span>
+          </div>
+          <div class="output-label">Clave Pública Comprimida Derivada (33 bytes)</div>
+          <div class="output-box" style="position:relative">
+            <button class="copy-btn">Copiar</button>
+            <span id="leaf-pubkey"></span>
+          </div>
+        </div>
+        <div>
+          <div class="output-label">Dirección Formateada</div>
+          <div class="output-box" style="position:relative; font-size:1.1rem; color:var(--accent3)">
+            <button class="copy-btn">Copiar</button>
+            <span id="leaf-address"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { hexToBytes, bytesToHex, withWasm, initCopyButtons, randomBytes } from './shared.js'
+
+/**
+ * Resuelve el purpose y coinType correctos según el formato de dirección.
+ * Esto sigue los estándares BIP44, BIP49, BIP84 y BIP86.
+ */
+function resolveDerivationParams(symbol) {
+  switch (symbol) {
+    case 'P2SH':   return { purpose: 49, coin: 0 }   // BIP49 - Nested SegWit - Bitcoin
+    case 'P2WPKH': return { purpose: 84, coin: 0 }   // BIP84 - Native SegWit - Bitcoin
+    case 'P2TR':   return { purpose: 86, coin: 0 }   // BIP86 - Taproot - Bitcoin
+    case 'BTC':    return { purpose: 44, coin: 0 }   // BIP44 - Legacy P2PKH - Bitcoin
+    case 'ETH':    return { purpose: 44, coin: 60 }  // BIP44 - Ethereum
+    default:       return { purpose: 44, coin: parseInt(document.getElementById('bip44-coin').value) }
+  }
+}
+
+/** Actualiza los campos purpose/coin y muestra la ruta derivada */
+function syncFormFromSymbol() {
+  const symbol = document.getElementById('bip44-symbol').value
+  const account = parseInt(document.getElementById('bip44-account').value) || 0
+  const { purpose, coin } = resolveDerivationParams(symbol)
+
+  document.getElementById('bip44-purpose').value = purpose
+
+  // Actualizar el selector de coin si es un activo BTC o ETH conocido
+  const coinSelect = document.getElementById('bip44-coin')
+  const isKnownCoin = ['BTC', 'P2SH', 'P2WPKH', 'P2TR', 'ETH'].includes(symbol)
+  if (isKnownCoin) {
+    coinSelect.value = coin
+  }
+
+  document.getElementById('derived-path-display').textContent =
+    `m/${purpose}'/${coin}'/${account}'`
+}
+
+// Sincronizar al cambiar el formato o la cuenta
+document.getElementById('bip44-symbol').addEventListener('change', syncFormFromSymbol)
+document.getElementById('bip44-account').addEventListener('input', syncFormFromSymbol)
+syncFormFromSymbol() // Init
+
+// Presets de palabras
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const words = parseInt(btn.dataset.words)
+    let entropySize = 16
+    if (words === 15) entropySize = 20
+    else if (words === 18) entropySize = 24
+    else if (words === 24) entropySize = 32
+
+    const entropy = randomBytes(entropySize)
+    try {
+      const { BlockchainWasm } = await import('../dist/index.js')
+      const wasm = await BlockchainWasm.load()
+      const mnemonic = wasm.bip44EntropyToMnemonic(entropy)
+      document.getElementById('mnemonic-input').value = mnemonic
+      validateMnemonic(wasm, mnemonic)
+    } catch (e) {
+      alert(`Error al generar mnemónico: ${e.message}`)
+    }
+  })
+})
+
+function validateMnemonic(wasm, mnemonic) {
+  const badge = document.getElementById('mnemonic-status')
+  const isValid = wasm.bip44ValidateMnemonic(mnemonic)
+  if (isValid) {
+    badge.textContent = 'VÁLIDO ✓'
+    badge.className = 'status-badge valid'
+  } else {
+    badge.textContent = 'INVÁLIDO ✗'
+    badge.className = 'status-badge invalid'
+  }
+}
+
+// Botón Validar
+document.getElementById('btn-validate').addEventListener('click', async () => {
+  const mnemonic = document.getElementById('mnemonic-input').value.trim()
+  try {
+    const { BlockchainWasm } = await import('../dist/index.js')
+    const wasm = await BlockchainWasm.load()
+    validateMnemonic(wasm, mnemonic)
+  } catch (e) {
+    alert(e.message)
+  }
+})
+
+// Botón Generar Semilla
+document.getElementById('btn-generate-seed').addEventListener('click', withWasm('btn-generate-seed', 'out-seed', async wasm => {
+  const mnemonic = document.getElementById('mnemonic-input').value.trim()
+  const passphrase = document.getElementById('passphrase-input').value
+
+  validateMnemonic(wasm, mnemonic)
+  if (!wasm.bip44ValidateMnemonic(mnemonic)) {
+    throw new Error('La frase mnemónica actual no es válida. Corrígela antes de generar la semilla.')
+  }
+
+  const seed = wasm.bip44SeedFromMnemonic(mnemonic, passphrase)
+  document.getElementById('derived-seed').textContent = bytesToHex(seed)
+  document.getElementById('out-seed').classList.add('visible')
+}))
+
+// Botón Cuenta Extendida
+document.getElementById('btn-derive-account').addEventListener('click', withWasm('btn-derive-account', 'out-account', async wasm => {
+  const seedHex = document.getElementById('derived-seed').textContent.trim()
+  if (!seedHex) throw new Error('Primero genera la semilla en el paso 1.')
+
+  const seed = hexToBytes(seedHex)
+  const purpose = parseInt(document.getElementById('bip44-purpose').value)
+  const coin = parseInt(document.getElementById('bip44-coin').value)
+  const account = parseInt(document.getElementById('bip44-account').value)
+
+  const xpub = wasm.bip44AccountXpub(seed, purpose, coin, account)
+  const xprv = wasm.bip44AccountXprv(seed, purpose, coin, account)
+
+  document.getElementById('account-xpub').textContent = xpub
+  document.getElementById('account-xprv').textContent = xprv
+  document.getElementById('out-account').classList.add('visible')
+}))
+
+// Botón Derivar Hoja
+document.getElementById('btn-derive-leaf').addEventListener('click', withWasm('btn-derive-leaf', 'out-leaf', async wasm => {
+  const seedHex = document.getElementById('derived-seed').textContent.trim()
+  if (!seedHex) throw new Error('Primero genera la semilla en el paso 1.')
+
+  const seed = hexToBytes(seedHex)
+  const symbol = document.getElementById('bip44-symbol').value
+  const account = parseInt(document.getElementById('bip44-account').value)
+  const change = parseInt(document.getElementById('bip44-change').value)
+  const index = parseInt(document.getElementById('bip44-address-index').value)
+
+  // Resolver purpose y coin correctamente según el formato seleccionado
+  const { purpose, coin } = resolveDerivationParams(symbol)
+
+  const keys = wasm.bip44DeriveKeys(seed, purpose, coin, account, change, index)
+  const address = wasm.bip44DeriveAddress(seed, purpose, coin, account, change, index, symbol)
+
+  document.getElementById('leaf-privkey').textContent = `0x${bytesToHex(keys.privateKey)}`
+  document.getElementById('leaf-pubkey').textContent = `0x${bytesToHex(keys.publicKey)}`
+  document.getElementById('leaf-address').textContent = address
+
+  document.getElementById('out-leaf').classList.add('visible')
+}))
+
+initCopyButtons()
+</script>
+</body>
+</html>
