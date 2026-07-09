@@ -2,7 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/blockchain-wasm?color=63b3ed&label=npm)](https://www.npmjs.com/package/blockchain-wasm)
 [![license](https://img.shields.io/npm/l/blockchain-wasm?color=68d391)](LICENSE)
-[![size](https://pkg-size.dev/badge/install/677291)](https://pkg-size.dev/badge/install/677291)
+[![size](https://pkg-size.dev/badge/install/331117)](https://pkg-size.dev/badge/install/331117)
 
 Biblioteca criptográfica de alto rendimiento que compila primitivas criptográficas avanzadas escritas en **AssemblyScript** a un binario **WebAssembly (WASM)** altamente optimizado.
 
