@@ -5,8 +5,14 @@
   "author": "Edison Manrique",
   "license": "MIT",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "files": [
     "dist/",
     "assembly/",
@@ -17,6 +23,7 @@
     "asbuild": "asc assembly/index.ts --target release",
     "build:ts": "tsc",
     "build": "npm run asbuild && npm run build:ts",
+    "prepublishOnly": "npm run build:ts",
     "examples": "node examples/server.cjs"
   },
   "keywords": [
@@ -40,5 +47,8 @@
   "bugs": {
     "url": "https://github.com/edison-manrique/blockchain-wasm/issues"
   },
-  "homepage": "https://github.com/edison-manrique/blockchain-wasm#readme"
+  "homepage": "https://github.com/edison-manrique/blockchain-wasm#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
