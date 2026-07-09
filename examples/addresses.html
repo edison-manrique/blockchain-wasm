@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Direcciones Bitcoin y Ethereum · BlockchainWasm</title>
+  <meta name="description" content="Deriva direcciones P2PKH, P2SH, P2WPKH, P2TR y Ethereum a partir de una llave privada en WebAssembly." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    :root { --page-accent: #68d391; --page-accent2: #4fd1c5; }
+
+    .addr-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 4px;
+    }
+    @media (max-width: 640px) { .addr-grid { grid-template-columns: 1fr; } }
+
+    .addr-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      transition: border-color 0.25s;
+    }
+    .addr-card:hover { border-color: var(--page-accent); }
+
+    .addr-type {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .addr-value {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--accent3);
+      word-break: break-all;
+      line-height: 1.5;
+      position: relative;
+    }
+
+    .addr-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 5px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .tag-legacy    { background: rgba(246,173,85,0.15); color: var(--accent4); border: 1px solid rgba(246,173,85,0.3); }
+    .tag-segwit    { background: rgba(99,179,237,0.12); color: var(--accent);  border: 1px solid var(--border2); }
+    .tag-taproot   { background: rgba(159,122,234,0.15); color: var(--accent2); border: 1px solid rgba(159,122,234,0.3); }
+    .tag-eth       { background: rgba(104,211,145,0.12); color: var(--accent3); border: 1px solid rgba(104,211,145,0.3); }
+
+    .section-eth { --page-accent: #9f7aea; --page-accent2: #63b3ed; }
+
+    .pubkey-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    @media (max-width:600px) { .pubkey-row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html"><span class="nav-brand-dot"></span>BlockchainWasm</a>
+  <div class="nav-links">
+    <a href="hashing.html">Hashing</a>
+    <a href="ecdsa.html">ECDSA</a>
+    <a href="schnorr.html">Schnorr</a>
+    <a href="addresses.html" class="active">Direcciones</a>
+    <a href="bip32.html">BIP-32</a>
+    <a href="ecdh.html">ECDH</a>
+    <a href="utils.html">Utils</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-badge">🏦 Direcciones</div>
+    <h1>Direcciones Bitcoin y <span class="grad">Ethereum</span></h1>
+    <p>Deriva todos los tipos de direcciones de Bitcoin (Legacy, P2SH, SegWit, Taproot) y Ethereum a partir de una llave privada secp256k1.</p>
+  </div>
+
+  <!-- ── Entrada ── -->
+  <div class="section">
+    <div class="section-title">Llave privada de entrada</div>
+
+    <div class="field">
+      <label for="addr-priv">Llave privada (32 bytes hex)</label>
+      <input type="text" id="addr-priv" placeholder="Ingresa o genera una clave privada de 32 bytes…" />
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-addr-derive">
+        <span class="spinner"></span>
+        Derivar todas las direcciones
+      </button>
+      <button class="btn btn-ghost" id="btn-addr-gen">⚡ Clave aleatoria</button>
+    </div>
+  </div>
+
+  <!-- ── Llaves públicas ── -->
+  <div class="output section" id="out-pubkeys" style="display:none">
+    <div class="section-title">Llaves públicas</div>
+    <div class="pubkey-row">
+      <div>
+        <div class="output-label">Comprimida (33 bytes)</div>
+        <div class="output-box" style="position:relative">
+          <button class="copy-btn">Copiar</button>
+          <span id="pub-compressed"></span>
+        </div>
+      </div>
+      <div>
+        <div class="output-label">Descomprimida (65 bytes)</div>
+        <div class="output-box" style="position:relative;font-size:0.72rem">
+          <button class="copy-btn">Copiar</button>
+          <span id="pub-uncompressed"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Direcciones Bitcoin ── -->
+  <div class="output section" id="out-btc" style="display:none">
+    <div class="section-title">Direcciones Bitcoin</div>
+    <div class="addr-grid">
+
+      <div class="addr-card">
+        <div class="addr-type">P2PKH <span class="addr-tag tag-legacy">Legacy (1…)</span></div>
+        <div class="addr-value" id="addr-p2pkh">—</div>
+      </div>
+
+      <div class="addr-card">
+        <div class="addr-type">P2SH <span class="addr-tag tag-segwit">Nested SegWit (3…)</span></div>
+        <div class="addr-value" id="addr-p2sh">—</div>
+      </div>
+
+      <div class="addr-card">
+        <div class="addr-type">P2WPKH <span class="addr-tag tag-segwit">Native SegWit (bc1q…)</span></div>
+        <div class="addr-value" id="addr-p2wpkh">—</div>
+      </div>
+
+      <div class="addr-card">
+        <div class="addr-type">P2TR <span class="addr-tag tag-taproot">Taproot (bc1p…)</span></div>
+        <div class="addr-value" id="addr-p2tr">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Dirección Ethereum ── -->
+  <div class="output section section-eth" id="out-eth" style="display:none">
+    <div class="section-title">Dirección Ethereum</div>
+    <div class="addr-card" style="grid-column:span 2">
+      <div class="addr-type">ERC-20 / EVM <span class="addr-tag tag-eth">Ethereum</span></div>
+      <div class="addr-value" id="addr-eth" style="font-size:0.9rem;color:var(--accent2)">—</div>
+    </div>
+  </div>
+
+  <!-- ── Compresión / Descompresión ── -->
+  <div class="section">
+    <div class="section-title">Utilidades de compresión de llaves</div>
+
+    <div class="info-box">
+      Conversión entre formatos de llave pública comprimida (33 bytes, prefijo <strong>02</strong>/<strong>03</strong>) y descomprimida (65 bytes, prefijo <strong>04</strong>).
+    </div>
+
+    <div class="field">
+      <label for="compress-input">Llave pública (hex)</label>
+      <input type="text" id="compress-input" placeholder="02… (33 bytes) o 04… (65 bytes)" />
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-compress">
+        <span class="spinner"></span>
+        Comprimir
+      </button>
+      <button class="btn btn-ghost" id="btn-decompress">Descomprimir</button>
+    </div>
+
+    <div class="output" id="out-compress">
+      <div class="output-label">Resultado</div>
+      <div class="output-box" style="position:relative">
+        <button class="copy-btn">Copiar</button>
+        <span id="compress-val"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { getWasm, hexToBytes, bytesToHex, withWasm, initCopyButtons, fillRandom } from './shared.js'
+
+function showSection(id) {
+  const el = document.getElementById(id)
+  el.style.display = 'block'
+  el.classList.add('visible')
+}
+
+// ── Generate random key ───────────────────────────────────────────────────
+document.getElementById('btn-addr-gen').addEventListener('click', () => fillRandom('addr-priv', 32))
+
+// ── Derive all ────────────────────────────────────────────────────────────
+document.getElementById('btn-addr-derive').addEventListener('click', withWasm('btn-addr-derive', '', async wasm => {
+  const privHex = document.getElementById('addr-priv').value
+  if (!privHex) throw new Error('Ingresa o genera una llave privada.')
+  const priv = hexToBytes(privHex)
+
+  // Public keys
+  const compressed   = wasm.getPublicKeyCompressed(priv)
+  const uncompressed = wasm.getPublicKeyUncompressed(priv)
+
+  document.getElementById('pub-compressed').textContent   = `0x${bytesToHex(compressed)}`
+  document.getElementById('pub-uncompressed').textContent = `0x${bytesToHex(uncompressed)}`
+  showSection('out-pubkeys')
+
+  // Bitcoin addresses
+  try { document.getElementById('addr-p2pkh').textContent  = wasm.getBitcoinAddress(compressed) }       catch { document.getElementById('addr-p2pkh').textContent  = 'N/A' }
+  try { document.getElementById('addr-p2sh').textContent   = wasm.getBitcoinP2SHAddress(compressed) }   catch { document.getElementById('addr-p2sh').textContent   = 'N/A' }
+  try { document.getElementById('addr-p2wpkh').textContent = wasm.getBitcoinP2WPKHAddress(compressed) } catch { document.getElementById('addr-p2wpkh').textContent = 'N/A' }
+  try { document.getElementById('addr-p2tr').textContent   = wasm.getBitcoinP2TRAddress(compressed) }   catch { document.getElementById('addr-p2tr').textContent   = 'N/A' }
+  showSection('out-btc')
+
+  // Ethereum
+  try { document.getElementById('addr-eth').textContent = wasm.getEthereumAddress(uncompressed) }
+  catch { document.getElementById('addr-eth').textContent = 'N/A' }
+  showSection('out-eth')
+
+  // Pre-fill compress input
+  document.getElementById('compress-input').value = `0x${bytesToHex(compressed)}`
+
+  initCopyButtons()
+}))
+
+// ── Compress ─────────────────────────────────────────────────────────────
+document.getElementById('btn-compress').addEventListener('click', withWasm('btn-compress', 'out-compress', async wasm => {
+  const pub = hexToBytes(document.getElementById('compress-input').value)
+  const out = wasm.compressPublicKey(pub)
+  document.getElementById('compress-val').textContent = `0x${bytesToHex(out)}`
+  document.getElementById('out-compress').classList.add('visible')
+  initCopyButtons()
+}))
+
+document.getElementById('btn-decompress').addEventListener('click', withWasm('btn-decompress', 'out-compress', async wasm => {
+  const pub = hexToBytes(document.getElementById('compress-input').value)
+  const out = wasm.uncompressPublicKey(pub)
+  document.getElementById('compress-val').textContent = `0x${bytesToHex(out)}`
+  document.getElementById('out-compress').classList.add('visible')
+  initCopyButtons()
+}))
+
+initCopyButtons()
+</script>
+</body>
+</html>

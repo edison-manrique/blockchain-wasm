@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hashing — SHA-256 y Keccak-256 · BlockchainWasm</title>
+  <meta name="description" content="Calcula hashes SHA-256, HMAC-SHA-256, HMAC-SHA-512 y Keccak-256 usando primitivas WebAssembly." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    :root { --page-accent: #63b3ed; --page-accent2: #4fd1c5; }
+    .algo-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab {
+      padding: 7px 18px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab.active, .tab:hover {
+      background: rgba(99,179,237,0.10);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html">
+    <span class="nav-brand-dot"></span>
+    BlockchainWasm
+  </a>
+  <div class="nav-links">
+    <a href="hashing.html" class="active">Hashing</a>
+    <a href="ecdsa.html">ECDSA</a>
+    <a href="schnorr.html">Schnorr</a>
+    <a href="addresses.html">Direcciones</a>
+    <a href="bip32.html">BIP-32</a>
+    <a href="ecdh.html">ECDH</a>
+    <a href="utils.html">Utils</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-badge">🔐 Hashing</div>
+    <h1>SHA-256 y <span class="grad">Keccak-256</span></h1>
+    <p>Calcula hashes criptográficos a partir de texto o hexadecimal. Todo se ejecuta nativamente en WebAssembly sin dependencias externas de JavaScript.</p>
+  </div>
+
+  <!-- ── SHA-256 ── -->
+  <div class="section" id="sha256-section">
+    <div class="section-title">SHA-256</div>
+
+    <div class="field">
+      <label for="sha256-input">Entrada</label>
+      <textarea id="sha256-input" rows="3" placeholder="Ingresa texto o hexadecimal con prefijo 0x…">¡Hola, WebAssembly!</textarea>
+    </div>
+
+    <div class="field">
+      <label>Formato de entrada</label>
+      <div class="algo-tabs" id="sha256-fmt-tabs">
+        <button class="tab active" data-fmt="text">Texto (UTF-8)</button>
+        <button class="tab" data-fmt="hex">Hexadecimal</button>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-sha256">
+        <span class="spinner"></span>
+        Calcular SHA-256
+      </button>
+    </div>
+
+    <div class="output" id="out-sha256">
+      <div class="output-label">Resultado</div>
+      <div class="output-box" style="position:relative">
+        <button class="copy-btn">Copiar</button>
+        <span id="sha256-val"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Keccak-256 ── -->
+  <div class="section" id="keccak-section">
+    <div class="section-title">Keccak-256 (Ethereum)</div>
+
+    <div class="info-box">
+      <strong>Nota:</strong> Keccak-256 es el algoritmo de hash utilizado en Ethereum (diferente al estándar final NIST SHA-3).
+    </div>
+
+    <div class="field">
+      <label for="keccak-input">Entrada</label>
+      <textarea id="keccak-input" rows="3" placeholder="Ingresa texto o hexadecimal con prefijo 0x…">¡Hola, WebAssembly!</textarea>
+    </div>
+
+    <div class="field">
+      <label>Formato de entrada</label>
+      <div class="algo-tabs" id="keccak-fmt-tabs">
+        <button class="tab active" data-fmt="text">Texto (UTF-8)</button>
+        <button class="tab" data-fmt="hex">Hexadecimal</button>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-keccak">
+        <span class="spinner"></span>
+        Calcular Keccak-256
+      </button>
+    </div>
+
+    <div class="output" id="out-keccak">
+      <div class="output-label">Resultado</div>
+      <div class="output-box" style="position:relative">
+        <button class="copy-btn">Copiar</button>
+        <span id="keccak-val"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HMAC ── -->
+  <div class="section" id="hmac-section">
+    <div class="section-title">HMAC — SHA-256 / SHA-512</div>
+
+    <div class="row">
+      <div class="field">
+        <label for="hmac-key">Clave (hexadecimal o texto)</label>
+        <input type="text" id="hmac-key" placeholder="mi-clave-secreta" value="supersecreto" />
+      </div>
+      <div class="field">
+        <label for="hmac-algo">Algoritmo</label>
+        <select id="hmac-algo">
+          <option value="sha256">HMAC-SHA-256</option>
+          <option value="sha512">HMAC-SHA-512</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="hmac-data">Datos</label>
+      <textarea id="hmac-data" rows="2" placeholder="Mensaje a autenticar…">The quick brown fox</textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-hmac">
+        <span class="spinner"></span>
+        Calcular HMAC
+      </button>
+    </div>
+
+    <div class="output" id="out-hmac">
+      <div class="output-label">Resultado</div>
+      <div class="output-box" style="position:relative">
+        <button class="copy-btn">Copiar</button>
+        <span id="hmac-val"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Comparación en lote ── -->
+  <div class="section" id="compare-section">
+    <div class="section-title">Comparar SHA-256 vs Keccak-256</div>
+
+    <div class="field">
+      <label for="compare-input">Texto de entrada</label>
+      <input type="text" id="compare-input" value="blockchain" />
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-compare">
+        <span class="spinner"></span>
+        Comparar ambos hashes
+      </button>
+    </div>
+
+    <div class="output" id="out-compare">
+      <div class="output-label">Resultados</div>
+      <div class="output-row">
+        <div>
+          <div class="output-label" style="margin-bottom:6px">SHA-256</div>
+          <div class="output-box" style="position:relative">
+            <button class="copy-btn">Copiar</button>
+            <span id="cmp-sha256"></span>
+          </div>
+        </div>
+        <div>
+          <div class="output-label" style="margin-bottom:6px">Keccak-256</div>
+          <div class="output-box" style="position:relative">
+            <button class="copy-btn">Copiar</button>
+            <span id="cmp-keccak"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { getWasm, textToBytes, hexToBytes, bytesToHex, showOutput, hideOutput, withWasm, initCopyButtons } from './shared.js'
+
+// ── Tab helpers ──────────────────────────────────────────────────────────
+function initTabs(tabGroupId) {
+  const container = document.getElementById(tabGroupId)
+  let current = 'text'
+  container.addEventListener('click', e => {
+    const tab = e.target.closest('.tab')
+    if (!tab) return
+    container.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+    tab.classList.add('active')
+    current = tab.dataset.fmt
+  })
+  return () => current
+}
+
+function parseInput(value, fmt) {
+  if (fmt === 'hex') return hexToBytes(value)
+  return textToBytes(value)
+}
+
+// ── SHA-256 ──────────────────────────────────────────────────────────────
+const getSha256Fmt = initTabs('sha256-fmt-tabs')
+
+document.getElementById('btn-sha256').addEventListener('click', withWasm('btn-sha256', 'out-sha256', async wasm => {
+  const raw = document.getElementById('sha256-input').value
+  const data = parseInput(raw, getSha256Fmt())
+  const hash = wasm.sha256(data)
+  const hex = bytesToHex(hash)
+  
+  // Hide error banner and show container
+  const errBox = document.querySelector('#out-sha256 .error-banner')
+  if (errBox) errBox.style.display = 'none'
+  document.getElementById('out-sha256').classList.add('visible')
+  
+  document.getElementById('sha256-val').textContent = `0x${hex}`
+}))
+
+// ── Keccak-256 ───────────────────────────────────────────────────────────
+const getKeccakFmt = initTabs('keccak-fmt-tabs')
+
+document.getElementById('btn-keccak').addEventListener('click', withWasm('btn-keccak', 'out-keccak', async wasm => {
+  const raw = document.getElementById('keccak-input').value
+  const data = parseInput(raw, getKeccakFmt())
+  const hash = wasm.keccak256(data)
+  const hex = bytesToHex(hash)
+  
+  // Hide error banner and show container
+  const errBox = document.querySelector('#out-keccak .error-banner')
+  if (errBox) errBox.style.display = 'none'
+  document.getElementById('out-keccak').classList.add('visible')
+  
+  document.getElementById('keccak-val').textContent = `0x${hex}`
+}))
+
+// ── HMAC ─────────────────────────────────────────────────────────────────
+document.getElementById('btn-hmac').addEventListener('click', withWasm('btn-hmac', 'out-hmac', async wasm => {
+  const keyRaw = document.getElementById('hmac-key').value
+  const dataRaw = document.getElementById('hmac-data').value
+  const algo = document.getElementById('hmac-algo').value
+
+  const key  = keyRaw.startsWith('0x') ? hexToBytes(keyRaw) : textToBytes(keyRaw)
+  const data = textToBytes(dataRaw)
+
+  const hash = algo === 'sha512' ? wasm.hmacSha512(key, data) : wasm.hmacSha256(key, data)
+  const hex  = bytesToHex(hash)
+  const label = algo === 'sha512' ? 'HMAC-SHA-512' : 'HMAC-SHA-256'
+
+  document.getElementById('hmac-val').textContent = `0x${hex}`
+  document.getElementById('out-hmac').querySelector('.output-label').textContent = `${label} — ${hex.length / 2} bytes`
+  document.getElementById('out-hmac').classList.add('visible')
+  initCopyButtons()
+}))
+
+// ── Compare ───────────────────────────────────────────────────────────────
+document.getElementById('btn-compare').addEventListener('click', withWasm('btn-compare', 'out-compare', async wasm => {
+  const text = document.getElementById('compare-input').value
+  const data = textToBytes(text)
+
+  const sha = bytesToHex(wasm.sha256(data))
+  const kec = bytesToHex(wasm.keccak256(data))
+
+  document.getElementById('cmp-sha256').textContent = `0x${sha}`
+  document.getElementById('cmp-keccak').textContent = `0x${kec}`
+  document.getElementById('out-compare').classList.add('visible')
+  initCopyButtons()
+}))
+
+initCopyButtons()
+</script>
+</body>
+</html>

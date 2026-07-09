@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firma y Verifica ECDSA · BlockchainWasm</title>
+  <meta name="description" content="Firma y verifica mensajes usando ECDSA secp256k1 en WebAssembly." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    :root { --page-accent: #9f7aea; --page-accent2: #63b3ed; }
+    .sig-parts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+    @media (max-width:600px) { .sig-parts { grid-template-columns: 1fr; } }
+    .v-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      background: rgba(159,122,234,0.15);
+      border: 1px solid rgba(159,122,234,0.3);
+      font-family: var(--mono); font-size: 1rem; font-weight: 700;
+      color: var(--accent2); align-self: end; margin-bottom: 2px;
+    }
+    .sig-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html"><span class="nav-brand-dot"></span>BlockchainWasm</a>
+  <div class="nav-links">
+    <a href="hashing.html">Hashing</a>
+    <a href="ecdsa.html" class="active">ECDSA</a>
+    <a href="schnorr.html">Schnorr</a>
+    <a href="addresses.html">Direcciones</a>
+    <a href="bip32.html">BIP-32</a>
+    <a href="ecdh.html">ECDH</a>
+    <a href="utils.html">Utils</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-badge">✍️ Firmas</div>
+    <h1>ECDSA <span class="grad">Firma y Verifica</span></h1>
+    <p>Firma hashes o mensajes de texto con llaves privadas secp256k1, luego verifica la firma resultante de 65 bytes <strong>[R | S | V]</strong>.</p>
+  </div>
+
+  <!-- ── Generar Clave ── -->
+  <div class="section">
+    <div class="section-title">Par de llaves</div>
+    <div class="info-box">
+      Genera una llave privada secp256k1 aleatoria. La correspondiente llave pública comprimida se derivará mediante WASM.
+    </div>
+    <div class="field">
+      <label for="priv-key">Llave privada (32 bytes hex)</label>
+      <input type="text" id="priv-key" placeholder="Genera o pega una llave privada hexadecimal de 32 bytes…" />
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="btn-gen-key">⚡ Generar clave aleatoria</button>
+    </div>
+
+    <div class="output" id="out-pubkey">
+      <div class="output-label">Llave pública comprimida (33 bytes)</div>
+      <div class="output-box" style="position:relative">
+        <button class="copy-btn">Copiar</button>
+        <span id="pubkey-val"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Firmar ── -->
+  <div class="section">
+    <div class="section-title">Firmar un mensaje</div>
+
+    <div class="field">
+      <label for="sign-msg">Mensaje</label>
+      <textarea id="sign-msg" rows="2" placeholder="Ingresa el mensaje a firmar…">Autorizo esta transacción</textarea>
+    </div>
+
+    <div class="field">
+      <label for="sign-fmt">Prefijo de mensaje</label>
+      <select id="sign-fmt">
+        <option value="0">Raw (sin prefijo)</option>
+        <option value="1" selected>Ethereum personal_sign</option>
+        <option value="2">Bitcoin Signed Message</option>
+      </select>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-sign">
+        <span class="spinner"></span>
+        Firmar mensaje
+      </button>
+    </div>
+
+    <div class="output" id="out-sign">
+      <div class="output-label">Firma (65 bytes)</div>
+      <div class="output-box" id="sig-full-box" style="position:relative">
+        <button class="copy-btn">Copiar</button>
+        <span id="sig-full"></span>
+      </div>
+      <div class="sig-parts" style="margin-top:12px">
+        <div>
+          <div class="output-label">R (32 bytes)</div>
+          <div class="output-box"><span id="sig-r"></span></div>
+        </div>
+        <div>
+          <div class="output-label">S (32 bytes)</div>
+          <div class="output-box"><span id="sig-s"></span></div>
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:12px">
+        <div class="output-label" style="margin:0">V (byte de recuperación)</div>
+        <div class="v-badge" id="sig-v">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Verificar ── -->
+  <div class="section">
+    <div class="section-title">Verificar una firma</div>
+
+    <div class="info-box">
+      Pega un mensaje, su firma de 65 bytes y la llave pública del firmante para verificar. Los campos se completan automáticamente al firmar arriba.
+    </div>
+
+    <div class="field">
+      <label for="verify-msg">Mensaje</label>
+      <textarea id="verify-msg" rows="2" placeholder="El mensaje original…"></textarea>
+    </div>
+
+    <div class="field">
+      <label for="verify-sig">Firma (hex, 64 o 65 bytes)</label>
+      <input type="text" id="verify-sig" placeholder="0xRRRR…SSSS…VV" />
+    </div>
+
+    <div class="field">
+      <label for="verify-pub">Llave pública (hex, 33 o 65 bytes)</label>
+      <input type="text" id="verify-pub" placeholder="02… o 04…" />
+    </div>
+
+    <div class="field">
+      <label for="verify-fmt">Prefijo de mensaje</label>
+      <select id="verify-fmt">
+        <option value="0">Raw (sin prefijo)</option>
+        <option value="1" selected>Ethereum personal_sign</option>
+        <option value="2">Bitcoin Signed Message</option>
+      </select>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-verify">
+        <span class="spinner"></span>
+        Verificar firma
+      </button>
+    </div>
+
+    <div class="output" id="out-verify">
+      <div class="output-label">Resultado</div>
+      <div class="output-box" id="verify-result"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { getWasm, textToBytes, hexToBytes, bytesToHex, showOutput, withWasm, initCopyButtons, fillRandom } from './shared.js'
+
+// ── Gen key ──────────────────────────────────────────────────────────────
+document.getElementById('btn-gen-key').addEventListener('click', withWasm('btn-gen-key', 'out-pubkey', async wasm => {
+  fillRandom('priv-key', 32)
+  const priv = hexToBytes(document.getElementById('priv-key').value)
+  const pub  = wasm.getPublicKeyCompressed(priv)
+  document.getElementById('pubkey-val').textContent = `0x${bytesToHex(pub)}`
+  document.getElementById('out-pubkey').classList.add('visible')
+  initCopyButtons()
+}))
+
+// Auto-derivar pubkey al cambiar priv
+document.getElementById('priv-key').addEventListener('change', async () => {
+  try {
+    const wasm = await getWasm()
+    const priv = hexToBytes(document.getElementById('priv-key').value)
+    const pub  = wasm.getPublicKeyCompressed(priv)
+    document.getElementById('pubkey-val').textContent = `0x${bytesToHex(pub)}`
+    document.getElementById('out-pubkey').classList.add('visible')
+  } catch {}
+})
+
+// ── Sign ─────────────────────────────────────────────────────────────────
+document.getElementById('btn-sign').addEventListener('click', withWasm('btn-sign', 'out-sign', async wasm => {
+  const privHex = document.getElementById('priv-key').value
+  if (!privHex) throw new Error('Por favor genera o ingresa una llave privada primero.')
+
+  const priv    = hexToBytes(privHex)
+  const message = document.getElementById('sign-msg').value
+  const fmt     = parseInt(document.getElementById('sign-fmt').value)
+
+  const sig = wasm.signTextMessage(message, priv, fmt)
+  const hex = bytesToHex(sig)
+
+  document.getElementById('sig-full').textContent   = `0x${hex}`
+  document.getElementById('sig-r').textContent       = `0x${hex.slice(0, 64)}`
+  document.getElementById('sig-s').textContent       = `0x${hex.slice(64, 128)}`
+  document.getElementById('sig-v').textContent       = sig[64]
+  document.getElementById('out-sign').classList.add('visible')
+
+  // Auto-completar campos de verificación
+  document.getElementById('verify-msg').value = message
+  document.getElementById('verify-sig').value = `0x${hex}`
+  document.getElementById('verify-fmt').value = fmt
+
+  const pub = wasm.getPublicKeyCompressed(priv)
+  document.getElementById('verify-pub').value = `0x${bytesToHex(pub)}`
+
+  initCopyButtons()
+}))
+
+// ── Verify ───────────────────────────────────────────────────────────────
+document.getElementById('btn-verify').addEventListener('click', withWasm('btn-verify', 'out-verify', async wasm => {
+  const message = document.getElementById('verify-msg').value
+  const sigHex  = document.getElementById('verify-sig').value
+  const pubHex  = document.getElementById('verify-pub').value
+  const fmt     = parseInt(document.getElementById('verify-fmt').value)
+
+  const sig = hexToBytes(sigHex)
+  let pub = hexToBytes(pubHex)
+  
+  // Si la llave pública está comprimida (33 bytes), la descomprimimos antes de verificar
+  if (pub.length === 33) {
+    pub = wasm.uncompressPublicKey(pub)
+  }
+
+  const ok = wasm.verifyTextMessage(message, sig, pub, fmt)
+
+  const box = document.getElementById('verify-result')
+  box.className = `output-box ${ok ? '' : 'error'}`.trim()
+  box.innerHTML = ok
+    ? `<span class="status ok">✓ VÁLIDO — la firma es auténtica</span>`
+    : `<span class="status fail">✗ INVÁLIDO — la firma no coincide</span>`
+
+  document.getElementById('out-verify').classList.add('visible')
+}))
+
+initCopyButtons()
+</script>
+</body>
+</html>

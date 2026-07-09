@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firmas Schnorr · BlockchainWasm</title>
+  <meta name="description" content="Firma y verifica Schnorr BIP-340 sobre secp256k1 en WebAssembly." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    :root { --page-accent: #4fd1c5; --page-accent2: #68d391; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html"><span class="nav-brand-dot"></span>BlockchainWasm</a>
+  <div class="nav-links">
+    <a href="hashing.html">Hashing</a>
+    <a href="ecdsa.html">ECDSA</a>
+    <a href="schnorr.html" class="active">Schnorr</a>
+    <a href="addresses.html">Direcciones</a>
+    <a href="bip32.html">BIP-32</a>
+    <a href="ecdh.html">ECDH</a>
+    <a href="utils.html">Utils</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-badge">⚡ Schnorr</div>
+    <h1>Firmas <span class="grad">Schnorr</span></h1>
+    <p>Firmas Schnorr compatibles con BIP-340 sobre secp256k1 — el algoritmo que impulsa Bitcoin Taproot (P2TR).</p>
+  </div>
+
+  <!-- ── Clave ── -->
+  <div class="section">
+    <div class="section-title">Par de llaves</div>
+    <div class="field">
+      <label for="schnorr-priv">Llave privada (32 bytes hex)</label>
+      <input type="text" id="schnorr-priv" placeholder="Genera o pega una llave privada de 32 bytes…" />
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="btn-schnorr-gen">⚡ Generar clave aleatoria</button>
+    </div>
+    <div class="output" id="out-schnorr-pub">
+      <div class="output-label">Llave pública Schnorr (x-only, 32 bytes)</div>
+      <div class="output-box" style="position:relative">
+        <button class="copy-btn">Copiar</button>
+        <span id="schnorr-pub-val"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Firmar ── -->
+  <div class="section">
+    <div class="section-title">Firmar un hash de 32 bytes</div>
+
+    <div class="info-box">
+      Schnorr opera sobre un hash de mensaje de 32 bytes (ej: digest SHA-256 de tus datos).
+      Ingresa el hash como hex, o escribe un mensaje que será transformado a SHA-256 automáticamente.
+    </div>
+
+    <div class="field">
+      <label for="schnorr-msg-text">Mensaje (será hasheado con SHA-256)</label>
+      <textarea id="schnorr-msg-text" rows="2">Taproot es el futuro de Bitcoin</textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-schnorr-sign">
+        <span class="spinner"></span>
+        Hashear y Firmar
+      </button>
+    </div>
+
+    <div class="output" id="out-schnorr-sign">
+      <div class="output-label">Hash utilizado para firmar (32 bytes)</div>
+      <div class="output-box" style="position:relative;margin-bottom:12px">
+        <button class="copy-btn">Copiar</button>
+        <span id="schnorr-hash-val"></span>
+      </div>
+      <div class="output-label">Firma Schnorr (64 bytes)</div>
+      <div class="output-box" style="position:relative">
+        <button class="copy-btn">Copiar</button>
+        <span id="schnorr-sig-val"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Verificar ── -->
+  <div class="section">
+    <div class="section-title">Verificar una firma Schnorr</div>
+
+    <div class="field">
+      <label for="schnorr-verify-hash">Hash (32 bytes hex)</label>
+      <input type="text" id="schnorr-verify-hash" placeholder="0x…" />
+    </div>
+    <div class="field">
+      <label for="schnorr-verify-sig">Firma (64 bytes hex)</label>
+      <input type="text" id="schnorr-verify-sig" placeholder="0x…" />
+    </div>
+    <div class="field">
+      <label for="schnorr-verify-pub">Llave pública x-only (32 bytes hex)</label>
+      <input type="text" id="schnorr-verify-pub" placeholder="0x…" />
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-schnorr-verify">
+        <span class="spinner"></span>
+        Verificar
+      </button>
+    </div>
+
+    <div class="output" id="out-schnorr-verify">
+      <div class="output-label">Resultado</div>
+      <div class="output-box" id="schnorr-verify-result"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { getWasm, textToBytes, hexToBytes, bytesToHex, withWasm, initCopyButtons, fillRandom } from './shared.js'
+
+// ── Gen key ──────────────────────────────────────────────────────────────
+document.getElementById('btn-schnorr-gen').addEventListener('click', withWasm('btn-schnorr-gen', 'out-schnorr-pub', async wasm => {
+  fillRandom('schnorr-priv', 32)
+  const priv = hexToBytes(document.getElementById('schnorr-priv').value)
+  const pub  = wasm.getSchnorrPublicKey(priv)
+  document.getElementById('schnorr-pub-val').textContent = `0x${bytesToHex(pub)}`
+  document.getElementById('out-schnorr-pub').classList.add('visible')
+  initCopyButtons()
+}))
+
+// ── Sign ─────────────────────────────────────────────────────────────────
+document.getElementById('btn-schnorr-sign').addEventListener('click', withWasm('btn-schnorr-sign', 'out-schnorr-sign', async wasm => {
+  const privHex = document.getElementById('schnorr-priv').value
+  if (!privHex) throw new Error('Por favor genera o ingresa una llave privada primero.')
+
+  const priv    = hexToBytes(privHex)
+  const message = document.getElementById('schnorr-msg-text').value
+  const msgBytes = textToBytes(message)
+
+  // Hash del mensaje con SHA-256 primero
+  const hash = wasm.sha256(msgBytes)
+  const hashHex = bytesToHex(hash)
+
+  const sig    = wasm.signSchnorr(hash, priv)
+  const sigHex = bytesToHex(sig)
+
+  document.getElementById('schnorr-hash-val').textContent = `0x${hashHex}`
+  document.getElementById('schnorr-sig-val').textContent  = `0x${sigHex}`
+  document.getElementById('out-schnorr-sign').classList.add('visible')
+
+  // Auto-completar verificación
+  const pub = wasm.getSchnorrPublicKey(priv)
+  document.getElementById('schnorr-verify-hash').value = `0x${hashHex}`
+  document.getElementById('schnorr-verify-sig').value  = `0x${sigHex}`
+  document.getElementById('schnorr-verify-pub').value  = `0x${bytesToHex(pub)}`
+
+  initCopyButtons()
+}))
+
+// ── Verify ───────────────────────────────────────────────────────────────
+document.getElementById('btn-schnorr-verify').addEventListener('click', withWasm('btn-schnorr-verify', 'out-schnorr-verify', async wasm => {
+  const hash = hexToBytes(document.getElementById('schnorr-verify-hash').value)
+  const sig  = hexToBytes(document.getElementById('schnorr-verify-sig').value)
+  const pub  = hexToBytes(document.getElementById('schnorr-verify-pub').value)
+
+  const ok = wasm.verifySchnorr(hash, sig, pub)
+
+  const box = document.getElementById('schnorr-verify-result')
+  box.className = `output-box ${ok ? '' : 'error'}`.trim()
+  box.innerHTML = ok
+    ? `<span class="status ok">✓ Firma Schnorr VÁLIDA</span>`
+    : `<span class="status fail">✗ INVÁLIDA — el chequeo de la firma falló</span>`
+
+  document.getElementById('out-schnorr-verify').classList.add('visible')
+}))
+
+initCopyButtons()
+</script>
+</body>
+</html>

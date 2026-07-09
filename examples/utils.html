@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Codificación y Utilidades · BlockchainWasm</title>
+  <meta name="description" content="Hex/bytes, Base64, PBKDF2-SHA512, codificación/decodificación WIF en WebAssembly." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    :root { --page-accent: #63b3ed; --page-accent2: #9f7aea; }
+
+    .convert-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 0;
+      color: var(--muted);
+      font-size: 1.2rem;
+    }
+
+    .pbkdf2-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width:600px) { .pbkdf2-grid { grid-template-columns: 1fr; } }
+
+    .strength-bar {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--bg4);
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .strength-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.4s ease;
+      background: linear-gradient(90deg, var(--accent5), var(--accent4), var(--accent3));
+    }
+
+    .wif-result {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html"><span class="nav-brand-dot"></span>BlockchainWasm</a>
+  <div class="nav-links">
+    <a href="hashing.html">Hashing</a>
+    <a href="ecdsa.html">ECDSA</a>
+    <a href="schnorr.html">Schnorr</a>
+    <a href="addresses.html">Direcciones</a>
+    <a href="bip32.html">BIP-32</a>
+    <a href="ecdh.html">ECDH</a>
+    <a href="utils.html" class="active">Utils</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-badge">🛠️ Utilidades</div>
+    <h1>Codificación <span class="grad">&amp; Utils</span></h1>
+    <p>Convierte entre hex, bytes y Base64. Deriva llaves con PBKDF2-SHA512. Codifica/decodifica llaves privadas Bitcoin WIF.</p>
+  </div>
+
+  <!-- ── Hex ↔ Bytes ↔ Base64 ── -->
+  <div class="section">
+    <div class="section-title">Conversor Hex ↔ Base64 ↔ Texto</div>
+
+    <div class="field">
+      <label for="conv-text">Texto de entrada</label>
+      <input type="text" id="conv-text" placeholder="Ingresa texto…" value="¡Hola, Blockchain!" />
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-conv">
+        <span class="spinner"></span>
+        Convertir
+      </button>
+    </div>
+
+    <div class="output" id="out-conv">
+      <div class="output-row">
+        <div>
+          <div class="output-label">Hexadecimal</div>
+          <div class="output-box" style="position:relative">
+            <button class="copy-btn">Copiar</button>
+            <span id="conv-hex"></span>
+          </div>
+        </div>
+        <div>
+          <div class="output-label">Base64</div>
+          <div class="output-box" style="position:relative">
+            <button class="copy-btn">Copiar</button>
+            <span id="conv-b64"></span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="output-label">Tamaño en bytes</div>
+        <div class="output-box"><span id="conv-len"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Hex ↔ Base64 raw ── -->
+  <div class="section">
+    <div class="section-title">Hex ↔ Base64 (bytes planos)</div>
+
+    <div class="row">
+      <div class="field">
+        <label for="raw-hex">Hex de entrada</label>
+        <input type="text" id="raw-hex" placeholder="0x…" />
+      </div>
+      <div class="field">
+        <label for="raw-b64">Base64 de entrada</label>
+        <input type="text" id="raw-b64" placeholder="base64…" />
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-hex-to-b64">Hex → Base64</button>
+      <button class="btn btn-ghost" id="btn-b64-to-hex">Base64 → Hex</button>
+    </div>
+
+    <div class="output" id="out-raw-conv">
+      <div class="output-label">Resultado</div>
+      <div class="output-box" style="position:relative">
+        <button class="copy-btn">Copiar</button>
+        <span id="raw-result"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PBKDF2 ── -->
+  <div class="section">
+    <div class="section-title">Derivación de llaves PBKDF2-SHA512</div>
+
+    <div class="info-box">
+      Utilizado en BIP-39 para derivar una semilla de 64 bytes a partir de un mnemónico. Iteraciones estándar: <strong>2048</strong> para BIP-39.
+    </div>
+
+    <div class="pbkdf2-grid">
+      <div class="field">
+        <label for="pbkdf2-pass">Contraseña / Frase semilla</label>
+        <input type="text" id="pbkdf2-pass" value="abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about" />
+      </div>
+      <div class="field">
+        <label for="pbkdf2-salt">Sal (BIP-39: "mnemonic" + passphrase)</label>
+        <input type="text" id="pbkdf2-salt" value="mnemonic" />
+      </div>
+      <div class="field">
+        <label for="pbkdf2-iter">Iteraciones</label>
+        <input type="number" id="pbkdf2-iter" value="2048" min="1" max="100000" />
+      </div>
+      <div class="field">
+        <label for="pbkdf2-len">Tamaño de salida (bytes)</label>
+        <input type="number" id="pbkdf2-len" value="64" min="16" max="128" />
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-pbkdf2">
+        <span class="spinner"></span>
+        Derivar llave
+      </button>
+    </div>
+
+    <div class="output" id="out-pbkdf2">
+      <div class="output-label">Llave derivada</div>
+      <div class="output-box" style="position:relative">
+        <button class="copy-btn">Copiar</button>
+        <span id="pbkdf2-val"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── WIF ── -->
+  <div class="section">
+    <div class="section-title">WIF — Wallet Import Format</div>
+
+    <div class="info-box">
+      El formato WIF codifica una llave privada de 32 bytes para Bitcoin como un string Base58Check que comienza con <strong>5</strong> (no comprimido) o <strong>K/L</strong> (comprimido).
+    </div>
+
+    <div class="field">
+      <label for="wif-priv">Llave privada (32 bytes hex)</label>
+      <input type="text" id="wif-priv" placeholder="64 caracteres hex…" />
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-to-wif">
+        <span class="spinner"></span>
+        Codificar a WIF
+      </button>
+      <button class="btn btn-ghost" id="btn-wif-gen">⚡ Llave aleatoria</button>
+    </div>
+
+    <div class="output" id="out-wif-encoded">
+      <div class="output-label">String WIF</div>
+      <div class="output-box" style="position:relative">
+        <button class="copy-btn">Copiar</button>
+        <span id="wif-encoded"></span>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <div class="field">
+      <label for="wif-import">String WIF a decodificar</label>
+      <input type="text" id="wif-import" placeholder="5HueCGU8…  o  Kxyz…" />
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-from-wif">
+        <span class="spinner"></span>
+        Decodificar WIF → llave privada
+      </button>
+    </div>
+
+    <div class="output" id="out-wif-decoded">
+      <div class="output-label">Llave privada (hex)</div>
+      <div class="output-box" style="position:relative">
+        <button class="copy-btn">Copiar</button>
+        <span id="wif-decoded"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── isSameBytes ── -->
+  <div class="section">
+    <div class="section-title">Comparar dos arreglos de bytes</div>
+
+    <div class="row">
+      <div class="field">
+        <label for="cmp-a">Arreglo A (hex)</label>
+        <input type="text" id="cmp-a" placeholder="0x…" />
+      </div>
+      <div class="field">
+        <label for="cmp-b">Arreglo B (hex)</label>
+        <input type="text" id="cmp-b" placeholder="0x…" />
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-cmp">
+        <span class="spinner"></span>
+        Comparar
+      </button>
+    </div>
+
+    <div class="output" id="out-cmp">
+      <div class="output-label">Resultado</div>
+      <div class="output-box" id="cmp-result"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { getWasm, textToBytes, hexToBytes, bytesToHex, withWasm, initCopyButtons, fillRandom } from './shared.js'
+
+// ── Text converter ────────────────────────────────────────────────────────
+document.getElementById('btn-conv').addEventListener('click', withWasm('btn-conv', 'out-conv', async wasm => {
+  const text = document.getElementById('conv-text').value
+  const bytes = textToBytes(text)
+
+  const hex = wasm.bytesToHex(bytes)
+  const b64 = wasm.bytesToBase64(bytes)
+
+  document.getElementById('conv-hex').textContent = hex
+  document.getElementById('conv-b64').textContent = b64
+  document.getElementById('conv-len').textContent = `${bytes.length} bytes`
+  document.getElementById('out-conv').classList.add('visible')
+  initCopyButtons()
+}))
+
+// ── Hex ↔ Base64 raw ─────────────────────────────────────────────────────
+document.getElementById('btn-hex-to-b64').addEventListener('click', withWasm('btn-hex-to-b64', 'out-raw-conv', async wasm => {
+  const hex   = document.getElementById('raw-hex').value
+  const bytes = wasm.hexToBytes(hex)
+  const b64   = wasm.bytesToBase64(bytes)
+  document.getElementById('raw-result').textContent = b64
+  document.getElementById('out-raw-conv').classList.add('visible')
+  initCopyButtons()
+}))
+
+document.getElementById('btn-b64-to-hex').addEventListener('click', withWasm('btn-b64-to-hex', 'out-raw-conv', async wasm => {
+  const b64   = document.getElementById('raw-b64').value
+  const bytes = wasm.base64ToBytes(b64)
+  const hex   = wasm.bytesToHex(bytes)
+  document.getElementById('raw-result').textContent = hex
+  document.getElementById('out-raw-conv').classList.add('visible')
+  initCopyButtons()
+}))
+
+// ── PBKDF2 ────────────────────────────────────────────────────────────────
+document.getElementById('btn-pbkdf2').addEventListener('click', withWasm('btn-pbkdf2', 'out-pbkdf2', async wasm => {
+  const pass  = textToBytes(document.getElementById('pbkdf2-pass').value)
+  const salt  = textToBytes(document.getElementById('pbkdf2-salt').value)
+  const iter  = parseInt(document.getElementById('pbkdf2-iter').value)
+  const len   = parseInt(document.getElementById('pbkdf2-len').value)
+
+  const key = wasm.pbkdf2Sha512(pass, salt, iter, len)
+  document.getElementById('pbkdf2-val').textContent = `0x${bytesToHex(key)}`
+  document.getElementById('out-pbkdf2').classList.add('visible')
+  initCopyButtons()
+}))
+
+// ── WIF encode ────────────────────────────────────────────────────────────
+document.getElementById('btn-wif-gen').addEventListener('click', () => fillRandom('wif-priv', 32))
+
+document.getElementById('btn-to-wif').addEventListener('click', withWasm('btn-to-wif', 'out-wif-encoded', async wasm => {
+  const privHex = document.getElementById('wif-priv').value
+  if (!privHex) throw new Error('Ingresa o genera una llave privada.')
+  const priv = hexToBytes(privHex)
+  const wif  = wasm.toWIF(priv)
+  document.getElementById('wif-encoded').textContent = wif
+  document.getElementById('out-wif-encoded').classList.add('visible')
+  // Pre-fill decode field
+  document.getElementById('wif-import').value = wif
+  initCopyButtons()
+}))
+
+// ── WIF decode ────────────────────────────────────────────────────────────
+document.getElementById('btn-from-wif').addEventListener('click', withWasm('btn-from-wif', 'out-wif-decoded', async wasm => {
+  const wif  = document.getElementById('wif-import').value.trim()
+  if (!wif)  throw new Error('Ingresa un string WIF para decodificar.')
+  const priv = wasm.fromWIF(wif)
+  document.getElementById('wif-decoded').textContent = `0x${bytesToHex(priv)}`
+  document.getElementById('out-wif-decoded').classList.add('visible')
+  initCopyButtons()
+}))
+
+// ── Compare bytes ─────────────────────────────────────────────────────────
+document.getElementById('btn-cmp').addEventListener('click', withWasm('btn-cmp', 'out-cmp', async wasm => {
+  const a = hexToBytes(document.getElementById('cmp-a').value)
+  const b = hexToBytes(document.getElementById('cmp-b').value)
+  const ok = wasm.isSameBytes(a, b)
+
+  const box = document.getElementById('cmp-result')
+  box.className = `output-box ${ok ? '' : 'error'}`.trim()
+  box.innerHTML = ok
+    ? `<span class="status ok">✓ Los arreglos son idénticos (${a.length} bytes)</span>`
+    : `<span class="status fail">✗ Los arreglos difieren — A: ${a.length} bytes, B: ${b.length} bytes</span>`
+
+  document.getElementById('out-cmp').classList.add('visible')
+}))
+
+initCopyButtons()
+</script>
+</body>
+</html>

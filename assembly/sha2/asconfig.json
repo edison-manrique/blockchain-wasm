@@ -1,0 +1,22 @@
+{
+  "options": {
+    "bindings": "esm",
+    "importMemory": false,
+    "initialMemory": 1,
+    "maximumMemory": 8192,
+    "optimizeLevel": 3,
+    "shrinkLevel": 0,
+    "converge": false,
+    "noAssert": true,
+    "runtime": "stub"
+  },
+  "targets": {
+    "optimized": {
+      "importMemory": false,
+      "enable": ["simd"]
+    },
+    "standard": {
+      "enable": ["simd"]
+    }
+  }
+}

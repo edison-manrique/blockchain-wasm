@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Secreto Compartido ECDH · BlockchainWasm</title>
+  <meta name="description" content="Calcula un secreto compartido ECDH Diffie-Hellman entre dos pares de llaves secp256k1 en WebAssembly." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    :root { --page-accent: #fc8181; --page-accent2: #f6ad55; }
+
+    .parties {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 640px) { .parties { grid-template-columns: 1fr; } }
+
+    .party-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .party-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .party-a .party-title { color: var(--accent);  }
+    .party-b .party-title { color: var(--accent2); }
+
+    .arrow-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: var(--muted);
+      animation: pulse 2s ease infinite;
+    }
+
+    .shared-box {
+      background: linear-gradient(135deg, rgba(252,129,129,0.06), rgba(246,173,85,0.06));
+      border: 1px solid rgba(252,129,129,0.2);
+      border-radius: 14px;
+      padding: 22px;
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    .shared-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .shared-value {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--accent5);
+      word-break: break-all;
+      line-height: 1.8;
+    }
+
+    .equal-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(104,211,145,0.10);
+      border: 1px solid rgba(104,211,145,0.25);
+      border-radius: 999px;
+      padding: 6px 18px;
+      color: var(--accent3);
+      font-size: 0.83rem;
+      font-weight: 700;
+      margin-top: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html"><span class="nav-brand-dot"></span>BlockchainWasm</a>
+  <div class="nav-links">
+    <a href="hashing.html">Hashing</a>
+    <a href="ecdsa.html">ECDSA</a>
+    <a href="schnorr.html">Schnorr</a>
+    <a href="addresses.html">Direcciones</a>
+    <a href="bip32.html">BIP-32</a>
+    <a href="ecdh.html" class="active">ECDH</a>
+    <a href="utils.html">Utils</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-badge">🤝 ECDH</div>
+    <h1>Secreto Compartido <span class="grad">(ECDH)</span></h1>
+    <p>Intercambio de claves Diffie-Hellman sobre secp256k1. Alice y Bob tienen un par de llaves propio — cada uno puede calcular el mismo secreto compartido de 32 bytes sin revelar sus llaves privadas.</p>
+  </div>
+
+  <!-- ── Claves ── -->
+  <div class="section">
+    <div class="section-title">Pares de llaves</div>
+
+    <div class="parties">
+      <div class="party-card party-a">
+        <div class="party-title">👤 Alice</div>
+        <div class="field">
+          <label for="alice-priv">Llave privada (hex)</label>
+          <input type="text" id="alice-priv" placeholder="32 bytes…" />
+        </div>
+        <div class="output-label" style="margin-bottom:6px">Llave pública</div>
+        <div class="output-box" style="font-size:0.72rem"><span id="alice-pub">—</span></div>
+      </div>
+
+      <div class="party-card party-b">
+        <div class="party-title">👤 Bob</div>
+        <div class="field">
+          <label for="bob-priv">Llave privada (hex)</label>
+          <input type="text" id="bob-priv" placeholder="32 bytes…" />
+        </div>
+        <div class="output-label" style="margin-bottom:6px">Llave pública</div>
+        <div class="output-box" style="font-size:0.72rem"><span id="bob-pub">—</span></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="btn-ecdh-gen">⚡ Generar ambos pares de llaves</button>
+    </div>
+  </div>
+
+  <!-- ── Computar ── -->
+  <div class="section">
+    <div class="section-title">Computar secreto compartido</div>
+
+    <div class="info-box">
+      Ambas partes computan: <strong>Alice.priv × Bob.pub</strong> = <strong>Bob.priv × Alice.pub</strong>.
+      El resultado es idéntico — esta es la magia de ECDH.
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-ecdh-compute">
+        <span class="spinner"></span>
+        Calcular en ambos lados
+      </button>
+    </div>
+
+    <div class="output" id="out-ecdh">
+      <div class="output-label">Secreto compartido — Lado de Alice (Alice.priv × Bob.pub)</div>
+      <div class="output-box" id="ecdh-alice-box" style="position:relative;margin-bottom:12px">
+        <button class="copy-btn">Copiar</button>
+        <span id="ecdh-alice"></span>
+      </div>
+
+      <div class="output-label">Secreto compartido — Lado de Bob (Bob.priv × Alice.pub)</div>
+      <div class="output-box" id="ecdh-bob-box" style="position:relative;margin-bottom:16px">
+        <button class="copy-btn">Copiar</button>
+        <span id="ecdh-bob"></span>
+      </div>
+
+      <div style="text-align:center" id="ecdh-equal-row">
+        <div class="equal-badge" id="ecdh-equal-badge">✓ Ambos secretos coinciden — canal seguro establecido</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { getWasm, hexToBytes, bytesToHex, withWasm, initCopyButtons, fillRandom } from './shared.js'
+
+async function derivePub(wasm, inputId, spanId) {
+  try {
+    const priv = hexToBytes(document.getElementById(inputId).value)
+    const pub  = wasm.getPublicKeyCompressed(priv)
+    document.getElementById(spanId).textContent = `0x${bytesToHex(pub)}`
+  } catch {
+    document.getElementById(spanId).textContent = '—'
+  }
+}
+
+// ── Live pub-key derivation ────────────────────────────────────────────────
+async function onKeyChange(inputId, spanId) {
+  try { const wasm = await getWasm(); await derivePub(wasm, inputId, spanId) } catch {}
+}
+
+document.getElementById('alice-priv').addEventListener('input', () => onKeyChange('alice-priv', 'alice-pub'))
+document.getElementById('bob-priv').addEventListener('input',   () => onKeyChange('bob-priv',   'bob-pub'))
+
+// ── Gen key pairs ─────────────────────────────────────────────────────────
+document.getElementById('btn-ecdh-gen').addEventListener('click', withWasm('btn-ecdh-gen', '', async wasm => {
+  fillRandom('alice-priv', 32)
+  fillRandom('bob-priv', 32)
+  await derivePub(wasm, 'alice-priv', 'alice-pub')
+  await derivePub(wasm, 'bob-priv',   'bob-pub')
+}))
+
+// ── Compute ───────────────────────────────────────────────────────────────
+document.getElementById('btn-ecdh-compute').addEventListener('click', withWasm('btn-ecdh-compute', 'out-ecdh', async wasm => {
+  const alicePriv = hexToBytes(document.getElementById('alice-priv').value)
+  const bobPriv   = hexToBytes(document.getElementById('bob-priv').value)
+
+  const alicePub = wasm.getPublicKeyUncompressed(alicePriv)
+  const bobPub   = wasm.getPublicKeyUncompressed(bobPriv)
+
+  // Alice computes: alicePriv × bobPub
+  const secretA = wasm.sharedSecret(alicePriv, bobPub)
+  // Bob computes:   bobPriv × alicePub
+  const secretB = wasm.sharedSecret(bobPriv, alicePub)
+
+  const hexA = bytesToHex(secretA)
+  const hexB = bytesToHex(secretB)
+
+  document.getElementById('ecdh-alice').textContent = `0x${hexA}`
+  document.getElementById('ecdh-bob').textContent   = `0x${hexB}`
+
+  const match = hexA === hexB
+  const badge = document.getElementById('ecdh-equal-badge')
+  badge.textContent = match
+    ? '✓ Ambos secretos coinciden — canal seguro establecido'
+    : '✗ Los secretos difieren — algo salió mal'
+  badge.className = `equal-badge ${match ? '' : 'status fail'}`.trim()
+  if (!match) badge.style.cssText = 'background:rgba(252,129,129,0.10);border-color:rgba(252,129,129,0.25);color:var(--accent5)'
+
+  document.getElementById('out-ecdh').classList.add('visible')
+  initCopyButtons()
+}))
+
+initCopyButtons()
+</script>
+</body>
+</html>

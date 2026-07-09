@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Derivación de Llaves HD BIP-32 · BlockchainWasm</title>
+  <meta name="description" content="Deriva llaves jerárquicas-deterministas BIP-32 a partir de una semilla utilizando WebAssembly." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    :root { --page-accent: #f6ad55; --page-accent2: #ed8936; }
+
+    .path-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .preset-btn {
+      background: rgba(246,173,85,0.08);
+      border: 1px solid rgba(246,173,85,0.2);
+      border-radius: 8px;
+      color: var(--accent4);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .preset-btn:hover { background: rgba(246,173,85,0.16); }
+
+    .tree-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+    }
+    .tree-table th {
+      text-align: left;
+      padding: 8px 12px;
+      color: var(--muted);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border);
+    }
+    .tree-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      word-break: break-all;
+    }
+    .tree-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .tree-table .path-col  { color: var(--accent4); white-space: nowrap; }
+    .tree-table .key-col   { color: var(--accent3); }
+    .tree-table .pub-col   { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="index.html"><span class="nav-brand-dot"></span>BlockchainWasm</a>
+  <div class="nav-links">
+    <a href="hashing.html">Hashing</a>
+    <a href="ecdsa.html">ECDSA</a>
+    <a href="schnorr.html">Schnorr</a>
+    <a href="addresses.html">Direcciones</a>
+    <a href="bip32.html" class="active">BIP-32</a>
+    <a href="ecdh.html">ECDH</a>
+    <a href="utils.html">Utils</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-badge">🌳 BIP-32</div>
+    <h1>Derivación de <span class="grad">Llaves HD</span></h1>
+    <p>Deriva llaves hijas jerárquicas-deterministas de acuerdo al estándar BIP-32. Ingresa una semilla de 64 bytes y una ruta para obtener las claves privadas y públicas.</p>
+  </div>
+
+  <!-- ── Semilla ── -->
+  <div class="section">
+    <div class="section-title">Semilla (64 bytes)</div>
+
+    <div class="info-box">
+      En una wallet real, esta semilla se genera a partir de una frase mnemónica (BIP-39) mediante PBKDF2-SHA512. Puedes generar una semilla aleatoria para pruebas abajo.
+    </div>
+
+    <div class="field">
+      <label for="bip32-seed">Semilla (128 caracteres hex = 64 bytes)</label>
+      <textarea id="bip32-seed" rows="3" placeholder="128 caracteres hexadecimales…"></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="btn-bip32-seed">⚡ Generar semilla aleatoria</button>
+    </div>
+  </div>
+
+  <!-- ── Ruta Simple ── -->
+  <div class="section">
+    <div class="section-title">Derivar una ruta simple</div>
+
+    <div class="field">
+      <label>Presets comunes de BIP-44 / BIP-84</label>
+      <div class="path-presets">
+        <button class="preset-btn" data-path="m/44'/0'/0'/0/0">BTC cuenta 0, dir 0</button>
+        <button class="preset-btn" data-path="m/44'/60'/0'/0/0">ETH cuenta 0, dir 0</button>
+        <button class="preset-btn" data-path="m/84'/0'/0'/0/0">P2WPKH (Native SegWit)</button>
+        <button class="preset-btn" data-path="m/86'/0'/0'/0/0">P2TR (Taproot)</button>
+        <button class="preset-btn" data-path="m/0'/0">Hardened child</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="bip32-path">Ruta de derivación</label>
+      <input type="text" id="bip32-path" value="m/44'/0'/0'/0/0" placeholder="m/44'/0'/0'/0/0" />
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-bip32-derive">
+        <span class="spinner"></span>
+        Derivar Llave
+      </button>
+    </div>
+
+    <div class="output" id="out-bip32">
+      <div class="output-row">
+        <div>
+          <div class="output-label">Llave privada (32 bytes)</div>
+          <div class="output-box" style="position:relative">
+            <button class="copy-btn">Copiar</button>
+            <span id="bip32-privkey"></span>
+          </div>
+        </div>
+        <div>
+          <div class="output-label">Llave pública comprimida (33 bytes)</div>
+          <div class="output-box" style="position:relative">
+            <button class="copy-btn">Copiar</button>
+            <span id="bip32-pubkey"></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <div class="output-label">Dirección Bitcoin P2PKH</div>
+        <div class="output-box" style="position:relative">
+          <button class="copy-btn">Copiar</button>
+          <span id="bip32-addr"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Derivación en lote ── -->
+  <div class="section">
+    <div class="section-title">Derivación en lote — Tabla de direcciones</div>
+
+    <div class="info-box">
+      Deriva las primeras <strong>N</strong> direcciones externas (índice 0…N-1) para una ruta de cuenta dada.
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="batch-base">Ruta base de cuenta (sin el índice final)</label>
+        <input type="text" id="batch-base" value="m/44'/0'/0'/0" />
+      </div>
+      <div class="field">
+        <label for="batch-count">Cantidad de direcciones</label>
+        <input type="number" id="batch-count" value="5" min="1" max="20" />
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-batch">
+        <span class="spinner"></span>
+        Derivar direcciones
+      </button>
+    </div>
+
+    <div class="output" id="out-batch">
+      <div class="output-label">Direcciones derivadas</div>
+      <div style="overflow-x:auto;border:1px solid var(--border);border-radius:12px;margin-top:8px">
+        <table class="tree-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Ruta</th>
+              <th>Llave privada</th>
+              <th>Llave pública</th>
+              <th>Dirección BTC</th>
+            </tr>
+          </thead>
+          <tbody id="batch-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { getWasm, hexToBytes, bytesToHex, withWasm, initCopyButtons, fillRandom } from './shared.js'
+
+// ── Seed gen ──────────────────────────────────────────────────────────────
+document.getElementById('btn-bip32-seed').addEventListener('click', () => fillRandom('bip32-seed', 64))
+
+// ── Path presets ─────────────────────────────────────────────────────────
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('bip32-path').value = btn.dataset.path
+  })
+})
+
+function getSeed() {
+  const hex = document.getElementById('bip32-seed').value.trim()
+  if (!hex) throw new Error('Genera o ingresa una semilla de 64 bytes primero.')
+  return hexToBytes(hex)
+}
+
+// ── Single derive ─────────────────────────────────────────────────────────
+document.getElementById('btn-bip32-derive').addEventListener('click', withWasm('btn-bip32-derive', 'out-bip32', async wasm => {
+  const seed = getSeed()
+  const path = document.getElementById('bip32-path').value.trim()
+
+  const privKey = wasm.bip32DerivePath(seed, path)
+  const pubKey  = wasm.bip32GetPublicKey(seed, path)
+
+  document.getElementById('bip32-privkey').textContent = `0x${bytesToHex(privKey)}`
+  document.getElementById('bip32-pubkey').textContent  = `0x${bytesToHex(pubKey)}`
+
+  try {
+    const addr = wasm.getBitcoinAddress(pubKey)
+    document.getElementById('bip32-addr').textContent = addr
+  } catch {
+    document.getElementById('bip32-addr').textContent = 'N/A'
+  }
+
+  document.getElementById('out-bip32').classList.add('visible')
+  initCopyButtons()
+}))
+
+// ── Batch derive ──────────────────────────────────────────────────────────
+document.getElementById('btn-batch').addEventListener('click', withWasm('btn-batch', 'out-batch', async wasm => {
+  const seed  = getSeed()
+  const base  = document.getElementById('batch-base').value.trim()
+  const count = Math.min(20, Math.max(1, parseInt(document.getElementById('batch-count').value) || 5))
+
+  const tbody = document.getElementById('batch-body')
+  tbody.innerHTML = ''
+
+  for (let i = 0; i < count; i++) {
+    const path    = `${base}/${i}`
+    const privKey = wasm.bip32DerivePath(seed, path)
+    const pubKey  = wasm.bip32GetPublicKey(seed, path)
+    let addr = ''
+    try { addr = wasm.getBitcoinAddress(pubKey) } catch { addr = 'N/A' }
+
+    const tr = document.createElement('tr')
+    tr.innerHTML = `
+      <td>${i}</td>
+      <td class="path-col">${path}</td>
+      <td class="key-col">${bytesToHex(privKey).slice(0, 16)}…</td>
+      <td class="pub-col">${bytesToHex(pubKey).slice(0, 16)}…</td>
+      <td style="color:var(--accent4)">${addr}</td>
+    `
+    tbody.appendChild(tr)
+  }
+
+  document.getElementById('out-batch').classList.add('visible')
+}))
+
+initCopyButtons()
+</script>
+</body>
+</html>
