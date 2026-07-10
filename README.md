@@ -177,4 +177,12 @@ blockchain-wasm/
 
 ## Licencia
 
-MIT © Edison Manrique — ver [LICENSE](LICENSE)
+Apache 2.0 © Edison Manrique — ver [LICENSE](LICENSE)
+
+## Disclaimer / Exención de Responsabilidad
+
+Este software se proporciona "tal cual" (AS IS), sin garantía de ningún tipo,
+expresa o implícita. Dado que `blockchain-wasm` interactúa con entornos de
+criptografía y/o contratos inteligentes, el uso de este paquete es bajo su
+propio riesgo. El autor no se hace responsable de pérdidas de fondos, fallos
+en la red, vulnerabilidades explotadas o cualquier otro daño financiero derivado del uso de este código.
