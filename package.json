@@ -20,7 +20,7 @@
   ],
   "scripts": {
     "asbuild": "asc assembly/index.ts --target release",
-    "build:ts": "tsc",
+    "build:ts": "esbuild src/index.ts --bundle --format=esm --minify --platform=browser --outfile=dist/index.js && tsc --emitDeclarationOnly",
     "build": "npm run asbuild && npm run build:ts",
     "prepublishOnly": "npm run build:ts",
     "examples": "node examples/server.cjs"

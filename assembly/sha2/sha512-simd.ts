@@ -1,15 +1,5 @@
 import { SHA512_K, SHA512_IV } from "./constants"
-import {
-  load64_be,
-  store64_be,
-  store64_be_arr,
-  sigma0_512,
-  sigma1_512,
-  Sigma0_512,
-  Sigma1_512,
-  Ch64,
-  Maj64
-} from "./common"
+import { store64_be, store64_be_arr, Sigma0_512, Sigma1_512, Ch64, Maj64 } from "./common"
 
 type aisize = i32
 
