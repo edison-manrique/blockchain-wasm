@@ -1,43 +1,56 @@
 {
   "name": "blockchain-wasm",
-  "version": "1.2.0",
-  "description": "Biblioteca criptográfica de alto rendimiento: SHA-256, Keccak-256, ECDSA, Schnorr, ECDH, BIP-32 y más — compilada en AssemblyScript/WASM con un wrapper TypeScript.",
+  "version": "2.0.0",
+  "description": "Motor criptográfico zero-alloc para wallets Bitcoin y Ethereum: un único binario WebAssembly (AssemblyScript) con un wrapper TypeScript ergonómico de clases de dominio. secp256k1, BIP-32/39/44, Schnorr (BIP-340), ECDSA, ECDH, direcciones P2PKH/P2SH-P2WPKH/P2TR/ETH, WIF y PBKDF2 — sin heap, sin memory.grow, isomórfico (Node, Bun, Deno y navegador).",
   "author": "Edison Manrique",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "files": [
-    "dist/",
-    "README.md",
-    "LICENSE"
+    "dist"
   ],
   "scripts": {
+    "clean": "rimraf dist",
     "asbuild": "asc assembly/index.ts --target release",
-    "build:ts": "esbuild src/index.ts --bundle --format=esm --minify --platform=browser --outfile=dist/index.js && tsc --emitDeclarationOnly",
-    "build": "npm run asbuild && npm run build:ts",
-    "prepublishOnly": "npm run build:ts",
-    "examples": "node examples/server.cjs"
+    "tsbuild": "esbuild src/index.ts --format=esm --bundle --minify --platform=browser --outfile=dist/index.js && tsc --emitDeclarationOnly",
+    "build": "npm run asbuild && npm run tsbuild",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "wasm",
     "webassembly",
+    "assemblyscript",
     "cryptography",
-    "sha256",
-    "keccak256",
+    "secp256k1",
     "ecdsa",
     "schnorr",
+    "bip340",
+    "ecdh",
     "bip32",
-    "secp256k1",
+    "bip39",
+    "bip44",
+    "hd-wallet",
+    "mnemonic",
     "bitcoin",
     "ethereum",
-    "assemblyscript"
+    "taproot",
+    "bech32",
+    "wif",
+    "keccak256",
+    "sha256",
+    "pbkdf2",
+    "zero-alloc",
+    "typescript",
+    "isomorphic",
+    "wallet"
   ],
   "repository": {
     "type": "git",

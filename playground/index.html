@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlockchainWasm — Suite Playground Fullscreen</title>
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+  <div class="app-viewport">
+    <!-- Header -->
+    <header class="app-header">
+      <a href="index.html" class="brand-container">
+        <div class="brand-logo">⚡</div>
+        <div class="brand-title">
+          BlockchainWasm <span class="tag">Zero-Alloc v2.0</span>
+        </div>
+      </a>
+      <div class="header-status">
+        <div class="wasm-badge">
+          <span class="status-dot" id="wasm-status-dot"></span>
+          <span id="wasm-status-text">Inicializando WASM...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Split -->
+    <div class="app-body">
+      <!-- Navigation Sidebar -->
+      <nav class="app-sidebar">
+        <div class="sidebar-title">Módulos Criptográficos</div>
+        <a href="index.html" class="sidebar-item active">
+          <span>⚡ Dashboard Central</span>
+          <span class="item-badge">HUB</span>
+        </a>
+        <a href="address.html" class="sidebar-item">
+          <span>📫 Address (BTC/ETH)</span>
+          <span class="item-badge">v2.0</span>
+        </a>
+        <a href="bip39.html" class="sidebar-item">
+          <span>🌱 BIP-39 Mnemonic</span>
+          <span class="item-badge">BIP39</span>
+        </a>
+        <a href="bip32.html" class="sidebar-item">
+          <span>🌳 BIP-32 HD Tree</span>
+          <span class="item-badge">BIP32</span>
+        </a>
+        <a href="bip44.html" class="sidebar-item">
+          <span>💼 BIP-44 Wallet</span>
+          <span class="item-badge">BIP44</span>
+        </a>
+        <a href="ecdsa.html" class="sidebar-item">
+          <span>✍️ ECDSA Secp256k1</span>
+          <span class="item-badge">ECDSA</span>
+        </a>
+        <a href="schnorr.html" class="sidebar-item">
+          <span>⚡ Schnorr Taproot</span>
+          <span class="item-badge">BIP340</span>
+        </a>
+        <a href="ecdh.html" class="sidebar-item">
+          <span>🔐 ECDH Secret</span>
+          <span class="item-badge">ECDH</span>
+        </a>
+        <a href="secp256k1.html" class="sidebar-item">
+          <span>📈 Curve Secp256k1</span>
+          <span class="item-badge">SECP</span>
+        </a>
+        <a href="pbkdf2.html" class="sidebar-item">
+          <span>🔑 PBKDF2 SHA-512</span>
+          <span class="item-badge">KDF</span>
+        </a>
+        <a href="wif.html" class="sidebar-item">
+          <span>🎫 WIF Format</span>
+          <span class="item-badge">WIF</span>
+        </a>
+      </nav>
+
+      <!-- Dashboard Viewport -->
+      <main class="app-content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Suite de Pruebas & Playground Criptográfico</h1>
+            <p class="page-description">Motor criptográfico zero-alloc WebAssembly (AssemblyScript) para carteras Bitcoin y Ethereum.</p>
+          </div>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">⚡</span> Rendimiento WASM</span>
+            </div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--gold-primary);">Zero Heap / Zero Alloc</div>
+            <p style="font-size: 12px; color: var(--text-muted);">Scratchpad estático en memoria WebAssembly de alto rendimiento sin recolección de basura.</p>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">📦</span> Cobertura de Algoritmos</span>
+            </div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--green-success);">10 Módulos Nativos</div>
+            <p style="font-size: 12px; color: var(--text-muted);">ECDSA, Schnorr, BIP-32/39/44, PBKDF2, ECDH, P2PKH, P2TR Taproot y Ethereum.</p>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">🌐</span> Entorno de Ejecución</span>
+            </div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--gold-hover);" id="runtime-name">Bun / Browser ESM</div>
+            <p style="font-size: 12px; color: var(--text-muted);">Totalmente isomórfico, empaquetado en ESM browser-native sin dependencias pesadas.</p>
+          </div>
+        </div>
+
+        <!-- Grid de Accesos a Aplicaciones -->
+        <h2 style="font-size: 16px; font-weight: 600; color: var(--text-main); margin-top: 10px;">Aplicaciones de Módulo</h2>
+        <div class="grid-auto">
+          <a href="address.html" class="card" style="text-decoration: none;">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">📫</span> Address Module</span>
+              <span class="btn btn-sm btn-secondary">Abrir App →</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted);">Generación de direcciones P2PKH, P2SH-P2WPKH, P2WPKH Bech32, P2TR Taproot y Ethereum EIP-55.</p>
+          </a>
+
+          <a href="bip39.html" class="card" style="text-decoration: none;">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">🌱</span> BIP-39 Mnemonic</span>
+              <span class="btn btn-sm btn-secondary">Abrir App →</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted);">Generador de 12 a 24 palabras mnemónicas, conversión de entropía hex y derivación de seed de 512 bits.</p>
+          </a>
+
+          <a href="bip32.html" class="card" style="text-decoration: none;">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">🌳</span> BIP-32 HD Tree</span>
+              <span class="btn btn-sm btn-secondary">Abrir App →</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted);">Derivación determinista jerárquica de claves, evaluación de rutas m/44'/0'/..., xprv/xpub y neutering.</p>
+          </a>
+
+          <a href="bip44.html" class="card" style="text-decoration: none;">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">💼</span> BIP-44 Multi-Coin</span>
+              <span class="btn btn-sm btn-secondary">Abrir App →</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted);">Matriz multi-moneda de cuentas y direcciones HD para Bitcoin, Ethereum y Taproot.</p>
+          </a>
+
+          <a href="ecdsa.html" class="card" style="text-decoration: none;">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">✍️</span> ECDSA Secp256k1</span>
+              <span class="btn btn-sm btn-secondary">Abrir App →</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted);">Firma y verificación de firmas de 65 bytes r|s|v en formatos Raw, Ethereum personal_sign y Bitcoin.</p>
+          </a>
+
+          <a href="schnorr.html" class="card" style="text-decoration: none;">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">⚡</span> Schnorr Taproot</span>
+              <span class="btn btn-sm btn-secondary">Abrir App →</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted);">Firmas Schnorr BIP-340 de 64 bytes, llaves públicas x-only de 32 bytes y agregación de firmas MuSig.</p>
+          </a>
+
+          <a href="ecdh.html" class="card" style="text-decoration: none;">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">🔐</span> ECDH Secret</span>
+              <span class="btn btn-sm btn-secondary">Abrir App →</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted);">Intercambio de claves Diffie-Hellman en Secp256k1. Simulación interactiva entre Alice y Bob.</p>
+          </a>
+
+          <a href="secp256k1.html" class="card" style="text-decoration: none;">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">📈</span> Curve Secp256k1</span>
+              <span class="btn btn-sm btn-secondary">Abrir App →</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted);">Transformación de llaves públicas 33B ↔ 65B y validación matemática de puntos en la curva elíptica.</p>
+          </a>
+
+          <a href="pbkdf2.html" class="card" style="text-decoration: none;">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">🔑</span> PBKDF2 SHA-512</span>
+              <span class="btn btn-sm btn-secondary">Abrir App →</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted);">Derivación de claves con contraseña y salt personalizables con benchmark de rendimiento.</p>
+          </a>
+
+          <a href="wif.html" class="card" style="text-decoration: none;">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">🎫</span> WIF Format</span>
+              <span class="btn btn-sm btn-secondary">Abrir App →</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted);">Codificación y decodificación de Wallet Import Format (Base58Check) con flags de compresión.</p>
+          </a>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initWasm } from "./js/common.js";
+    await initWasm();
+  </script>
+</body>
+</html>

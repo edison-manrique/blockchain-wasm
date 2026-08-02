@@ -1,125 +1,135 @@
 /**
- * Crypto WASM - Ultra-Optimized Cryptography Library
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  assembly/index.ts — Barrel global de la librería criptográfica zero-alloc
+ * ═══════════════════════════════════════════════════════════════════════════
  *
- * Functional API for production use.
- * Exposes only plain functions (no classes) to ensure maximum compatibility in JS/WASM environments.
+ * Expone la API pública de ALTO NIVEL. Reglas anti-colisión:
+ *   • memory y pubkey se re-exportan UNA vez (fuente canónica).
+ *   • Los módulos de alto nivel usan nombres prefijados únicos (bip32_, ecdsa_, …).
+ *   • hashing/encoding (sha2/keccak/ripemd/base58/bech32/wif) van con export *.
+ *   • secp256k1 de bajo nivel (field/scalar/point/glv/…) NO se re-exporta aquí:
+ *       import { ... } from "assembly/secp256k1"   // si lo necesitas
+ *
+ * Los códigos de error (ECDSA_ERR_*, SCHNORR_ERR_*, BIP32_ERR_*, …) y los
+ * accessors finos (bip32_xkey_*) se importan directo del módulo correspondiente
+ * para mantener este barrel enxuto.
  */
 
-import { Sha256, Sha512 } from "./sha2"
-import { ECDH } from "./crypto/ecdh"
-import { ECDSA, EcdsaSignature, SignatureFormat, getMessageHash } from "./crypto/ecdsa"
-import { HDKey } from "./bip32"
-export { keccak256 } from "./keccak256"
+// ═══════════════════════════════════════════════════════════════════════════
+// 1) MEMORIA — fuente canónica de punteros / arena (NO re-exportar de otros)
+// ═══════════════════════════════════════════════════════════════════════════
 export {
-  bip44DeriveLeafKeys,
-  bip44AccountXpub,
-  bip44AccountXprv,
-  bip44DerivePrivateKey,
-  bip44DerivePublicKey,
-  bip44SeedFromMnemonic,
-  bip44ValidateMnemonic,
-  bip44EntropyToMnemonic,
-  bip44FromMnemonicDeriveKeys,
-  bip44FromMnemonicAccountXpub
-} from "./bip44"
+  PARAM_IN_PTR,
+  PARAM_OUT_PTR,
+  PARAM_IN_SIZE,
+  PARAM_OUT_SIZE,
+  WORK_SIZE,
+  HASH_WORK_SIZE,
+  BIP32_WORK_SIZE,
+  ADDRESS_WORK_SIZE,
+  SCRATCH_SIZE,
+  CRYPTO_WORK_PTR,
+  HASH_WORK_PTR,
+  BIP32_WORK_PTR,
+  ADDRESS_WORK_PTR,
+  align8
+} from "./utils/memory"
 
-// ── HASHING ──
+// ═══════════════════════════════════════════════════════════════════════════
+// 2) CLAVES PÚBLICAS — fuente canónica (NO re-exportar de address/ecdsa/ecdh)
+// ═══════════════════════════════════════════════════════════════════════════
+export {
+  sqrtModP,
+  decompressXY,
+  decompressToPoint,
+  pubkeyFromPrivkey,
+  pubkeyUncompressedFromPrivkey,
+  compressRaw,
+  uncompressRaw
+} from "./utils/pubkey"
 
-export function sha256(data: Uint8Array): Uint8Array {
-  return Sha256.hash(data)
-}
+// ═══════════════════════════════════════════════════════════════════════════
+// 3) HASHING — prefijos propios (sha256_/sha512_/keccak256_/ripemd160_)
+// ═══════════════════════════════════════════════════════════════════════════
+export * from "./hash/sha2"
+export * from "./hash/keccak256"
+export * from "./hash/ripemd160"
 
-export function hmac_sha256(key: Uint8Array, data: Uint8Array): Uint8Array {
-  return Sha256.hmac(data, key)
-}
+// ═══════════════════════════════════════════════════════════════════════════
+// 4) ENCODING — prefijos propios (base58_/bech32_/toWIF/fromWIF)
+// ═══════════════════════════════════════════════════════════════════════════
+export * from "./utils/base58"
+export * from "./utils/bech32"
+// ✅ selectivo: wif re-exporta helpers de base58 que ya vienen arriba → evitar TS2308
+export { wif_encode_raw, wif_decode_raw } from "./utils/wif"
 
-export function hmac_sha512(key: Uint8Array, data: Uint8Array): Uint8Array {
-  return Sha512.hmac(data, key)
-}
-
-// ── ECDSA (Functional) ──
-
-export function get_message_hash(message: string, format: i32 = 0): Uint8Array {
-  return getMessageHash(message, <SignatureFormat>format)
-}
-
-/**
- * Returns a 65-byte signature: [R(32) | S(32) | V(1)]
- */
-export function ecdsa_sign(hash: Uint8Array, privKey: Uint8Array): Uint8Array {
-  const sig = ECDSA.sign(hash, privKey)
-  const result = new Uint8Array(65)
-  memory.copy(result.dataStart, sig.r.dataStart, 32)
-  memory.copy(result.dataStart + 32, sig.s.dataStart, 32)
-  result[64] = <u8>sig.v
-  return result
-}
-
-/**
- * signature: 64 or 65 bytes: [R(32) | S(32) | Optional V(1)]
- */
-export function ecdsa_verify(hash: Uint8Array, signature: Uint8Array, pubKey: Uint8Array): bool {
-  if (signature.length < 64) return false
-  const r = signature.slice(0, 32)
-  const s = signature.slice(32, 64)
-  const v = signature.length > 64 ? <i32>signature[64] : 0
-  const sig = new EcdsaSignature(r, s, v)
-  return ECDSA.verify(hash, sig, pubKey)
-}
-
-/**
- * Returns 65-byte signature [R|S|V]
- */
-export function sign_text_message(message: string, privKey: Uint8Array, format: i32 = 0): Uint8Array {
-  const hash = getMessageHash(message, <SignatureFormat>format)
-  return ecdsa_sign(hash, privKey)
-}
-
-export function verify_text_message(message: string, signature: Uint8Array, pubKey: Uint8Array, format: i32 = 0): bool {
-  const hash = getMessageHash(message, <SignatureFormat>format)
-  return ecdsa_verify(hash, signature, pubKey)
-}
-
-// ── SCHNORR ──
-
-export { signSchnorr, verifySchnorr, getSchnorrPublicKey } from "./crypto/schnorr"
-
-// ── ECDH ──
-
-export function shared_secret(privKey: Uint8Array, pubKey: Uint8Array): Uint8Array {
-  return ECDH.sharedSecret(privKey, pubKey)
-}
-
-// ── ADDRESSES ──
+// ═══════════════════════════════════════════════════════════════════════════
+// 5) BIPs
+// ═══════════════════════════════════════════════════════════════════════════
+export {
+  bip32_from_seed,
+  bip32_derive,
+  bip32_derive_path,
+  bip32_derive_account,
+  bip32_derive_address,
+  bip32_get_pubkey,
+  bip32_neuter,
+  bip32_fingerprint,
+  bip32_serialize_xpub,
+  bip32_serialize_xprv,
+  bip32_deserialize,
+  bip32_xkey_depth,
+  bip32_xkey_parent_fp,
+  bip32_xkey_child_index,
+  bip32_xkey_is_private,
+  bip32_xkey_chaincode_ptr,
+  bip32_xkey_keydata_ptr,
+  HARDENED_OFFSET
+} from "./bips/bip32"
 
 export {
-  getBitcoinAddress,
-  getBitcoinP2SHAddress,
-  getBitcoinP2WPKHAddress,
-  getBitcoinP2TRAddress,
-  getEthereumAddress,
-  getPublicKeyCompressed,
-  getPublicKeyUncompressed,
-  compressPublicKey,
-  uncompressPublicKey
-} from "./crypto/address"
+  bip39_mnemonic_to_seed,
+  bip39_validate_mnemonic,
+  bip39_entropy_to_mnemonic,
+  bip39_mnemonic_to_entropy
+} from "./bips/bip39"
 
-// ── BIP32 (Functional) ──
+export {
+  bip44_derive_leaf,
+  bip44_derive_privkey,
+  bip44_derive_pubkey,
+  bip44_account_xpub,
+  bip44_account_xprv,
+  bip44_from_mnemonic_derive,
+  bip44_from_mnemonic_xpub,
+  bip44_from_mnemonic_xprv
+} from "./bips/bip44"
 
-export function bip32_derive_path(seed: Uint8Array, path: string): Uint8Array {
-  const master = HDKey.fromSeed(seed)
-  const key = master.derivePath(path)
-  return key.keyData
-}
+// ═══════════════════════════════════════════════════════════════════════════
+// 6) FIRMAS
+// ═══════════════════════════════════════════════════════════════════════════
+export {
+  ecdsa_sign,
+  ecdsa_verify,
+  ecdsa_message_hash,
+  ecdsa_sign_message,
+  ecdsa_verify_message
+} from "./signatures/ecdsa"
 
-export function bip32_get_pubkey(seed: Uint8Array, path: string): Uint8Array {
-  const master = HDKey.fromSeed(seed)
-  const key = master.derivePath(path)
-  return key.getPublicKey()
-}
+export {
+  schnorr_get_pubkey,
+  schnorr_sign,
+  schnorr_verify,
+  schnorr_aggregate_pubkeys,
+  schnorr_aggregate_privkeys
+} from "./signatures/schnorr"
 
-// ── OTHERS ──
+// ═══════════════════════════════════════════════════════════════════════════
+// 7) ECDH
+// ═══════════════════════════════════════════════════════════════════════════
+export { ecdh_shared_secret } from "./ecdh"
 
-export { toWIF, fromWIF } from "./crypto/wif"
-export { pbkdf2_sha512 } from "./pbkdf2"
-export { bytesToHex, hexToBytes, bytesToBase64, base64ToBytes, isSameBytes, concatBytes } from "./utils"
+// ═══════════════════════════════════════════════════════════════════════════
+// 8) DIRECCIONES (Bitcoin + Ethereum)
+// ═══════════════════════════════════════════════════════════════════════════
+export { btc_p2pkh, btc_p2sh_p2wpkh, btc_p2wpkh, btc_p2tr, eth_address } from "./address"

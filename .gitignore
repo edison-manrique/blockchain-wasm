@@ -4,9 +4,6 @@ node_modules/
 # Salida de compilación TypeScript
 dist/
 
-# Archivos de debug y test temporales
-scratch/
-
 # Editor
 .vscode/
 *.swp

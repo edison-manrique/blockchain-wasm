@@ -1,0 +1,42 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  schnorr/constants.ts — Tag hashes BIP-340 + códigos de error
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * TAG_HASHES = SHA256("BIP0340/aux") ‖ SHA256("BIP0340/nonce") ‖
+ *              SHA256("BIP0340/challenge")   (3 × 32 = 96 bytes)
+ * Verificados con hashlib y cruzados contra los test vectors oficiales BIP-340.
+ */
+
+// ── Índices de tag ────────────────────────────────────────────────────────
+export const TAG_AUX: i32 = 0
+export const TAG_NONCE: i32 = 1
+export const TAG_CHALLENGE: i32 = 2
+
+// ── Tag hashes (96 bytes: aux ‖ nonce ‖ challenge) ────────────────────────
+export const TAG_HASHES: StaticArray<u8> = [
+  // aux = SHA256("BIP0340/aux")
+  0xf1, 0xef, 0x4e, 0x5e, 0xc0, 0x63, 0xca, 0xda,
+  0x6d, 0x94, 0xca, 0xfa, 0x9d, 0x98, 0x7e, 0xa0,
+  0x69, 0x26, 0x58, 0x39, 0xec, 0xc1, 0x1f, 0x97,
+  0x2d, 0x77, 0xa5, 0x2e, 0xd8, 0xc1, 0xcc, 0x90,
+  // nonce = SHA256("BIP0340/nonce")
+  0x07, 0x49, 0x77, 0x34, 0xa7, 0x9b, 0xcb, 0x35,
+  0x5b, 0x9b, 0x8c, 0x7d, 0x03, 0x4f, 0x12, 0x1c,
+  0xf4, 0x34, 0xd7, 0x3e, 0xf7, 0x2d, 0xda, 0x19,
+  0x87, 0x00, 0x61, 0xfb, 0x52, 0xbf, 0xeb, 0x2f,
+  // challenge = SHA256("BIP0340/challenge")
+  0x7b, 0xb5, 0x2d, 0x7a, 0x9f, 0xef, 0x58, 0x32,
+  0x3e, 0xb1, 0xbf, 0x7a, 0x40, 0x7d, 0xb3, 0x82,
+  0xd2, 0xf3, 0xf2, 0xd8, 0x1b, 0xb1, 0x22, 0x4f,
+  0x49, 0xfe, 0x51, 0x8f, 0x6d, 0x48, 0xd3, 0x7c
+]
+
+// ── Códigos de error (retorno i32; 0 = OK) ────────────────────────────────
+export const SCHNORR_OK: i32 = 0
+export const SCHNORR_ERR_K_ZERO: i32 = -1    // nonce k resultó 0
+export const SCHNORR_ERR_PUBKEY: i32 = -2    // lift_x inválido (punto fuera de curva)
+export const SCHNORR_ERR_INFINITY: i32 = -3  // punto en el infinito
+export const SCHNORR_ERR_SIG_LEN: i32 = -4   // firma ≠ 64 bytes
+export const SCHNORR_ERR_PUB_LEN: i32 = -5   // pubkey ≠ 32 bytes
+export const SCHNORR_ERR_COUNT: i32 = -6     // count inválido en agregación

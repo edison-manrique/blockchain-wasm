@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Curve Secp256k1 — BlockchainWasm Playground</title>
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+  <div class="app-viewport">
+    <header class="app-header">
+      <a href="index.html" class="brand-container">
+        <div class="brand-logo">⚡</div>
+        <div class="brand-title">BlockchainWasm <span class="tag">Secp256k1 App</span></div>
+      </a>
+      <div class="header-status">
+        <div class="wasm-badge">
+          <span class="status-dot" id="wasm-status-dot"></span>
+          <span id="wasm-status-text">Cargando WASM...</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <nav class="app-sidebar">
+        <div class="sidebar-title">Módulos</div>
+        <a href="index.html" class="sidebar-item"><span>⚡ Dashboard</span></a>
+        <a href="address.html" class="sidebar-item"><span>📫 Address (BTC/ETH)</span></a>
+        <a href="bip39.html" class="sidebar-item"><span>🌱 BIP-39 Mnemonic</span></a>
+        <a href="bip32.html" class="sidebar-item"><span>🌳 BIP-32 HD Tree</span></a>
+        <a href="bip44.html" class="sidebar-item"><span>💼 BIP-44 Wallet</span></a>
+        <a href="ecdsa.html" class="sidebar-item"><span>✍️ ECDSA Secp256k1</span></a>
+        <a href="schnorr.html" class="sidebar-item"><span>⚡ Schnorr Taproot</span></a>
+        <a href="ecdh.html" class="sidebar-item"><span>🔐 ECDH Secret</span></a>
+        <a href="secp256k1.html" class="sidebar-item active"><span>📈 Curve Secp256k1</span></a>
+        <a href="pbkdf2.html" class="sidebar-item"><span>🔑 PBKDF2 SHA-512</span></a>
+        <a href="wif.html" class="sidebar-item"><span>🎫 WIF Format</span></a>
+      </nav>
+
+      <main class="app-content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">📈 Secp256k1 Elliptic Curve Explorer</h1>
+            <p class="page-description">Compresión (33B) y descompresión (65B) de puntos de la curva y validación $y^2 = x^3 + 7 \pmod p$.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-rand">🎲 Clave Aleatoria</button>
+        </div>
+
+        <div class="grid-2">
+          <!-- Transformación de Puntos -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">📐</span> Generación de Puntos</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Clave Privada (32 Bytes Hex)</label>
+              <input type="text" id="input-priv" class="input-text">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Pública Comprimida (33 Bytes — Prefijo 0x02 / 0x03)</label>
+              <div class="output-box">
+                <span id="txt-comp">-</span>
+                <button class="copy-btn" onclick="window.copyTxt('txt-comp', 'Compressed')">Copiar</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Pública Descomprimida (65 Bytes — Prefijo 0x04)</label>
+              <div class="output-box">
+                <span id="txt-uncomp">-</span>
+                <button class="copy-btn" onclick="window.copyTxt('txt-uncomp', 'Uncompressed')">Copiar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Validador de Puntos -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">🔍</span> Validador de Puntos en la Curva</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Ingresa una Clave Pública (Hex 33B o 65B)</label>
+              <textarea id="txt-custom-pub" class="textarea-custom" rows="3" placeholder="Paste 33-byte or 65-byte hex public key..."></textarea>
+            </div>
+
+            <div id="alert-valid" class="alert alert-success">
+              ✓ Punto Válido en la Curva Secp256k1
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Conversión / Formato Inverso</label>
+              <div class="output-box">
+                <span id="txt-converted">-</span>
+                <button class="copy-btn" onclick="window.copyTxt('txt-converted', 'Converted')">Copiar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard } from "./js/common.js";
+    import { Secp256k1 } from "../dist/index.js";
+
+    window.copyTxt = (id, name) => {
+      const text = document.getElementById(id).innerText;
+      if (text !== "-") copyToClipboard(text, name);
+    };
+
+    await initWasm();
+
+    const inputPriv = document.getElementById("input-priv");
+    const btnRand = document.getElementById("btn-rand");
+    const txtCustomPub = document.getElementById("txt-custom-pub");
+    const alertValid = document.getElementById("alert-valid");
+
+    function runSecp() {
+      try {
+        const priv = parseHexInput(inputPriv.value);
+        if (priv.length !== 32) return;
+
+        const comp = Secp256k1.getPublicKey(priv, true);
+        const uncomp = Secp256k1.getPublicKey(priv, false);
+
+        const compHex = bytesToHex(comp);
+        const uncompHex = bytesToHex(uncomp);
+
+        document.getElementById("txt-comp").innerText = compHex;
+        document.getElementById("txt-uncomp").innerText = uncompHex;
+
+        if (!txtCustomPub.value) {
+          txtCustomPub.value = compHex;
+          validateCustom();
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function validateCustom() {
+      try {
+        const hex = txtCustomPub.value.trim();
+        const pubBytes = parseHexInput(hex);
+        const isValid = Secp256k1.isValid(pubBytes);
+
+        if (isValid) {
+          alertValid.className = "alert alert-success";
+          alertValid.innerText = "✓ Punto Válido en la Curva Secp256k1";
+
+          if (pubBytes.length === 33) {
+            const uncomp = Secp256k1.uncompress(pubBytes);
+            document.getElementById("txt-converted").innerText = bytesToHex(uncomp) + " (Uncompressed 65B)";
+          } else if (pubBytes.length === 65) {
+            const comp = Secp256k1.compress(pubBytes);
+            document.getElementById("txt-converted").innerText = bytesToHex(comp) + " (Compressed 33B)";
+          }
+        } else {
+          alertValid.className = "alert alert-error";
+          alertValid.innerText = "❌ Punto Inválido o fuera de la curva Secp256k1";
+          document.getElementById("txt-converted").innerText = "-";
+        }
+      } catch (err) {
+        alertValid.className = "alert alert-error";
+        alertValid.innerText = "❌ Error: " + err.message;
+        document.getElementById("txt-converted").innerText = "-";
+      }
+    }
+
+    btnRand.addEventListener("click", () => {
+      inputPriv.value = getRandomHexKey();
+      txtCustomPub.value = "";
+      runSecp();
+    });
+
+    inputPriv.addEventListener("input", runSecp);
+    txtCustomPub.addEventListener("input", validateCustom);
+
+    // Initial setup
+    inputPriv.value = getRandomHexKey();
+    runSecp();
+  </script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BIP-32 HD Tree — BlockchainWasm Playground</title>
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+  <div class="app-viewport">
+    <header class="app-header">
+      <a href="index.html" class="brand-container">
+        <div class="brand-logo">⚡</div>
+        <div class="brand-title">BlockchainWasm <span class="tag">BIP-32 HD Key App</span></div>
+      </a>
+      <div class="header-status">
+        <div class="wasm-badge">
+          <span class="status-dot" id="wasm-status-dot"></span>
+          <span id="wasm-status-text">Cargando WASM...</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <nav class="app-sidebar">
+        <div class="sidebar-title">Módulos</div>
+        <a href="index.html" class="sidebar-item"><span>⚡ Dashboard</span></a>
+        <a href="address.html" class="sidebar-item"><span>📫 Address (BTC/ETH)</span></a>
+        <a href="bip39.html" class="sidebar-item"><span>🌱 BIP-39 Mnemonic</span></a>
+        <a href="bip32.html" class="sidebar-item active"><span>🌳 BIP-32 HD Tree</span></a>
+        <a href="bip44.html" class="sidebar-item"><span>💼 BIP-44 Wallet</span></a>
+        <a href="ecdsa.html" class="sidebar-item"><span>✍️ ECDSA Secp256k1</span></a>
+        <a href="schnorr.html" class="sidebar-item"><span>⚡ Schnorr Taproot</span></a>
+        <a href="ecdh.html" class="sidebar-item"><span>🔐 ECDH Secret</span></a>
+        <a href="secp256k1.html" class="sidebar-item"><span>📈 Curve Secp256k1</span></a>
+        <a href="pbkdf2.html" class="sidebar-item"><span>🔑 PBKDF2 SHA-512</span></a>
+        <a href="wif.html" class="sidebar-item"><span>🎫 WIF Format</span></a>
+      </nav>
+
+      <main class="app-content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">🌳 BIP-32 HD Key Explorer</h1>
+            <p class="page-description">Derivación jerárquica de claves (HD Trees), serialización xprv / xpub y evaluación de rutas.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-random-seed">🎲 Generar Seed Aleatoria</button>
+        </div>
+
+        <div class="grid-2">
+          <!-- Entrada Seed y Ruta -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">🔑</span> Parámetros de Derivación</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">BIP-39 Master Seed (16..64 Bytes Hex)</label>
+              <textarea id="input-seed" class="textarea-custom" rows="2" placeholder="000102030405060708090a0b0c0d0e0f..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Ruta de Derivación (HD Path)</label>
+              <input type="text" id="input-path" class="input-text" value="m/44'/0'/0'/0/0" placeholder="e.g. m/44'/0'/0'/0/0">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Master Extended Private Key (Root xprv)</label>
+              <div class="output-box">
+                <span id="txt-root-xprv">-</span>
+                <button class="copy-btn" onclick="window.copyTxt('txt-root-xprv', 'Root xprv')">Copiar</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Master Extended Public Key (Root xpub)</label>
+              <div class="output-box">
+                <span id="txt-root-xpub">-</span>
+                <button class="copy-btn" onclick="window.copyTxt('txt-root-xpub', 'Root xpub')">Copiar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resultado Derivado -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">🌲</span> Resultado Derivado de la Ruta</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Derived xprv <span class="extra" id="lbl-path">m/44'/0'/0'/0/0</span></label>
+              <div class="output-box">
+                <span id="txt-derived-xprv">-</span>
+                <button class="copy-btn" onclick="window.copyTxt('txt-derived-xprv', 'Derived xprv')">Copiar</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Derived xpub (Neutered Key)</label>
+              <div class="output-box">
+                <span id="txt-derived-xpub">-</span>
+                <button class="copy-btn" onclick="window.copyTxt('txt-derived-xpub', 'Derived xpub')">Copiar</button>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label class="form-label">Private Key (32B Hex)</label>
+                <div class="output-box">
+                  <span id="txt-derived-priv">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('txt-derived-priv', 'PrivKey')">Copiar</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Public Key (33B Hex)</label>
+                <div class="output-box">
+                  <span id="txt-derived-pub">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('txt-derived-pub', 'PubKey')">Copiar</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid-3" style="margin-top: 4px;">
+              <div class="form-group">
+                <label class="form-label">Depth</label>
+                <div class="output-box"><span id="txt-depth">-</span></div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Child Index</label>
+                <div class="output-box"><span id="txt-child-idx">-</span></div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Parent FP</label>
+                <div class="output-box"><span id="txt-parent-fp">-</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initWasm, parseHexInput, bytesToHex, copyToClipboard } from "./js/common.js";
+    import { Bip32 } from "../dist/index.js";
+
+    window.copyTxt = (id, name) => {
+      const text = document.getElementById(id).innerText;
+      if (text !== "-") copyToClipboard(text, name);
+    };
+
+    await initWasm();
+
+    const inputSeed = document.getElementById("input-seed");
+    const inputPath = document.getElementById("input-path");
+    const btnRandom = document.getElementById("btn-random-seed");
+
+    function updateDerivation() {
+      try {
+        const seedBytes = parseHexInput(inputSeed.value);
+        if (seedBytes.length < 16 || seedBytes.length > 64) return;
+
+        const masterNode = Bip32.fromSeed(seedBytes);
+        document.getElementById("txt-root-xprv").innerText = masterNode.toXprv();
+        document.getElementById("txt-root-xpub").innerText = masterNode.toXpub();
+
+        const pathStr = inputPath.value.trim();
+        document.getElementById("lbl-path").innerText = pathStr;
+
+        const derivedNode = masterNode.derivePath(pathStr);
+        document.getElementById("txt-derived-xprv").innerText = derivedNode.toXprv();
+        document.getElementById("txt-derived-xpub").innerText = derivedNode.toXpub();
+
+        document.getElementById("txt-derived-priv").innerText = bytesToHex(derivedNode.privateKey);
+        document.getElementById("txt-derived-pub").innerText = bytesToHex(derivedNode.publicKey);
+
+        document.getElementById("txt-depth").innerText = derivedNode.depth;
+        document.getElementById("txt-child-idx").innerText = derivedNode.childIndex;
+        document.getElementById("txt-parent-fp").innerText = "0x" + derivedNode.parentFingerprint.toString(16).padStart(8, "0");
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    btnRandom.addEventListener("click", () => {
+      const bytes = new Uint8Array(64);
+      crypto.getRandomValues(bytes);
+      inputSeed.value = bytesToHex(bytes);
+      updateDerivation();
+    });
+
+    inputSeed.addEventListener("input", updateDerivation);
+    inputPath.addEventListener("input", updateDerivation);
+
+    // Initial random seed
+    const defaultSeed = new Uint8Array(64);
+    crypto.getRandomValues(defaultSeed);
+    inputSeed.value = bytesToHex(defaultSeed);
+    updateDerivation();
+  </script>
+</body>
+</html>
