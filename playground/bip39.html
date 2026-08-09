@@ -112,7 +112,7 @@
 
   <script type="module">
     import { initWasm, copyToClipboard, bytesToHex } from "./js/common.js";
-    import { Bip39 } from "../dist/index.js";
+    import { Bip39 } from "./lib/index.js";
 
     window.copyTxt = (id, name) => {
       const text = document.getElementById(id).innerText;

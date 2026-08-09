@@ -3,12 +3,12 @@
  *  common.js — Utilidades compartidas y cargador de BlockchainWasm
  * ═══════════════════════════════════════════════════════════════════════════
  */
-import { BlockchainWasm, bytesToHex, hexToBytes } from "../../dist/index.js";
+import { BlockchainWasm, bytesToHex, hexToBytes } from "../lib/index.js";
 
 let wasmInstance = null;
 
 /**
- * Inicializa el singleton global de BlockchainWasm desde /dist/blockchain.wasm
+ * Inicializa el singleton global de BlockchainWasm desde /playground/lib/blockchain.wasm
  */
 export async function initWasm() {
   if (wasmInstance) return wasmInstance;
@@ -18,8 +18,8 @@ export async function initWasm() {
 
   try {
     if (statusText) statusText.innerText = "Cargando WASM...";
-    // Intentar desde la ruta de distribución servida por Bun
-    wasmInstance = await BlockchainWasm.fromUrl("/dist/blockchain.wasm");
+    // Carga desde el directorio local lib/
+    wasmInstance = await BlockchainWasm.fromUrl("./lib/blockchain.wasm");
     
     if (statusDot) statusDot.classList.add("active");
     if (statusText) statusText.innerText = "WASM Listo (Zero-Alloc)";

@@ -108,7 +108,7 @@
 
   <script type="module">
     import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard } from "./js/common.js";
-    import { Wif } from "../dist/index.js";
+    import { Wif } from "./lib/index.js";
 
     window.copyTxt = (id, name) => {
       const text = document.getElementById(id).innerText;

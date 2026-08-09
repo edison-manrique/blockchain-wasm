@@ -26,6 +26,7 @@
         <div class="sidebar-title">Módulos</div>
         <a href="index.html" class="sidebar-item"><span>⚡ Dashboard</span></a>
         <a href="address.html" class="sidebar-item active"><span>📫 Address (BTC/ETH)</span></a>
+        <a href="vanity.html" class="sidebar-item"><span>✨ Vanity Search</span></a>
         <a href="bip39.html" class="sidebar-item"><span>🌱 BIP-39 Mnemonic</span></a>
         <a href="bip32.html" class="sidebar-item"><span>🌳 BIP-32 HD Tree</span></a>
         <a href="bip44.html" class="sidebar-item"><span>💼 BIP-44 Wallet</span></a>
@@ -128,7 +129,7 @@
 
   <script type="module">
     import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard } from "./js/common.js";
-    import { Secp256k1, Address } from "../dist/index.js";
+    import { Secp256k1, Address } from "./lib/index.js";
 
     window.copyTxt = (id, name) => {
       const text = document.getElementById(id).innerText;
