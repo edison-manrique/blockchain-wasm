@@ -8,7 +8,7 @@
  */
 import { BlockchainWasm } from "./blockchain-wasm"
 import { InvalidArgumentError } from "./errors"
-import { PRIVKEY_BYTES } from "./types"
+import { isValidPrivateKey, PRIVKEY_BYTES } from "./types"
 export type { WifKey } from "./types"
 
 const MAX_WIF_STR = 128
@@ -20,6 +20,9 @@ export class Wif {
   static encode(privateKey: Uint8Array, compressed = true): string {
     if (privateKey.length !== PRIVKEY_BYTES) {
       throw new InvalidArgumentError("privateKey debe ser 32 bytes", "wif")
+    }
+    if (!isValidPrivateKey(privateKey)) {
+      throw new InvalidArgumentError("privateKey fuera de rango (0 o ≥ N)", "<modulo>")
     }
     return BlockchainWasm.getInstance().wifEncode(privateKey, compressed)
   }

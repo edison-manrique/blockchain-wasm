@@ -8,7 +8,7 @@
 import { describe, test, expect, beforeAll } from "bun:test"
 import { Wasm, type WasmInstance, type CompileResult } from "./utils/wasm"
 
-const ENTRY = "assembly/base58.ts"
+const ENTRY = "assembly/utils/base58.ts"
 let wasm: WasmInstance
 let IN: number
 let OUT: number
@@ -75,13 +75,13 @@ describe("base58 — correctitud", () => {
     [
       "10 bytes",
       "10c8511e7488863679640400033f79d4",
-      "35CTsL9ssmwq8LEuMZEBiT" // ✅ FIX
+      "35CTsL9ssmwq8LEuMZEBiT", // ✅ FIX
     ],
     [
       "32 bytes (hash)",
       "ec1c8287ee9534dc47540885f34ff839456c3a22f9575a14de2f5e75e2e91483",
-      "GtgRzkTTRecXX3ABYQk158Mi2Jfo1WXNJBFEcT4Ngv8r" // ✅ FIX
-    ]
+      "GtgRzkTTRecXX3ABYQk158Mi2Jfo1WXNJBFEcT4Ngv8r", // ✅ FIX
+    ],
   ]
 
   for (const [name, inputHex, expected] of encodeCases) {
@@ -103,13 +103,13 @@ describe("base58 — correctitud", () => {
     [
       "10 bytes",
       "35CTsL9ssmwq8LEuMZEBiT", // ✅ FIX
-      "10c8511e7488863679640400033f79d4"
+      "10c8511e7488863679640400033f79d4",
     ],
     [
       "32 bytes",
       "GtgRzkTTRecXX3ABYQk158Mi2Jfo1WXNJBFEcT4Ngv8r", // ✅ FIX
-      "ec1c8287ee9534dc47540885f34ff839456c3a22f9575a14de2f5e75e2e91483"
-    ]
+      "ec1c8287ee9534dc47540885f34ff839456c3a22f9575a14de2f5e75e2e91483",
+    ],
   ]
 
   for (const [name, input, expectedHex] of decodeCases) {
@@ -303,7 +303,7 @@ describe("base58 — velocidad", () => {
     wasm.write(IN, input)
     const r = Wasm.benchSpeed("b58-encode(32B)", 200_000, () => wasm.exports.base58_encode_raw(OUT, IN, 32), {
       warmup: 5000,
-      runs: 3
+      runs: 3,
     })
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeLessThan(10_000) // < 10 µs
@@ -314,7 +314,7 @@ describe("base58 — velocidad", () => {
     stringToIndices(addr, IN)
     const r = Wasm.benchSpeed("b58-decode(44ch)", 200_000, () => wasm.exports.base58_decode_raw(OUT, IN, addr.length), {
       warmup: 5000,
-      runs: 3
+      runs: 3,
     })
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeLessThan(10_000)
@@ -325,7 +325,7 @@ describe("base58 — velocidad", () => {
     wasm.write(IN, payload)
     const r = Wasm.benchSpeed("b58check-enc(21B)", 100_000, () => wasm.exports.base58check_encode_raw(OUT, IN, 21), {
       warmup: 2000,
-      runs: 3
+      runs: 3,
     })
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeLessThan(20_000) // incluye 2× SHA-256

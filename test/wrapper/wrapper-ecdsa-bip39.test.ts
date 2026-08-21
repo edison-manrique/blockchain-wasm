@@ -4,8 +4,9 @@ import { Ecdsa, SignatureFormat } from "../../src/ecdsa"
 import { Bip39 } from "../../src/bip39"
 import { Secp256k1 } from "../../src/secp256k1"
 import { hexToBytes, bytesToHex, toUint8Array } from "../../src/types"
+import { join } from "path"
 
-const WASM_PATH = "../../dist/blockchain.wasm" // ajusta
+const WASM_PATH = join(import.meta.dirname, "../../dist/blockchain.wasm")
 
 const PRIV1 = "0000000000000000000000000000000000000000000000000000000000000001"
 const PRIV2 = "0000000000000000000000000000000000000000000000000000000000000002"
@@ -49,7 +50,7 @@ describe("wrapper ecdsa + bip39", () => {
   })
   test("messageHash Universal == SHA-256 (ancla 'abc')", () => {
     expect(bytesToHex(Ecdsa.messageHash(toUint8Array("abc"), SignatureFormat.Universal))).toBe(
-      "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+      "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
     )
   })
   test("signMessage/verifyMessage roundtrip (formato Bitcoin)", () => {
@@ -62,7 +63,7 @@ describe("wrapper ecdsa + bip39", () => {
   test("ECDSA: longitudes inválidas → lanza", () => {
     expect(() => Ecdsa.sign(new Uint8Array(31), hexToBytes(PRIV1))).toThrow()
     expect(() =>
-      Ecdsa.verify(new Uint8Array(32), new Uint8Array(63), Secp256k1.getPublicKey(hexToBytes(PRIV1)))
+      Ecdsa.verify(new Uint8Array(32), new Uint8Array(63), Secp256k1.getPublicKey(hexToBytes(PRIV1))),
     ).toThrow()
   })
 
@@ -79,7 +80,7 @@ describe("wrapper ecdsa + bip39", () => {
   test("validate: válido true / checksum inválido false", () => {
     expect(Bip39.validate(MNEMONIC_ABANDON)).toBe(true)
     expect(
-      Bip39.validate("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon")
+      Bip39.validate("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon"),
     ).toBe(false)
   })
   test("generate(128) → 12 palabras y validate true (rng del host)", () => {

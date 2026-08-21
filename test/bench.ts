@@ -27,7 +27,7 @@ import {
   SignatureFormat,
   hexToBytes,
   toUint8Array,
-  getRandomBytes
+  getRandomBytes,
 } from "../src/index"
 
 // ── Resolución del binario (relativo a este archivo) ──────────────────────
@@ -70,13 +70,15 @@ function printRows(): void {
 }
 
 /**
- * Stream de claves: base aleatoria (32 B) + contador incremental en los últimos
- * 4 bytes. Cada llamada a next() devuelve una clave distinta (base ‖ counter).
- * El buffer se muta in-place (las fachadas copian el input al WASM, así es seguro).
+ * Stream de claves determinista y siempre válido para secp256k1.
+ * Base fijada en (N - 1) / 2 = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0
+ * Incrementa un contador de 32 bits en los últimos 4 bytes por iteración.
  */
 function makeKeyStream(): { next: () => Uint8Array } {
-  const buf = getRandomBytes(32) // base aleatoria (cambia por run; fija aquí si quieres reproducibilidad)
+  // (N - 1) / 2 en secp256k1
+  const buf = hexToBytes("7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0")
   let counter = 0
+
   return {
     next: () => {
       counter = (counter + 1) >>> 0
@@ -85,7 +87,7 @@ function makeKeyStream(): { next: () => Uint8Array } {
       buf[30] = (counter >>> 8) & 0xff
       buf[31] = counter & 0xff
       return buf
-    }
+    },
   }
 }
 
@@ -178,11 +180,11 @@ async function main(): Promise<void> {
   bench("verify (hash)", () => Ecdsa.verify(HASH, ECDSA_SIG, PUB))
   bench("signMessage (Bitcoin)", () => Ecdsa.signMessage(MSG_TEXT_BYTES, PRIV, SignatureFormat.Bitcoin))
   bench("verifyMessage (Bitcoin)", () =>
-    Ecdsa.verifyMessage(MSG_TEXT_BYTES, ECDSA_MSG_SIG, PUB, SignatureFormat.Bitcoin)
+    Ecdsa.verifyMessage(MSG_TEXT_BYTES, ECDSA_MSG_SIG, PUB, SignatureFormat.Bitcoin),
   )
   bench("signTextMessage (Ethereum)", () => Ecdsa.signTextMessage(MSG_TEXT, PRIV, SignatureFormat.Ethereum))
   bench("verifyTextMessage (Ethereum)", () =>
-    Ecdsa.verifyTextMessage(MSG_TEXT, ECDSA_TEXT_SIG, PUB, SignatureFormat.Ethereum)
+    Ecdsa.verifyTextMessage(MSG_TEXT, ECDSA_TEXT_SIG, PUB, SignatureFormat.Ethereum),
   )
   printRows()
 

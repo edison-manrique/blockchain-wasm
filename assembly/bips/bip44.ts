@@ -25,11 +25,12 @@ import {
   bip32_derive_address,
   bip32_get_pubkey,
   bip32_serialize_xpub,
-  bip32_serialize_xprv
+  bip32_serialize_xprv,
 } from "./bip32"
 import { bip39_mnemonic_to_seed } from "./bip39"
 import {
   BW_XKEY_A,
+  BW_XKEY_B,
   BW_SERIALIZE_BUF,
   OFF_KEY_DATA,
   HARDENED_OFFSET,
@@ -42,7 +43,7 @@ import {
   COIN_BTC,
   COIN_BTC_TESTNET,
   COIN_ETH,
-  BIP32_OK
+  BIP32_OK,
 } from "./bip32/constants"
 
 // ── Re-exports (constantes y utilidades) ──────────────────────────────────
@@ -55,7 +56,7 @@ export {
   BIP86_PURPOSE,
   COIN_BTC,
   COIN_BTC_TESTNET,
-  COIN_ETH
+  COIN_ETH,
 }
 
 // ── Re-exports BIP39 (para conveniencia del wrapper TS) ───────────────────
@@ -78,29 +79,17 @@ export function bip44_derive_leaf(
   coinType: u32,
   account: u32,
   change: u32,
-  addressIndex: u32
+  addressIndex: u32,
 ): i32 {
   const work = align8(BIP32_WORK_PTR)
   const master = work + BW_XKEY_A
-  const child = work + BW_SERIALIZE_BUF // 78 B libres, caben 88 de xkey? No: 78 < 88.
-
-  // Usamos BW_XKEY_B como child (88 B)
-  const childXkey = work + 88 // BW_XKEY_B
-
-  // 1. Master
+  const childXkey = work + BW_XKEY_B // BW_XKEY_B (88 B)
   const rc1 = bip32_from_seed(master, seedPtr, seedLen)
   if (rc1 != BIP32_OK) return rc1
-
-  // 2. Derivar m/p'/c'/a'/change/idx
   const rc2 = bip32_derive_address(childXkey, master, purpose, coinType, account, change, addressIndex)
   if (rc2 != BIP32_OK) return rc2
-
-  // 3. Pubkey (antes de copiar privkey, para no pisar el xkey)
   bip32_get_pubkey(outPub33, childXkey)
-
-  // 4. Privkey
   memory.copy(outPriv32, childXkey + OFF_KEY_DATA, PRIVKEY_LEN)
-
   return BIP32_OK
 }
 
@@ -113,7 +102,7 @@ export function bip44_derive_privkey(
   coinType: u32,
   account: u32,
   change: u32,
-  addressIndex: u32
+  addressIndex: u32,
 ): i32 {
   const work = align8(BIP32_WORK_PTR)
   const master = work + BW_XKEY_A
@@ -138,7 +127,7 @@ export function bip44_derive_pubkey(
   coinType: u32,
   account: u32,
   change: u32,
-  addressIndex: u32
+  addressIndex: u32,
 ): i32 {
   const work = align8(BIP32_WORK_PTR)
   const master = work + BW_XKEY_A
@@ -167,7 +156,7 @@ export function bip44_account_xpub(
   seedLen: u32,
   purpose: u32,
   coinType: u32,
-  account: u32
+  account: u32,
 ): i32 {
   const work = align8(BIP32_WORK_PTR)
   const master = work + BW_XKEY_A
@@ -192,7 +181,7 @@ export function bip44_account_xprv(
   seedLen: u32,
   purpose: u32,
   coinType: u32,
-  account: u32
+  account: u32,
 ): i32 {
   const work = align8(BIP32_WORK_PTR)
   const master = work + BW_XKEY_A
@@ -226,7 +215,7 @@ export function bip44_from_mnemonic_derive(
   coinType: u32,
   account: u32,
   change: u32,
-  addressIndex: u32
+  addressIndex: u32,
 ): i32 {
   const work = align8(BIP32_WORK_PTR)
   const seedBuf = work + BW_SERIALIZE_BUF // 64 B de seed (caben en 78 B)
@@ -245,7 +234,7 @@ export function bip44_from_mnemonic_xpub(
   passLen: u32,
   purpose: u32,
   coinType: u32,
-  account: u32
+  account: u32,
 ): i32 {
   const work = align8(BIP32_WORK_PTR)
   const seedBuf = work + BW_SERIALIZE_BUF
@@ -264,7 +253,7 @@ export function bip44_from_mnemonic_xprv(
   passLen: u32,
   purpose: u32,
   coinType: u32,
-  account: u32
+  account: u32,
 ): i32 {
   const work = align8(BIP32_WORK_PTR)
   const seedBuf = work + BW_SERIALIZE_BUF

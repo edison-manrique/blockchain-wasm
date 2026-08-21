@@ -14,8 +14,18 @@
  */
 import { Memory } from "../../utils/memory"
 import { N0, N1, N2, N3 } from "../../secp256k1/constants"
-import { fromBytesPtr, toBytesPtr, isZero, cmp, subRaw } from "../../secp256k1/field"
-import { mulMod as scalarMul, add as scalarAdd, modInverse as scalarInv } from "../../secp256k1/scalar"
+import {
+  fromBytesPtr,
+  toBytesPtr,
+  isZero,
+  cmp,
+  subRaw,
+} from "../../secp256k1/field"
+import {
+  mulMod as scalarMul,
+  add as scalarAdd,
+  modInverse as scalarInv,
+} from "../../secp256k1/scalar"
 import { multiplyG } from "../../secp256k1/generator"
 import { toAffine, isInfinity } from "../../secp256k1/point"
 import { generateK, reduceScalar } from "./rfc6979"
@@ -26,10 +36,14 @@ import {
   N_HALF_3,
   ECDSA_ERR_R_ZERO,
   ECDSA_ERR_S_ZERO,
-  ECDSA_ERR_K_INF
+  ECDSA_ERR_K_INF,
 } from "./constants"
 
-export function ecdsa_sign(out65: usize, hashPtr32: usize, privPtr32: usize): i32 {
+export function ecdsa_sign(
+  out65: usize,
+  hashPtr32: usize,
+  privPtr32: usize,
+): i32 {
   const ctx = Memory.save()
   const z = Memory.alloc(32)
   const d = Memory.alloc(32)
@@ -91,7 +105,7 @@ export function ecdsa_sign(out65: usize, hashPtr32: usize, privPtr32: usize): i3
   }
 
   // canonical S (BIP-62): si s > N/2 → s = N−s, recId ^= 1
-  if (cmp(s, n_half) >= 0) {
+  if (cmp(s, n_half) > 0) {
     subRaw(s, N, s)
     recId ^= 1
   }

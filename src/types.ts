@@ -39,6 +39,8 @@ export interface AsmExports {
   btc_p2wpkh: (outPtr: number, pubPtr: number, pubLen: number) => number
   btc_p2tr: (outPtr: number, pubPtr: number, pubLen: number) => number
   eth_address: (outPtr: number, pubPtr: number, pubLen: number) => number
+  btc_p2pkh_uncompressed: (outPtr: number, pubPtr: number, pubLen: number) => number
+  tron_address: (outPtr: number, pubPtr: number, pubLen: number) => number
 
   // ── ecdsa ──
   ecdsa_sign: (out65: number, hashPtr32: number, privPtr32: number) => number
@@ -51,7 +53,7 @@ export interface AsmExports {
     sigPtr64: number,
     pubPtr: number,
     pubLen: number,
-    format: number
+    format: number,
   ) => number
 
   // ── schnorr ──
@@ -63,7 +65,7 @@ export interface AsmExports {
     msgPtr: number,
     msgLen: number,
     pubPtr32: number,
-    pubLen: number
+    pubLen: number,
   ) => number
   schnorr_aggregate_pubkeys: (out32: number, pubsPtr: number, count: number) => number
   schnorr_aggregate_privkeys: (out32: number, privsPtr: number, count: number) => number
@@ -79,7 +81,7 @@ export interface AsmExports {
     saltPtr: number,
     saltLen: number,
     iterations: number,
-    dkLen: number
+    dkLen: number,
   ) => void
 
   // ── bip32 ──
@@ -91,14 +93,14 @@ export interface AsmExports {
     parentPtr: number,
     purpose: number,
     coinType: number,
-    account: number
+    account: number,
   ) => number
   bip32_serialize_xpub: (outPtr: number, xkeyPtr: number) => number
   bip32_serialize_xprv: (outPtr: number, xkeyPtr: number) => number
   bip32_deserialize: (xkeyPtr: number, srcPtr: number, srcLen: number) => number
   bip32_neuter: (pubXkeyPtr: number, privXkeyPtr: number) => number
   bip32_get_pubkey: (out33: number, xkeyPtr: number) => number
-  bip32_fingerprint: (xkeyPtr: number) => number
+  bip32_fingerprint: (pub33Ptr: number) => number
   bip32_xkey_depth: (xkeyPtr: number) => number
   bip32_xkey_parent_fp: (xkeyPtr: number) => number
   bip32_xkey_child_index: (xkeyPtr: number) => number
@@ -121,7 +123,7 @@ export interface AsmExports {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number
+    addressIndex: number,
   ) => number
   bip44_derive_pubkey: (
     out33: number,
@@ -131,7 +133,7 @@ export interface AsmExports {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number
+    addressIndex: number,
   ) => number
   bip44_derive_leaf: (
     outPriv32: number,
@@ -142,7 +144,7 @@ export interface AsmExports {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number
+    addressIndex: number,
   ) => number
   bip44_account_xpub: (
     outPtr: number,
@@ -150,7 +152,7 @@ export interface AsmExports {
     seedLen: number,
     purpose: number,
     coinType: number,
-    account: number
+    account: number,
   ) => number
   bip44_account_xprv: (
     outPtr: number,
@@ -158,7 +160,7 @@ export interface AsmExports {
     seedLen: number,
     purpose: number,
     coinType: number,
-    account: number
+    account: number,
   ) => number
   bip44_from_mnemonic_derive: (
     outPriv32: number,
@@ -171,7 +173,7 @@ export interface AsmExports {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number
+    addressIndex: number,
   ) => number
   bip44_from_mnemonic_xpub: (
     outPtr: number,
@@ -181,7 +183,7 @@ export interface AsmExports {
     passLen: number,
     purpose: number,
     coinType: number,
-    account: number
+    account: number,
   ) => number
   bip44_from_mnemonic_xprv: (
     outPtr: number,
@@ -191,7 +193,7 @@ export interface AsmExports {
     passLen: number,
     purpose: number,
     coinType: number,
-    account: number
+    account: number,
   ) => number
 
   // ── hash (uso interno / canary de tests) ──
@@ -269,3 +271,35 @@ export function concatBytes(...parts: Uint8Array[]): Uint8Array {
   }
   return out
 }
+
+// ── Validación de escalares en la frontera (E6) ────────────────────────────
+/** N (orden del grupo secp256k1) en bytes big-endian. */
+// prettier-ignore
+const N_BE: ReadonlyArray<number> = [
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
+  0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b,
+  0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41
+]
+
+/** true si privkey (32 B BE) es un escalar válido: 0 < k < N. */
+export function isValidPrivateKey(privateKey: Uint8Array): boolean {
+  if (privateKey.length !== PRIVKEY_BYTES) return false
+  let nonZero = false
+  for (let i = 0; i < PRIVKEY_BYTES; i++) {
+    if (privateKey[i] !== 0) {
+      nonZero = true
+      break
+    }
+  }
+  if (!nonZero) return false // k == 0
+  for (let i = 0; i < PRIVKEY_BYTES; i++) {
+    if (privateKey[i] < N_BE[i]) return true // k < N
+    if (privateKey[i] > N_BE[i]) return false // k > N
+  }
+  return false // k == N
+}
+
+// ── Límite de passphrase BIP39 (E5) ────────────────────────────────────────
+/** Máx. bytes UTF-8 de la passphrase: HASH_WORK 4096 − SALT_OFF 2200 − 8 = 1888. */
+export const MAX_PASSPHRASE_BYTES = 1888

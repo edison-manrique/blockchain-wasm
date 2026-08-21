@@ -3,10 +3,10 @@
  *  bip32.ts — class Bip32 (fachada estática) + HDKey (encadenable)
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * HDKey envuelve el xkey crudo (88 B) copiado del WASM. Los getters parsean el
- * raw en JS (layout de bip32/xkey.ts: depth@0, parentFP@1 LE, childIdx@5 LE,
- * isPrivate@9, chainCode@16..48, keyData@48..81). Los métodos encadenables
- * (derive/derivePath/neuter/…) delegan en BlockchainWasm y devuelven NUEVA HDKey.
+ * HDKey envuelve el xkey crudo (88 B) copiado del WASM. El layout interno es
+ * detalle del WASM (depth@0, parentFP@4, childIdx@8, isPrivate@12,
+ * chainCode@16..48, keyData@48..81): el wrapper NUNCA parsea el raw en JS,
+ * lee todo vía accessors (bip32_xkey_*).
  *
  * El usuario NO escribe `new HDKey(...)`: la construyen Bip32.fromSeed/derive/
  * fromXpub/… (constructor público solo para uso interno de Bip32).

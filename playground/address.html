@@ -129,7 +129,7 @@
 
   <script type="module">
     import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard } from "./js/common.js";
-    import { Secp256k1, Address } from "./lib/index.js";
+    import { Secp256k1, Address } from "../../dist/index.js";
 
     window.copyTxt = (id, name) => {
       const text = document.getElementById(id).innerText;

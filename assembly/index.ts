@@ -32,7 +32,7 @@ export {
   HASH_WORK_PTR,
   BIP32_WORK_PTR,
   ADDRESS_WORK_PTR,
-  align8
+  align8,
 } from "./utils/memory"
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -45,7 +45,7 @@ export {
   pubkeyFromPrivkey,
   pubkeyUncompressedFromPrivkey,
   compressRaw,
-  uncompressRaw
+  uncompressRaw,
 } from "./utils/pubkey"
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -84,14 +84,14 @@ export {
   bip32_xkey_is_private,
   bip32_xkey_chaincode_ptr,
   bip32_xkey_keydata_ptr,
-  HARDENED_OFFSET
+  HARDENED_OFFSET,
 } from "./bips/bip32"
 
 export {
   bip39_mnemonic_to_seed,
   bip39_validate_mnemonic,
   bip39_entropy_to_mnemonic,
-  bip39_mnemonic_to_entropy
+  bip39_mnemonic_to_entropy,
 } from "./bips/bip39"
 
 export {
@@ -102,7 +102,7 @@ export {
   bip44_account_xprv,
   bip44_from_mnemonic_derive,
   bip44_from_mnemonic_xpub,
-  bip44_from_mnemonic_xprv
+  bip44_from_mnemonic_xprv,
 } from "./bips/bip44"
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -113,7 +113,7 @@ export {
   ecdsa_verify,
   ecdsa_message_hash,
   ecdsa_sign_message,
-  ecdsa_verify_message
+  ecdsa_verify_message,
 } from "./signatures/ecdsa"
 
 export {
@@ -121,7 +121,7 @@ export {
   schnorr_sign,
   schnorr_verify,
   schnorr_aggregate_pubkeys,
-  schnorr_aggregate_privkeys
+  schnorr_aggregate_privkeys,
 } from "./signatures/schnorr"
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -132,4 +132,12 @@ export { ecdh_shared_secret } from "./ecdh"
 // ═══════════════════════════════════════════════════════════════════════════
 // 8) DIRECCIONES (Bitcoin + Ethereum)
 // ═══════════════════════════════════════════════════════════════════════════
-export { btc_p2pkh, btc_p2sh_p2wpkh, btc_p2wpkh, btc_p2tr, eth_address } from "./address"
+export {
+  btc_p2pkh,
+  btc_p2sh_p2wpkh,
+  btc_p2wpkh,
+  btc_p2tr,
+  btc_p2pkh_uncompressed,
+  eth_address,
+  tron_address,
+} from "./address"

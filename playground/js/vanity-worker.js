@@ -3,7 +3,7 @@
  *  vanity-worker.js — Web Worker de Alta Velocidad con Evaluación Multi-Regla
  * ═══════════════════════════════════════════════════════════════════════════
  */
-import { BlockchainWasm, Address, Secp256k1, Wif, bytesToHex } from "../lib/index.js";
+import { BlockchainWasm, Address, Secp256k1, Wif, bytesToHex } from "../../dist/index.js";
 
 let isRunning = false;
 let workerId = 0;
@@ -22,7 +22,7 @@ self.onmessage = async (e) => {
 
     try {
       // Carga e inicialización de WebAssembly desde playground/lib/
-      await BlockchainWasm.fromUrl("../lib/blockchain.wasm");
+      await BlockchainWasm.fromUrl("../../dist/index.js");
       runSearchLoop(data);
     } catch (err) {
       self.postMessage({ type: "error", error: err.message, workerId });

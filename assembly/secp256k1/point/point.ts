@@ -157,15 +157,10 @@ export function double(res: usize, p: usize): void {
   add(t, y, z)            // t = Y + Z
   sqrMod(t, t)            // t = (Y+Z)²
   sub(t, t, B)            // − B
-  sub(Z3, t, C)           // Z' = (Y+Z)² − B − C   (aquí C ya es Y²=B, ¡ojo!)
-
-  // NOTA: C fue sobreescrito a 8C arriba; recomputamos Z' con B (=Y²) original.
-  // Para evitar el lío, rehacemos Z' de forma limpia:
-  sqrMod(t, y)            // t = Y²  (= B original)
-  // Z' = (Y+Z)² − Y² − Z²;  pero la fórmula usada es (Y+Z)² − B − C con C=Y⁴.
-  // La forma correcta y simple: Z' = 2·Y·Z.
+  // Z' = 2·Y·Z  (fórmula simple y correcta para a=0; reemplaza la fórmula
+  // original (Y+Z)² − B − C que queda invalidada cuando C se reutiliza para 8C)
   mulMod(Z3, y, z)
-  add(Z3, Z3, Z3)         // Z' = 2·Y·Z
+  add(Z3, Z3, Z3)
 
   memory.copy(res, X3, 32)
   memory.copy(res + 32, Y3, 32)

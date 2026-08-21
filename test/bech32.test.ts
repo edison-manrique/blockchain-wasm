@@ -8,7 +8,7 @@
 import { describe, test, expect, beforeAll } from "bun:test"
 import { Wasm, type WasmInstance } from "./utils/wasm"
 
-const ENTRY = "assembly/secp256k1/bech32.ts"
+const ENTRY = "assembly/utils/bech32.ts"
 let wasm: WasmInstance
 let IN: number
 let OUT: number
@@ -69,7 +69,7 @@ function bech32Decode(addr: string): { data: Uint8Array; enc: number } | null {
     hrpPtr,
     hrpBytes.length,
     srcPtr,
-    dataPart.length
+    dataPart.length,
   )
   if (enc < 0) return null
 
@@ -252,7 +252,7 @@ describe("bech32 — memoria", () => {
       "bech32-enc",
       wasm,
       () => wasm.exports.bech32_encode_raw(OUT, IN + 256, 2, IN + 300, data5.length, 1),
-      5000
+      5000,
     )
   })
 
@@ -288,7 +288,7 @@ describe("bech32 — velocidad", () => {
       "bech32-encode",
       200_000,
       () => wasm.exports.bech32_encode_raw(OUT, IN + 256, 2, IN + 300, data5.length, 1),
-      { warmup: 5000, runs: 3 }
+      { warmup: 5000, runs: 3 },
     )
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeLessThan(5_000)
@@ -299,7 +299,7 @@ describe("bech32 — velocidad", () => {
     wasm.write(IN, data)
     const r = Wasm.benchSpeed("convert8to5", 500_000, () => wasm.exports.convert_bits_raw(OUT, IN, 32, 8, 5, 1), {
       warmup: 10000,
-      runs: 3
+      runs: 3,
     })
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeLessThan(2_000)

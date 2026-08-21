@@ -44,6 +44,8 @@ export {
   toUint8Array,
   concatBytes,
   getGlobalValue,
+  isValidPrivateKey,
+  MAX_PASSPHRASE_BYTES,
   PRIVKEY_BYTES,
   PUBKEY_COMPRESSED_BYTES,
   PUBKEY_UNCOMPRESSED_BYTES,
@@ -52,7 +54,7 @@ export {
   SEED_BYTES,
   HASH_BYTES,
   SIG_BYTES,
-  HALF_ZONE
+  HALF_ZONE,
 } from "./types"
 
 // ── Tipos (type-only; cada uno desde su fuente canónica) ──────────────────

@@ -13,6 +13,7 @@ import { fromBytesPtr, toBytesPtr, isZero } from "../../secp256k1/field"
 import { add as scalarAdd, isGreaterOrEqualN } from "../../secp256k1/scalar"
 import { multiplyG } from "../../secp256k1/generator"
 import { addPoint, toAffine } from "../../secp256k1/point"
+import { BIP32_OK, BIP32_ERR_PUBKEY_INVALID } from "./constants"
 
 // ── Re-export desde el módulo compartido (transparencia para ckd/index) ───
 import { pubkeyFromPrivkey, decompressToPoint } from "../../utils/pubkey"
@@ -21,8 +22,11 @@ export { pubkeyFromPrivkey, decompressToPoint }
 // ═══════════════════════════════════════════════════════════════════════════
 // SUMA DE PUNTOS (CKDpub): childPub = point(IL) + parentPub → compressed
 // ═══════════════════════════════════════════════════════════════════════════
-
-export function pointAddPubkeys(out33: usize, parentPub33: usize, scalarIL32: usize): void {
+/**
+ * @returns BIP32_OK, o BIP32_ERR_PUBKEY_INVALID si la pubkey del padre está
+ *          malformada o fuera de la curva (xpub deserializado inválido).
+ */
+export function pointAddPubkeys(out33: usize, parentPub33: usize, scalarIL32: usize): i32 {
   const ctx = Memory.save()
   const ilScalar = Memory.alloc(32)
   const ilPoint = Memory.alloc(96)
@@ -30,17 +34,22 @@ export function pointAddPubkeys(out33: usize, parentPub33: usize, scalarIL32: us
   const resultPoint = Memory.alloc(96)
   const affine = Memory.alloc(64)
 
+  // ✅ VALIDACIÓN (BLOQUE 3): la pubkey del padre debe estar en la curva.
+  // decompressToPoint verifica prefijo + y² ≡ x³+7 → sin puntos basura.
+  if (!decompressToPoint(parentPoint, parentPub33)) {
+    Memory.restore(ctx)
+    return BIP32_ERR_PUBKEY_INVALID
+  }
+
   fromBytesPtr(ilScalar, scalarIL32)
   multiplyG(ilPoint, ilScalar)
-  decompressToPoint(parentPoint, parentPub33)
   addPoint(resultPoint, ilPoint, parentPoint)
-
   toAffine(affine, resultPoint)
   const yIsOdd: bool = (load<u64>(affine + 32) & 1) != 0
   store<u8>(out33, yIsOdd ? 0x03 : 0x02)
   toBytesPtr(affine, out33 + 1)
-
   Memory.restore(ctx)
+  return BIP32_OK
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

@@ -8,22 +8,30 @@
  *       Acepta pubkey compressed (33 B, 0x02/0x03 → decompressToPoint) y
  *       uncompressed (65 B, 0x04) — mejora sobre el original (solo uncompressed).
  *
+ * ── VALIDACIÓN DE CURVA (BLOQUE 2) ─────────────────────────────────────────
+ * • 33 B: decompressToPoint verifica prefijo + y² ≡ x³+7 (mod P) → false si
+ *   la X no levanta un punto real. Antes se aceptaban puntos fuera de curva.
+ * • 65 B: isOnCurveXY(X, Y) verifica pertenencia a la curva. Antes NO se
+ *   validaba nada (un atacante podía inyectar cualquier (X,Y)).
+ *
  * Usa toAffine (reemplaza la normalización z_inv/z_inv²/z_inv³ manual del
  * original) y glv.mul para d·Q.
  *
+ * ── ZONA DEL ARENA ─────────────────────────────────────────────────────────
  * Zero-alloc: Q/d/P en CRYPTO_WORK (Memory.save/restore); glv.mul / toAffine /
- * decompressToPoint usan CRYPTO_WORK internamente (anidación LIFO segura).
+ * decompressToPoint / isOnCurveXY usan CRYPTO_WORK internamente (anidación
+ * LIFO segura).
  */
 import { Memory } from "../utils/memory"
 import { fromBytesPtr, toBytesPtr } from "../secp256k1/field"
 import { toAffine, isInfinity } from "../secp256k1/point"
 import { mul as glvMul } from "../secp256k1/glv"
-import { decompressToPoint } from "../utils/pubkey"
+import { decompressToPoint, isOnCurveXY } from "../utils/pubkey"
 
 // ── Códigos de error (retorno i32; 0 = OK) ────────────────────────────────
 export const ECDH_OK: i32 = 0
 export const ECDH_ERR_PRIV_LEN: i32 = -1 // privkey ≠ 32 B (lo valida el wrapper)
-export const ECDH_ERR_PUB_FORMAT: i32 = -2 // pubkey malformada / longitud inválida
+export const ECDH_ERR_PUB_FORMAT: i32 = -2 // pubkey malformada / fuera de la curva
 export const ECDH_ERR_INFINITY: i32 = -3 // d·Q en el infinito
 
 export function ecdh_shared_secret(out33: usize, privPtr32: usize, pubPtr: usize, pubLen: u32): i32 {
@@ -32,21 +40,30 @@ export function ecdh_shared_secret(out33: usize, privPtr32: usize, pubPtr: usize
   const d = Memory.alloc(32)
   const P = Memory.alloc(96)
 
-  // Q = pubkey (compressed → descomprimir | uncompressed → directo)
+  // Q = pubkey (compressed → descomprimir | uncompressed → directo), VALIDADA
   if (pubLen == 33) {
     const p0 = load<u8>(pubPtr)
     if (p0 != 0x02 && p0 != 0x03) {
       Memory.restore(ctx)
       return ECDH_ERR_PUB_FORMAT
     }
-    decompressToPoint(Q, pubPtr)
+    // ✅ VALIDACIÓN: prefijo + y² ≡ x³+7 (rechaza X fuera de la curva)
+    if (!decompressToPoint(Q, pubPtr)) {
+      Memory.restore(ctx)
+      return ECDH_ERR_PUB_FORMAT
+    }
   } else if (pubLen == 65) {
     if (load<u8>(pubPtr) != 0x04) {
       Memory.restore(ctx)
       return ECDH_ERR_PUB_FORMAT
     }
-    fromBytesPtr(Q, pubPtr + 1) // X
-    fromBytesPtr(Q + 32, pubPtr + 33) // Y
+    fromBytesPtr(Q, pubPtr + 1)       // X → limbs LE
+    fromBytesPtr(Q + 32, pubPtr + 33) // Y → limbs LE
+    // ✅ VALIDACIÓN: (X, Y) debe pertenecer a la curva
+    if (!isOnCurveXY(Q, Q + 32)) {
+      Memory.restore(ctx)
+      return ECDH_ERR_PUB_FORMAT
+    }
     store<u64>(Q + 64, 1) // Z = 1
     store<u64>(Q + 72, 0)
     store<u64>(Q + 80, 0)
@@ -59,7 +76,6 @@ export function ecdh_shared_secret(out33: usize, privPtr32: usize, pubPtr: usize
   // d = priv;  P = d·Q
   fromBytesPtr(d, privPtr32)
   glvMul(P, Q, d)
-
   if (isInfinity(P)) {
     Memory.restore(ctx)
     return ECDH_ERR_INFINITY

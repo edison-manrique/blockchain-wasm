@@ -8,7 +8,7 @@
 import { describe, test, expect, beforeAll } from "bun:test"
 import { Wasm, type WasmInstance, type CompileResult } from "./utils/wasm"
 
-const ENTRY = "assembly/ripemd160.ts"
+const ENTRY = "assembly/hash/ripemd160.ts"
 let wasm: WasmInstance
 let IN: number
 let OUT: number
@@ -63,18 +63,18 @@ describe("ripemd160 — correctitud", () => {
     [
       "448 bits (2 bloques)",
       "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
-      "12a053384a9c0c88e405a06c27dcf49ada62eb2b"
+      "12a053384a9c0c88e405a06c27dcf49ada62eb2b",
     ],
     [
       "alfanumérico",
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-      "b0e20b6e3116640286ed3a87a5713079b21f5189"
+      "b0e20b6e3116640286ed3a87a5713079b21f5189",
     ],
     [
       "80 dígitos (multi-bloque)",
       "12345678901234567890123456789012345678901234567890123456789012345678901234567890",
-      "9b752e45573d4b39f4dbd3323cab82bf63326bfb"
-    ]
+      "9b752e45573d4b39f4dbd3323cab82bf63326bfb",
+    ],
   ]
 
   for (const [name, msg, want] of officialVectors) {
@@ -92,7 +92,7 @@ describe("ripemd160 — correctitud", () => {
     ["56 bytes (padding fuerza 2 bloques)", 56, 0x61, "e72334b46c83cc70bef979e15453706c95b888be"],
     ["63 bytes (máx antes de bloque extra)", 63, 0x61, "e640041293fe663b9bf3f8c21ffecac03819e6b2"],
     ["64 bytes (1 bloque exacto)", 64, 0x61, "9dfb7d374ad924f3f88de96291c33e9abed53e32"],
-    ["65 bytes (1 bloque + 1 byte)", 65, 0x61, "99724bb11811e7166af38f671b6a082d8ab4960b"]
+    ["65 bytes (1 bloque + 1 byte)", 65, 0x61, "99724bb11811e7166af38f671b6a082d8ab4960b"],
   ]
 
   for (const [name, len, fill, want] of edgeCases) {
@@ -184,7 +184,7 @@ describe("ripemd160 — memoria", () => {
         wasm.exports.ripemd160_update_raw(ctx, IN, 200)
         wasm.exports.ripemd160_final_raw(ctx, padded, OUT)
       },
-      2000
+      2000,
     )
   })
 })
@@ -205,7 +205,7 @@ describe("ripemd160 — velocidad", () => {
     wasm.write(IN, msg)
     const r = Wasm.benchSpeed("ripemd160(1KB)", 100_000, () => wasm.exports.ripemd160_hash_raw(OUT, IN, 1024), {
       warmup: 2000,
-      runs: 3
+      runs: 3,
     })
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeLessThan(20_000) // < 20 µs por 1 KB
@@ -217,7 +217,7 @@ describe("ripemd160 — velocidad", () => {
     wasm.write(IN, msg)
     const r = Wasm.benchSpeed("ripemd160(64B)", 500_000, () => wasm.exports.ripemd160_hash_raw(OUT, IN, 64), {
       warmup: 5000,
-      runs: 3
+      runs: 3,
     })
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeLessThan(2_000) // < 2 µs por bloque
@@ -235,7 +235,7 @@ describe("ripemd160 — velocidad", () => {
       "rmd160(64B)",
       () => wasm.exports.ripemd160_hash_raw(OUT, IN, 64),
       100_000,
-      { warmup: 2000, runs: 3 }
+      { warmup: 2000, runs: 3 },
     )
     console.log(`\n  1KB/64B ratio: ${cmp.ratio.toFixed(2)}x → winner: ${cmp.winner}\n`)
     expect(cmp.ratio).toBeGreaterThan(2) // 1 KB debe ser >2x más lento que 64 B

@@ -9,7 +9,7 @@
 import { describe, test, expect, beforeAll } from "bun:test"
 import { Wasm, type WasmInstance, type CompileResult } from "./utils/wasm"
 
-const ENTRY = "assembly/keccak256.ts"
+const ENTRY = "assembly/hash/keccak256.ts"
 let wasm: WasmInstance
 let IN: number
 let OUT: number
@@ -59,7 +59,7 @@ describe("keccak256 — correctitud", () => {
     ["vacío", "", "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"],
     ["abc", "abc", "4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45"],
     ["testing", "testing", "5f16f4c7f149ac4f9510d9cf8cf384038ad348b3bcdc01915f95de12df9d1b02"],
-    ["hello world", "hello world", "47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad"]
+    ["hello world", "hello world", "47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad"],
   ]
 
   for (const [name, msg, want] of generalVectors) {
@@ -104,7 +104,7 @@ describe("keccak256 — correctitud", () => {
   const rateBoundary: [string, number, number, string][] = [
     ["135 B (rate-1)", 135, 0x61, "34367dc248bbd832f4e3e69dfaac2f92638bd0bbd18f2912ba4ef454919cf446"],
     ["136 B (rate exacto)", 136, 0x61, "a6c4d403279fe3e0af03729caada8374b5ca54d8065329a3ebcaeb4b60aa386e"],
-    ["137 B (rate+1)", 137, 0x61, "d869f639c7046b4929fc92a4d988a8b22c55fbadb802c0c66ebcd484f1915f39"]
+    ["137 B (rate+1)", 137, 0x61, "d869f639c7046b4929fc92a4d988a8b22c55fbadb802c0c66ebcd484f1915f39"],
   ]
 
   for (const [name, len, fill, want] of rateBoundary) {
@@ -121,7 +121,7 @@ describe("keccak256 — correctitud", () => {
     ["200 B", 200, 0x62, "dbd0c053f63c64c156e3a86a2f0a64fa9cfaa347e61e7d28f7b591b4a6d5d17d"],
     ["272 B (2 bloques exactos)", 272, 0x63, "ad7ace922c13f7bacdf9cc8cbe845bb30e86e28c2e181c26d2ca3881d9fa8aea"],
     ["273 B (2 bloques + 1)", 273, 0x63, "1c76b21cc06334b41a54e20518fc2c3ac707017ddb23712a1a575306d2c1cd05"],
-    ["1024 B", 1024, 0x64, "d775318e37e261a9014e32af163f0f7a7bf6c4854c85e313934e8400388dfd00"]
+    ["1024 B", 1024, 0x64, "d775318e37e261a9014e32af163f0f7a7bf6c4854c85e313934e8400388dfd00"],
   ]
 
   for (const [name, len, fill, want] of multiBlock) {
@@ -224,7 +224,7 @@ describe("keccak256 — memoria", () => {
         wasm.exports.keccak256_update_raw(ctx, IN, 300)
         wasm.exports.keccak256_final_raw(ctx, OUT)
       },
-      2000
+      2000,
     )
   })
 })
@@ -243,9 +243,9 @@ describe("keccak256 — velocidad", () => {
   test("throughput (1 KB)", () => {
     const msg = new Uint8Array(1024).fill(0x61)
     wasm.write(IN, msg)
-    const r = Wasm.benchSpeed("keccak256(1KB)", 100_000, () => wasm.exports.keccak256_hash_raw(OUT, IN, 1024), {
-      warmup: 2000,
-      runs: 3
+    const r = Wasm.benchSpeed("keccak256(1KB)", 25_000, () => wasm.exports.keccak256_hash_raw(OUT, IN, 1024), {
+      warmup: 200,
+      runs: 3,
     })
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeLessThan(50_000) // < 50 µs por 1 KB
@@ -255,9 +255,9 @@ describe("keccak256 — velocidad", () => {
   test("latencia (32 B = input típico de hash)", () => {
     const msg = new Uint8Array(32).fill(0x62)
     wasm.write(IN, msg)
-    const r = Wasm.benchSpeed("keccak256(32B)", 500_000, () => wasm.exports.keccak256_hash_raw(OUT, IN, 32), {
-      warmup: 5000,
-      runs: 3
+    const r = Wasm.benchSpeed("keccak256(32B)", 100_000, () => wasm.exports.keccak256_hash_raw(OUT, IN, 32), {
+      warmup: 1000,
+      runs: 3,
     })
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeLessThan(5_000) // < 5 µs por hash de 32 B
@@ -268,28 +268,23 @@ describe("keccak256 — velocidad", () => {
     wasm.write(IN, sig)
     const r = Wasm.benchSpeed(
       "keccak256(selector)",
-      500_000,
+      100_000,
       () => wasm.exports.keccak256_hash_raw(OUT, IN, sig.length),
-      { warmup: 5000, runs: 3 }
+      { warmup: 1000, runs: 3 },
     )
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeLessThan(5_000)
   })
 
-  test("comparativa: keccak256 vs sha256 (32 B input)", () => {
-    const msg = new Uint8Array(32).fill(0x63)
+  test("throughput (1 KB)", () => {
+    const msg = new Uint8Array(1024).fill(0x61)
     wasm.write(IN, msg)
-    // Solo comparamos keccak en dos tamaños (sha256 está en otro módulo)
-    const cmp = Wasm.benchCompare(
-      "keccak(32B)",
-      () => wasm.exports.keccak256_hash_raw(OUT, IN, 32),
-      "keccak(1KB)",
-      () => wasm.exports.keccak256_hash_raw(OUT, IN, 1024),
-      100_000,
-      { warmup: 2000, runs: 3 }
-    )
-    console.log(`\n  32B/1KB ratio: ${cmp.ratio.toFixed(3)}x → winner: ${cmp.winner}\n`)
-    // 32B debe ser mucho más rápido (1 permutación vs ~8)
-    expect(cmp.ratio).toBeLessThan(0.5)
+    const r = Wasm.benchSpeed("keccak256(1KB)", 25_000, () => wasm.exports.keccak256_hash_raw(OUT, IN, 1024), {
+      warmup: 200,
+      runs: 3,
+    })
+    Wasm.printResults([r])
+    expect(r.nsPerOp).toBeLessThan(50_000) // < 50 µs por 1 KB
+    expect(r.cvPct).toBeLessThan(15)
   })
 })

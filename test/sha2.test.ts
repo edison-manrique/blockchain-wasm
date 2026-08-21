@@ -10,7 +10,7 @@
 import { describe, test, expect, beforeAll } from "bun:test"
 import { Wasm, type WasmInstance, type CompileResult } from "./utils/wasm"
 
-const ENTRY = "assembly/sha2/index.ts"
+const ENTRY = "assembly/hash/sha2/index.ts"
 let wasm: WasmInstance
 let IN: number
 let OUT: number
@@ -28,7 +28,7 @@ describe("sha2 — compilación", () => {
   test("compilar en 4 perfiles y reportar stats", async () => {
     console.log("\n═══ SHA2 — Compilation stats ═══")
     console.log(
-      `${"Profile".padEnd(10)}  ${"Time".padStart(10)}  ${"Size".padStart(10)}  ${"Bytes".padStart(8)}  ${"Cached".padStart(6)}`
+      `${"Profile".padEnd(10)}  ${"Time".padStart(10)}  ${"Size".padStart(10)}  ${"Bytes".padStart(8)}  ${"Cached".padStart(6)}`,
     )
     console.log("─".repeat(52))
 
@@ -94,13 +94,13 @@ describe("sha2 — correctitud", () => {
     [
       "448 bits",
       "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
-      "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"
+      "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1",
     ],
     [
       "896 bits",
       "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
-      "cf5b16a778af8380036ce59e7b0492370b249b11e8f07a51afac45037afee9d1"
-    ]
+      "cf5b16a778af8380036ce59e7b0492370b249b11e8f07a51afac45037afee9d1",
+    ],
   ]
   for (const [name, msg, want] of sha256Cases) {
     test(`SHA256(${name})`, () => {
@@ -116,18 +116,18 @@ describe("sha2 — correctitud", () => {
     [
       "vacío",
       "",
-      "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+      "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
     ],
     [
       "abc",
       "abc",
-      "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f"
+      "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f",
     ],
     [
       "896 bits",
       "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
-      "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d289e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909"
-    ]
+      "8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d289e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909",
+    ],
   ]
   for (const [name, msg, want] of sha512Cases) {
     test(`SHA512(${name})`, () => {
@@ -174,7 +174,7 @@ describe("sha2 — correctitud", () => {
     wasm.write(IN + 128, msg)
     wasm.exports.sha512_hmac_raw(OUT, IN, key.length, IN + 128, msg.length)
     expect(hex(wasm.read(OUT, 64))).toBe(
-      "87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cdedaa833b7d6b8a702038b274eaea3f4e4be9d914eeb61f1702e696c203a126854"
+      "87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cdedaa833b7d6b8a702038b274eaea3f4e4be9d914eeb61f1702e696c203a126854",
     )
   })
 
@@ -185,7 +185,7 @@ describe("sha2 — correctitud", () => {
     wasm.write(IN + 128, msg)
     wasm.exports.sha512_hmac_raw(OUT, IN, key.length, IN + 128, msg.length)
     expect(hex(wasm.read(OUT, 64))).toBe(
-      "164b7a7bfcf819e2e395fbe73b56e0a387bd64222e831fd610270cd7ea2505549758bf75c05a994a6d034f65f8f0e6fdcaeab1a34d4a6b4b636e070a38bce737"
+      "164b7a7bfcf819e2e395fbe73b56e0a387bd64222e831fd610270cd7ea2505549758bf75c05a994a6d034f65f8f0e6fdcaeab1a34d4a6b4b636e070a38bce737",
     )
   })
 
@@ -196,7 +196,7 @@ describe("sha2 — correctitud", () => {
     wasm.write(IN + 128, msg)
     wasm.exports.sha512_hmac_raw(OUT, IN, key.length, IN + 128, msg.length)
     expect(hex(wasm.read(OUT, 64))).toBe(
-      "fa73b0089d56a284efb0f0756c890be9b1b5dbdd8ee81a3655f83e33b2279d39bf3e848279a722c806b485a47e67c807b946a337bee8942674278859e13292fb"
+      "fa73b0089d56a284efb0f0756c890be9b1b5dbdd8ee81a3655f83e33b2279d39bf3e848279a722c806b485a47e67c807b946a337bee8942674278859e13292fb",
     )
   })
 
@@ -241,7 +241,7 @@ describe("sha2 — correctitud", () => {
       "salt",
       1,
       64,
-      "55ac046e56e3089fec1691c22544b605f94185216dde0465e68b9d57c20dacbc49ca9cccf179b645991664b39d77ef317c71b845b1e30bd509112041d3a19783"
+      "55ac046e56e3089fec1691c22544b605f94185216dde0465e68b9d57c20dacbc49ca9cccf179b645991664b39d77ef317c71b845b1e30bd509112041d3a19783",
     ],
     [
       "c=2, dkLen=64",
@@ -249,7 +249,7 @@ describe("sha2 — correctitud", () => {
       "salt",
       2,
       64,
-      "2d412f896e76685e30df569f0a740634e31f031f749d607d9e44210bffb91a6ab670f500c78862001959f7d7b9f96afb3605700298acb14427e0239463c66f20"
+      "2d412f896e76685e30df569f0a740634e31f031f749d607d9e44210bffb91a6ab670f500c78862001959f7d7b9f96afb3605700298acb14427e0239463c66f20",
     ],
     [
       "c=4096, dkLen=32",
@@ -257,8 +257,8 @@ describe("sha2 — correctitud", () => {
       "salt",
       4096,
       32,
-      "c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a"
-    ]
+      "c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a",
+    ],
   ]
   for (const [name, pass, salt, iters, dkLen, want] of pbkdf2Sha256Cases) {
     test(`PBKDF2-SHA256 (${name})`, () => {
@@ -279,7 +279,7 @@ describe("sha2 — correctitud", () => {
       "salt",
       1,
       64,
-      "867f70cf1ade02cff3752599a3a53dc4af34c7a669815ae5d513554e1c8cf252c02d470a285a0501bad999bfe943c08f050235d7d68b1da55e63f73b60a57fce"
+      "867f70cf1ade02cff3752599a3a53dc4af34c7a669815ae5d513554e1c8cf252c02d470a285a0501bad999bfe943c08f050235d7d68b1da55e63f73b60a57fce",
     ],
     [
       "c=2, dkLen=64",
@@ -287,7 +287,7 @@ describe("sha2 — correctitud", () => {
       "salt",
       2,
       64,
-      "422a2c609b7e035e154ad40236dc0d73983c6c7a46aa6136466e216b3be22896cf65c59be9216fc659736f14d29a7472862c7c261e8a2dd53cf2a67a73dcd275"
+      "422a2c609b7e035e154ad40236dc0d73983c6c7a46aa6136466e216b3be22896cf65c59be9216fc659736f14d29a7472862c7c261e8a2dd53cf2a67a73dcd275",
     ],
     [
       "c=4096, dkLen=64",
@@ -295,8 +295,8 @@ describe("sha2 — correctitud", () => {
       "salt",
       4096,
       64,
-      "d197b1b33db0143e018b12f3d1d1479e6cdebdcc97c5c0f87f6902e072f457b5143f30602641b3d55cd335988cb36b84376060ecd532e039b742a239434af2d5"
-    ]
+      "d197b1b33db0143e018b12f3d1d1479e6cdebdcc97c5c0f87f6902e072f457b5143f30602641b3d55cd335988cb36b84376060ecd532e039b742a239434af2d5",
+    ],
   ]
   for (const [name, pass, salt, iters, dkLen, want] of pbkdf2Sha512Cases) {
     test(`PBKDF2-SHA512 (${name})`, () => {
@@ -330,7 +330,7 @@ describe("sha2 — correctitud", () => {
   // ── Streaming SHA-512 == one-shot ─────────────────────────────────────────
   test("SHA512 streaming (4 fragmentos) == one-shot", () => {
     const msg = enc(
-      "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu"
+      "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu",
     )
     // one-shot
     wasm.write(IN, msg)
@@ -409,7 +409,7 @@ describe("sha2 — memoria", () => {
       "pbkdf2-256",
       wasm,
       () => wasm.exports.sha256_pbkdf2_raw(OUT, IN, pass.length, IN + 64, salt.length, 4, 32),
-      200
+      200,
     )
   })
 
@@ -422,7 +422,7 @@ describe("sha2 — memoria", () => {
       "pbkdf2-512",
       wasm,
       () => wasm.exports.sha512_pbkdf2_raw(OUT, IN, pass.length, IN + 128, salt.length, 4, 64),
-      200
+      200,
     )
   })
 
@@ -439,7 +439,7 @@ describe("sha2 — memoria", () => {
         wasm.exports.sha256_update_raw(ctx, IN, 100)
         wasm.exports.sha256_final_raw(ctx, padded, OUT)
       },
-      500
+      500,
     )
   })
 })
@@ -461,10 +461,10 @@ describe("sha2 — velocidad", () => {
     const results = Wasm.benchSuite(
       [
         { name: "sha256(1KB)", fn: () => wasm.exports.sha256_hash_raw(OUT, IN, msg.length), iterations: 50_000 },
-        { name: "sha512(1KB)", fn: () => wasm.exports.sha512_hash_raw(OUT, IN, msg.length), iterations: 50_000 }
+        { name: "sha512(1KB)", fn: () => wasm.exports.sha512_hash_raw(OUT, IN, msg.length), iterations: 50_000 },
       ],
       10_000,
-      { warmup: 1000, runs: 3 }
+      { warmup: 1000, runs: 3 },
     )
     Wasm.printResults(results)
     const s256 = results.find((r) => r.name === "sha256(1KB)")!
@@ -481,10 +481,10 @@ describe("sha2 — velocidad", () => {
     const results = Wasm.benchSuite(
       [
         { name: "sha256(64B)", fn: () => wasm.exports.sha256_hash_raw(OUT, IN, 64), iterations: 200_000 },
-        { name: "sha512(128B)", fn: () => wasm.exports.sha512_hash_raw(OUT, IN, 128), iterations: 200_000 }
+        { name: "sha512(128B)", fn: () => wasm.exports.sha512_hash_raw(OUT, IN, 128), iterations: 200_000 },
       ],
       50_000,
-      { warmup: 2000, runs: 3 }
+      { warmup: 2000, runs: 3 },
     )
     Wasm.printResults(results)
     const s256 = results.find((r) => r.name === "sha256(64B)")!
@@ -500,7 +500,7 @@ describe("sha2 — velocidad", () => {
       "hmac256(short)",
       100_000,
       () => wasm.exports.sha256_hmac_raw(OUT, IN, 32, IN + 64, msg.length),
-      { warmup: 2000, runs: 3 }
+      { warmup: 2000, runs: 3 },
     )
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeLessThan(20_000) // < 20 µs
@@ -515,7 +515,7 @@ describe("sha2 — velocidad", () => {
       "pbkdf2-256(c=1)",
       50_000,
       () => wasm.exports.sha256_pbkdf2_raw(OUT, IN, pass.length, IN + 64, salt.length, 1, 64),
-      { warmup: 1000, runs: 3 }
+      { warmup: 1000, runs: 3 },
     )
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeLessThan(50_000) // < 50 µs por iteración única
@@ -530,7 +530,7 @@ describe("sha2 — velocidad", () => {
       "sha512",
       () => wasm.exports.sha512_hash_raw(OUT, IN, 1024),
       50_000,
-      { warmup: 1000, runs: 3 }
+      { warmup: 1000, runs: 3 },
     )
     console.log(`\n  sha256/sha512 ratio: ${cmp.ratio.toFixed(3)}x → winner: ${cmp.winner}\n`)
     // SHA-512 usa registros de 64 bits → suele ser más rápido en WASM64 o igual
@@ -557,7 +557,7 @@ describe("sha2 — compile compare", () => {
         return () => w.exports.sha256_hash_raw(outPtr, inPtr, 256)
       },
       100_000,
-      { warmup: 1000, runs: 3 }
+      { warmup: 1000, runs: 3 },
     )
     Wasm.printCompileCompare(report)
     // Sanity: ambos compilan y producen binarios válidos

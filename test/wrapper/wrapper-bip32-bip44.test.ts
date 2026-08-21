@@ -4,18 +4,23 @@ import { Bip32, HDKey } from "../../src/bip32"
 import { Bip44 } from "../../src/bip44"
 import { Secp256k1 } from "../../src/secp256k1"
 import { hexToBytes, bytesToHex } from "../../src/types"
+import { join } from "path"
 
-const WASM_PATH = "../../dist/blockchain.wasm" // ajusta
+const WASM_PATH = join(import.meta.dirname, "../../dist/blockchain.wasm")
 
 // BIP32 Test Vector 1
 const SEED_TV1 = "000102030405060708090a0b0c0d0e0f"
-const TV1_MASTER_XPRV = "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi"
-const TV1_MASTER_XPUB = "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
-const TV1_M0H_XPRV = "xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7"
+const TV1_MASTER_XPRV =
+  "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi"
+const TV1_MASTER_XPUB =
+  "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
+const TV1_M0H_XPRV =
+  "xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7"
 
 // BIP39 seed de "abandon…about" (para BIP44)
 const MNEMONIC_ABANDON = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
-const SEED_ABANDON = "5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4"
+const SEED_ABANDON =
+  "5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4"
 
 describe("wrapper bip32 + bip44", () => {
   beforeAll(async () => {

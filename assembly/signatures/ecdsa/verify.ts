@@ -11,6 +11,15 @@
  *   R = u1·G + u2·Q,  con u1·G vía multiplyG y u2·Q vía glv.mul.
  *   válido ⟺ R.x mod N == r.
  *
+ * ── VALIDACIÓN DE CURVA (BLOQUE 2) ─────────────────────────────────────────
+ * • 33 B: decompressToPoint verifica prefijo + y² ≡ x³+7 (mod P).
+ * • 65 B: isOnCurveXY(X, Y) verifica pertenencia a la curva.
+ *
+ * ⚠️ CONTRATO 1|0: el wrapper evalúa `rc !== 0` como "firma válida". Toda
+ *    pubkey inválida retorna 0 (nunca ECDSA_ERR_PUBKEY = -5, que el wrapper
+ *    leería como válido). ecdsa_verify_message hereda este contrato.
+ *
+ * ── ZONA DEL ARENA ─────────────────────────────────────────────────────────
  * Zero-alloc: temporales en CRYPTO_WORK (Memory.save/restore, LIFO).
  */
 import { Memory } from "../../utils/memory"
@@ -19,7 +28,7 @@ import { mulMod as scalarMul, modInverse as scalarInv, isGreaterOrEqualN } from 
 import { multiplyG } from "../../secp256k1/generator"
 import { addPoint, toAffine, isInfinity } from "../../secp256k1/point"
 import { mul as glvMul } from "../../secp256k1/glv"
-import { decompressToPoint } from "../../utils/pubkey"
+import { decompressToPoint, isOnCurveXY } from "../../utils/pubkey"
 import { reduceScalar } from "./rfc6979"
 
 export function ecdsa_verify(hashPtr32: usize, sigPtr64: usize, pubPtr: usize, pubLen: u32): i32 {
@@ -48,21 +57,30 @@ export function ecdsa_verify(hashPtr32: usize, sigPtr64: usize, pubPtr: usize, p
     return 0
   }
 
-  // Q = pubkey (compressed → descomprimir | uncompressed → directo)
+  // Q = pubkey (compressed → descomprimir | uncompressed → directo), VALIDADA
   if (pubLen == 33) {
     const p0 = load<u8>(pubPtr)
     if (p0 != 0x02 && p0 != 0x03) {
       Memory.restore(ctx)
       return 0
     }
-    decompressToPoint(Q, pubPtr)
+    // ✅ VALIDACIÓN: prefijo + y² ≡ x³+7 (rechaza X fuera de la curva)
+    if (!decompressToPoint(Q, pubPtr)) {
+      Memory.restore(ctx)
+      return 0
+    }
   } else if (pubLen == 65) {
     if (load<u8>(pubPtr) != 0x04) {
       Memory.restore(ctx)
       return 0
     }
-    fromBytesPtr(Q, pubPtr + 1) // X
-    fromBytesPtr(Q + 32, pubPtr + 33) // Y
+    fromBytesPtr(Q, pubPtr + 1)       // X → limbs LE
+    fromBytesPtr(Q + 32, pubPtr + 33) // Y → limbs LE
+    // ✅ VALIDACIÓN: (X, Y) debe pertenecer a la curva
+    if (!isOnCurveXY(Q, Q + 32)) {
+      Memory.restore(ctx)
+      return 0
+    }
     store<u64>(Q + 64, 1) // Z = 1
     store<u64>(Q + 72, 0)
     store<u64>(Q + 80, 0)
@@ -81,7 +99,6 @@ export function ecdsa_verify(hashPtr32: usize, sigPtr64: usize, pubPtr: usize, p
   multiplyG(P1, u1)
   glvMul(P2, Q, u2)
   addPoint(R, P1, P2)
-
   if (isInfinity(R)) {
     Memory.restore(ctx)
     return 0

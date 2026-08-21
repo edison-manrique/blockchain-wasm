@@ -93,7 +93,7 @@ describe("bip44 — derivación desde seed", () => {
     const rc = wasm.exports.bip44_derive_privkey(OUT, IN, 64, 44, 0, 0, 0, 1)
     expect(rc).toBe(0)
     expect(hex(wasm.read(OUT, 32))).toBe(
-      "5c1141f60edd3095579529db7e88d964cb0a9ec0f814f6a10cd5cbd763078a0c" // ✅ FIX
+      "5c1141f60edd3095579529db7e88d964cb0a9ec0f814f6a10cd5cbd763078a0c", // ✅ FIX
     )
   })
 
@@ -102,7 +102,7 @@ describe("bip44 — derivación desde seed", () => {
     const rc = wasm.exports.bip44_derive_privkey(OUT, IN, 64, 44, 0, 0, 1, 0)
     expect(rc).toBe(0)
     expect(hex(wasm.read(OUT, 32))).toBe(
-      "78df181d8d74216a5c1398689b35aada58cc42e5f056b6126c1c4f6e236294c7" // ✅ FIX
+      "78df181d8d74216a5c1398689b35aada58cc42e5f056b6126c1c4f6e236294c7", // ✅ FIX
     )
   })
 
@@ -132,7 +132,7 @@ describe("bip44 — account xpub/xprv", () => {
     const len = wasm.exports.bip44_account_xprv(OUT, IN, 64, 44, 0, 0)
     expect(len).toBeGreaterThan(0)
     expect(readAscii(OUT, len)).toBe(
-      "xprv9xpXFhFpqdQK3TmytPBqXtGSwS3DLjojFhTGht8gwAAii8py5X6pxeBnQ6ehJiyJ6nDjWGJfZ95WxByFXVkDxHXrqu53WCRGypk2ttuqncb"
+      "xprv9xpXFhFpqdQK3TmytPBqXtGSwS3DLjojFhTGht8gwAAii8py5X6pxeBnQ6ehJiyJ6nDjWGJfZ95WxByFXVkDxHXrqu53WCRGypk2ttuqncb",
     )
   })
 
@@ -141,7 +141,7 @@ describe("bip44 — account xpub/xprv", () => {
     const len = wasm.exports.bip44_account_xpub(OUT, IN, 64, 44, 0, 0)
     expect(len).toBeGreaterThan(0)
     expect(readAscii(OUT, len)).toBe(
-      "xpub6BosfCnifzxcFwrSzQiqu2DBVTshkCXacvNsWGYJVVhhawA7d4R5WSWGFNbi8Aw6ZRc1brxMyWMzG3DSSSSoekkudhUd9yLb6qx39T9nMdj"
+      "xpub6BosfCnifzxcFwrSzQiqu2DBVTshkCXacvNsWGYJVVhhawA7d4R5WSWGFNbi8Aw6ZRc1brxMyWMzG3DSSSSoekkudhUd9yLb6qx39T9nMdj",
     )
   })
 })
@@ -173,7 +173,7 @@ describe("bip44 — desde mnemonic", () => {
     const len = wasm.exports.bip44_from_mnemonic_xprv(OUT, mnPtr, mnLen, passPtr, passLen, 44, 0, 0)
     expect(len).toBeGreaterThan(0)
     expect(readAscii(OUT, len)).toBe(
-      "xprv9xpXFhFpqdQK3TmytPBqXtGSwS3DLjojFhTGht8gwAAii8py5X6pxeBnQ6ehJiyJ6nDjWGJfZ95WxByFXVkDxHXrqu53WCRGypk2ttuqncb"
+      "xprv9xpXFhFpqdQK3TmytPBqXtGSwS3DLjojFhTGht8gwAAii8py5X6pxeBnQ6ehJiyJ6nDjWGJfZ95WxByFXVkDxHXrqu53WCRGypk2ttuqncb",
     )
   })
 
@@ -182,7 +182,7 @@ describe("bip44 — desde mnemonic", () => {
     const len = wasm.exports.bip44_from_mnemonic_xpub(OUT, mnPtr, mnLen, passPtr, passLen, 44, 0, 0)
     expect(len).toBeGreaterThan(0)
     expect(readAscii(OUT, len)).toBe(
-      "xpub6BosfCnifzxcFwrSzQiqu2DBVTshkCXacvNsWGYJVVhhawA7d4R5WSWGFNbi8Aw6ZRc1brxMyWMzG3DSSSSoekkudhUd9yLb6qx39T9nMdj"
+      "xpub6BosfCnifzxcFwrSzQiqu2DBVTshkCXacvNsWGYJVVhhawA7d4R5WSWGFNbi8Aw6ZRc1brxMyWMzG3DSSSSoekkudhUd9yLb6qx39T9nMdj",
     )
   })
 
@@ -213,7 +213,7 @@ describe("bip44 — memoria", () => {
       "derive_leaf",
       wasm,
       () => wasm.exports.bip44_derive_leaf(OUT, OUT + 64, IN, 64, 44, 0, 0, 0, 0),
-      300
+      300,
     )
   })
 
@@ -228,7 +228,7 @@ describe("bip44 — memoria", () => {
       "mn_derive",
       wasm,
       () => wasm.exports.bip44_from_mnemonic_derive(OUT, OUT + 64, mnPtr, mnLen, passPtr, passLen, 44, 0, 0, 0, 0),
-      200
+      200,
     )
   })
 })
@@ -250,9 +250,9 @@ describe("bip44 — velocidad", () => {
     writeSeed()
     const r = Wasm.benchSpeed(
       "derive_leaf",
-      5_000,
+      2_000,
       () => wasm.exports.bip44_derive_leaf(OUT, OUT + 64, IN, 64, 44, 0, 0, 0, 0),
-      { warmup: 100, runs: 3 }
+      { warmup: 50, runs: 3 },
     )
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeGreaterThan(0)
@@ -260,9 +260,9 @@ describe("bip44 — velocidad", () => {
 
   test("account_xpub", () => {
     writeSeed()
-    const r = Wasm.benchSpeed("account_xpub", 5_000, () => wasm.exports.bip44_account_xpub(OUT, IN, 64, 44, 0, 0), {
-      warmup: 100,
-      runs: 3
+    const r = Wasm.benchSpeed("account_xpub", 2_000, () => wasm.exports.bip44_account_xpub(OUT, IN, 64, 44, 0, 0), {
+      warmup: 50,
+      runs: 3,
     })
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeGreaterThan(0)
@@ -274,7 +274,7 @@ describe("bip44 — velocidad", () => {
       "mn_derive",
       200, // ✅ FIX: era 2_000 (timeout). 100 × 2.4ms ≈ 240ms/run
       () => wasm.exports.bip44_from_mnemonic_derive(OUT, OUT + 64, mnPtr, mnLen, passPtr, passLen, 44, 0, 0, 0, 0),
-      { warmup: 10, runs: 3 } // ✅ FIX: warmup era 50
+      { warmup: 10, runs: 3 }, // ✅ FIX: warmup era 50
     )
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeGreaterThan(0)

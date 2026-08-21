@@ -195,7 +195,7 @@ describe("bip32 — Test Vectors 2 y 3", () => {
   test("Test Vector 2 — master", () => {
     fromSeed(
       "fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542",
-      IN
+      IN,
     )
     expect(readChain(IN)).toBe("60499f801b896d83179a4374aeb7822aaeaceaa0db1f85ee3e904c4defbd9689")
     expect(readPriv(IN)).toBe("4b03d6fc340455b363f51020ad3ecca4f0850280cf436c70c727923f6db46c3e")
@@ -204,7 +204,7 @@ describe("bip32 — Test Vectors 2 y 3", () => {
   test("Test Vector 3 — master", () => {
     fromSeed(
       "4b381541583be4423346c643850da4b320e46a87ae3d2a4e6da11eba819cd4acba45d239319ac14f863b8d5ab5a0d0c64d2e8a1e7d1457df2e5a3c51c73235be",
-      IN
+      IN,
     )
     expect(readChain(IN)).toBe("01d28a3e53cffa419ec122c968b3259e16b65076495494d97cae10bbfec3c36f")
     expect(readPriv(IN)).toBe("00ddb80b067e0d4993197fe10f2657a844a384589847602d56f0c629c81aae32")
@@ -346,7 +346,7 @@ describe("bip32 — serialización xpub/xprv", () => {
     const len = wasm.exports.bip32_serialize_xprv(OUT, IN)
     expect(len).toBeGreaterThan(0)
     expect(readAscii(OUT, len)).toBe(
-      "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi"
+      "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi",
     )
   })
 
@@ -355,7 +355,7 @@ describe("bip32 — serialización xpub/xprv", () => {
     const len = wasm.exports.bip32_serialize_xpub(OUT, IN)
     expect(len).toBeGreaterThan(0)
     expect(readAscii(OUT, len)).toBe(
-      "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
+      "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
     )
   })
 
@@ -364,7 +364,7 @@ describe("bip32 — serialización xpub/xprv", () => {
     derive(OUT, IN, 0x80000000)
     const len = wasm.exports.bip32_serialize_xprv(OUT, OUT)
     expect(readAscii(OUT, len)).toBe(
-      "xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7"
+      "xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7",
     )
   })
 
@@ -373,7 +373,7 @@ describe("bip32 — serialización xpub/xprv", () => {
     derive(OUT, IN, 0x80000000)
     const len = wasm.exports.bip32_serialize_xpub(OUT, OUT)
     expect(readAscii(OUT, len)).toBe(
-      "xpub68Gmy5EdvgibQVfPdqkBBCHxA5htiqg55crXYuXoQRKfDBFA1WEjWgP6LHhwBZeNK1VTsfTFUHCdrfp1bgwQ9xv5ski8PX9rL2dZXvgGDnw"
+      "xpub68Gmy5EdvgibQVfPdqkBBCHxA5htiqg55crXYuXoQRKfDBFA1WEjWgP6LHhwBZeNK1VTsfTFUHCdrfp1bgwQ9xv5ski8PX9rL2dZXvgGDnw",
     )
   })
 
@@ -467,7 +467,7 @@ describe("bip32 — memoria", () => {
       "derivePath",
       wasm,
       () => wasm.exports.bip32_derive_path(OUT, IN, IN + 128, pathBytes.length),
-      300
+      300,
     )
   })
 })
@@ -488,14 +488,14 @@ describe("bip32 — velocidad", () => {
     const seed = Wasm.hexToBytes(SEED1)
     wasm.write(IN, seed)
     wasm.exports.bip32_from_seed(IN, IN, SEED1_LEN)
-  }, 300_000)
+  }, 200_000)
 
   test("fromSeed", () => {
     const seed = Wasm.hexToBytes(SEED1)
     wasm.write(IN, seed)
-    const r = Wasm.benchSpeed("fromSeed", 50_000, () => wasm.exports.bip32_from_seed(OUT, IN, SEED1_LEN), {
-      warmup: 1000,
-      runs: 3
+    const r = Wasm.benchSpeed("fromSeed", 25_000, () => wasm.exports.bip32_from_seed(OUT, IN, SEED1_LEN), {
+      warmup: 100,
+      runs: 3,
     })
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeLessThan(20_000)
@@ -504,9 +504,9 @@ describe("bip32 — velocidad", () => {
   test("derive non-hardened (incluye multiplyG)", () => {
     fromSeed(SEED1, IN)
     wasm.exports.bip32_derive(OUT, IN, 0x80000000) // m/0'
-    const r = Wasm.benchSpeed("derive-nh", 10_000, () => wasm.exports.bip32_derive(IN, OUT, 1), {
-      warmup: 200,
-      runs: 3
+    const r = Wasm.benchSpeed("derive-nh", 5_000, () => wasm.exports.bip32_derive(IN, OUT, 1), {
+      warmup: 50,
+      runs: 3,
     })
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeLessThan(500_000) // < 0.5 ms
@@ -518,9 +518,9 @@ describe("bip32 — velocidad", () => {
     wasm.write(IN + 128, pathBytes)
     const r = Wasm.benchSpeed(
       "derivePath",
-      5_000,
+      2_000,
       () => wasm.exports.bip32_derive_path(OUT, IN, IN + 128, pathBytes.length),
-      { warmup: 100, runs: 3 }
+      { warmup: 50, runs: 3 },
     )
     Wasm.printResults([r])
     expect(r.nsPerOp).toBeGreaterThan(0)

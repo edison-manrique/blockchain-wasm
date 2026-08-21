@@ -1,7 +1,9 @@
 import { describe, test, expect, beforeAll } from "bun:test"
 import { BlockchainWasm, Ecdsa, Schnorr, Secp256k1, SignatureFormat, hexToBytes } from "../../src/index"
+import { join } from "path"
 
-const WASM_PATH = "../../dist/blockchain.wasm" // ajusta
+const WASM_PATH = join(import.meta.dirname, "../../dist/blockchain.wasm")
+
 const PRIV1 = "0000000000000000000000000000000000000000000000000000000000000001"
 const TEXT = "Autorizo esta transacción"
 
@@ -20,7 +22,7 @@ describe("wrapper signTextMessage / verifyTextMessage", () => {
   const formatos = [
     ["Universal", SignatureFormat.Universal],
     ["Bitcoin", SignatureFormat.Bitcoin],
-    ["Ethereum", SignatureFormat.Ethereum]
+    ["Ethereum", SignatureFormat.Ethereum],
   ] as const
 
   for (const [name, fmt] of formatos) {

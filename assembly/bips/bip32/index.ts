@@ -12,7 +12,7 @@
  *   bip32_derive_address(childPtr, parentPtr, purpose, coin, account, change, idx) → i32
  *   bip32_get_pubkey(out33Ptr, xkeyPtr) → i32
  *   bip32_neuter(pubXkeyPtr, privXkeyPtr) → i32
- *   bip32_fingerprint(xkeyPtr) → u32
+ *   bip32_fingerprint(pub33Ptr) → u32
  *
  *   Accessors xkey:
  *   bip32_xkey_depth(ptr) → u32
@@ -49,7 +49,7 @@ export {
   BIP32_ERR_HARDENED_FROM_PUB,
   BIP32_ERR_INVALID_PATH,
   BIP32_ERR_CHILD_INVALID,
-  BIP32_ERR_NOT_PRIVATE
+  BIP32_ERR_NOT_PRIVATE,
 } from "./constants"
 
 // ── Serialización xpub/xprv ───────────────────────────────────────────────
@@ -66,7 +66,7 @@ export {
   bip32_xkey_child_index,
   bip32_xkey_is_private,
   bip32_xkey_chaincode_ptr,
-  bip32_xkey_keydata_ptr
+  bip32_xkey_keydata_ptr,
 } from "./xkey"
 
 // ── Fingerprint (re-export con prefijo) ────────────────────────────────────

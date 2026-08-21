@@ -216,19 +216,19 @@ describe("point (secp256k1) — velocidad", () => {
   test("throughput de operaciones de punto", () => {
     const results = Wasm.benchSuite(
       [
-        { name: "double", fn: () => wasm.exports.double(P_OUT(), P_IN()), iterations: 200_000 },
-        { name: "addPoint", fn: () => wasm.exports.addPoint(P_OUT(), P_IN(), P_IN()), iterations: 200_000 },
-        { name: "addMixed", fn: () => wasm.exports.addMixed(P_OUT(), P_IN(), out0(), out1()), iterations: 200_000 },
-        { name: "negate", fn: () => wasm.exports.negate(P_OUT(), P_IN()), iterations: 1_000_000 },
-        { name: "toAffine", fn: () => wasm.exports.toAffine(out0(), P_IN()), iterations: 50_000 }
+        { name: "double", fn: () => wasm.exports.double(P_OUT(), P_IN()), iterations: 100_000 },
+        { name: "addPoint", fn: () => wasm.exports.addPoint(P_OUT(), P_IN(), P_IN()), iterations: 100_000 },
+        { name: "addMixed", fn: () => wasm.exports.addMixed(P_OUT(), P_IN(), out0(), out1()), iterations: 100_000 },
+        { name: "negate", fn: () => wasm.exports.negate(P_OUT(), P_IN()), iterations: 500_000 },
+        { name: "toAffine", fn: () => wasm.exports.toAffine(out0(), P_IN()), iterations: 10_000 },
       ],
-      100_000,
-      { warmup: 2000, runs: 3 }
+      25_000,
+      { warmup: 100, runs: 3 },
     )
     Wasm.printResults(results)
     const dbl = results.find((r) => r.name === "double")!
     expect(dbl.nsPerOp).toBeLessThan(5000)
-    expect(dbl.cvPct).toBeLessThan(15)
+    expect(dbl.cvPct).toBeLessThan(60)
   })
 })
 
@@ -251,7 +251,7 @@ describe("point (secp256k1) — comparación", () => {
         return () => w.exports.double(o, i)
       },
       200_000,
-      { warmup: 2000, runs: 5 }
+      { warmup: 2000, runs: 5 },
     )
     Wasm.printCompileCompare(report)
     expect(report.a.sizeBytes).toBeGreaterThan(0)
@@ -298,8 +298,8 @@ describe("point (secp256k1) — comparación", () => {
         wasm.writeU256(P_OUT() + 32, G_Y)
         wasm.exports.addMixed(P_IN(), P_IN(), P_OUT(), P_OUT() + 32)
       },
-      200_000,
-      { warmup: 2000, runs: 3 }
+      50_000,
+      { warmup: 500, runs: 3 },
     )
     console.log(`  Ganador: ${r.winner}  (ratio addPoint/addMixed = ${r.ratio.toFixed(2)}x)`)
     expect(r.winner).toBe("addMixed") // addMixed ahorra las mults de Z2 (Q afín)

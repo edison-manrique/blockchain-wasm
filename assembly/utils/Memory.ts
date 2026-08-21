@@ -38,7 +38,7 @@ export const ADDRESS_WORK_SIZE: usize = 1024 // 1 KB   (address BTC/ETH)
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const SCRATCH_SIZE: usize =
-  PARAM_IN_SIZE + PARAM_OUT_SIZE + WORK_SIZE + HASH_WORK_SIZE + BIP32_WORK_SIZE + ADDRESS_WORK_SIZE // 72192
+  PARAM_IN_SIZE + PARAM_OUT_SIZE + WORK_SIZE + HASH_WORK_SIZE + BIP32_WORK_SIZE + ADDRESS_WORK_SIZE // 79360
 
 const SCRATCH_BASE: usize = memory.data(<i32>SCRATCH_SIZE, 16)
 

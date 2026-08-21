@@ -29,10 +29,13 @@ export { PARAM_IN_PTR, PARAM_OUT_PTR, ADDRESS_WORK_PTR } from "../utils/memory"
 export { ADDR_OK, ADDR_ERR_PUBKEY, ADDR_ERR_CONVERT, VER_P2PKH, VER_P2SH } from "./constants"
 
 // ── Direcciones Bitcoin ───────────────────────────────────────────────────
-export { btc_p2pkh, btc_p2sh_p2wpkh, btc_p2wpkh, btc_p2tr } from "./btc"
+export { btc_p2pkh, btc_p2sh_p2wpkh, btc_p2wpkh, btc_p2tr, btc_p2pkh_uncompressed } from "./btc"
 
 // ── Dirección Ethereum ────────────────────────────────────────────────────
 export { eth_address } from "./eth"
+
+// ── Dirección Tron ─────────────────────────────────────────────────────────
+export { tron_address } from "./tron"
 
 // ── Utilidades de clave pública (re-export desde el módulo compartido) ────
 export { pubkeyFromPrivkey, pubkeyUncompressedFromPrivkey, compressRaw, uncompressRaw } from "../utils/pubkey"

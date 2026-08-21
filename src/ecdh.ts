@@ -8,7 +8,7 @@
  */
 import { BlockchainWasm } from "./blockchain-wasm"
 import { InvalidArgumentError } from "./errors"
-import { PRIVKEY_BYTES, PUBKEY_COMPRESSED_BYTES, PUBKEY_UNCOMPRESSED_BYTES } from "./types"
+import { isValidPrivateKey, PRIVKEY_BYTES, PUBKEY_COMPRESSED_BYTES, PUBKEY_UNCOMPRESSED_BYTES } from "./types"
 
 export class Ecdh {
   private constructor() {}
@@ -20,6 +20,9 @@ export class Ecdh {
     }
     if (publicKey.length !== PUBKEY_COMPRESSED_BYTES && publicKey.length !== PUBKEY_UNCOMPRESSED_BYTES) {
       throw new InvalidArgumentError("publicKey debe ser 33 o 65 bytes", "ecdh")
+    }
+    if (!isValidPrivateKey(privateKey)) {
+      throw new InvalidArgumentError("privateKey fuera de rango (0 o ≥ N)", "<modulo>")
     }
     return BlockchainWasm.getInstance().ecdhSharedSecret(privateKey, publicKey)
   }

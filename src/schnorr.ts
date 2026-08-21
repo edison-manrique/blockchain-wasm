@@ -12,7 +12,7 @@
  */
 import { BlockchainWasm } from "./blockchain-wasm"
 import { InvalidArgumentError } from "./errors"
-import { PRIVKEY_BYTES, XONLY_BYTES, SIG_BYTES, HALF_ZONE, toUint8Array } from "./types"
+import { PRIVKEY_BYTES, XONLY_BYTES, SIG_BYTES, HALF_ZONE, toUint8Array, isValidPrivateKey } from "./types"
 
 const MAX_AGG = 128 // 128 * 32 = 4096 = PARAM_IN
 
@@ -26,6 +26,9 @@ export class Schnorr {
   /** x-only pubkey (32 B) desde clave privada. */
   static getPublicKey(privateKey: Uint8Array): Uint8Array {
     if (privateKey.length !== PRIVKEY_BYTES) throw new InvalidArgumentError("privateKey debe ser 32 bytes", "schnorr")
+    if (!isValidPrivateKey(privateKey)) {
+      throw new InvalidArgumentError("privateKey fuera de rango (0 o ≥ N)", "<modulo>")
+    }
     return BlockchainWasm.getInstance().schnorrGetPubkey(privateKey)
   }
 
@@ -34,6 +37,9 @@ export class Schnorr {
     if (privateKey.length !== PRIVKEY_BYTES) throw new InvalidArgumentError("privateKey debe ser 32 bytes", "schnorr")
     if (message.length === 0 || message.length > HALF_ZONE) {
       throw new InvalidArgumentError(`message debe ser 1..${HALF_ZONE} bytes`, "schnorr")
+    }
+    if (!isValidPrivateKey(privateKey)) {
+      throw new InvalidArgumentError("privateKey fuera de rango (0 o ≥ N)", "<modulo>")
     }
     if (auxRand !== undefined && auxRand.length !== 32)
       throw new InvalidArgumentError("auxRand debe ser 32 bytes", "schnorr")
@@ -66,6 +72,9 @@ export class Schnorr {
     for (let i = 0; i < privateKeys.length; i++) {
       if (privateKeys[i].length !== PRIVKEY_BYTES)
         throw new InvalidArgumentError("cada privateKey debe ser 32 bytes", "schnorr")
+      if (!isValidPrivateKey(privateKeys[i]))
+        // ✅ FIX E6
+        throw new InvalidArgumentError(`privateKeys[${i}] fuera de rango (0 o ≥ N)`, "schnorr")
     }
     return BlockchainWasm.getInstance().schnorrAggregatePrivkeys(privateKeys)
   }

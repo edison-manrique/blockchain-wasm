@@ -9,7 +9,7 @@
  */
 import { BlockchainWasm } from "./blockchain-wasm"
 import { InvalidArgumentError } from "./errors"
-import { SEED_BYTES } from "./types"
+import { MAX_PASSPHRASE_BYTES, SEED_BYTES, toUint8Array } from "./types"
 
 export interface Bip44Leaf {
   privateKey: Uint8Array
@@ -23,12 +23,18 @@ export class Bip44 {
   static readonly PURPOSE = 44
   static readonly COIN_BTC = 0
   static readonly COIN_ETH = 60
+  static readonly COIN_TRON = 195 // m/44'/195'/0'/0/0
 
   private static assertSeed(seed: Uint8Array): void {
     if (seed.length !== SEED_BYTES) throw new InvalidArgumentError("seed debe ser 64 bytes (BIP39)", "bip44")
   }
   private static assertMnemonic(mnemonic: string): void {
     if (mnemonic.length === 0) throw new InvalidArgumentError("mnemonic no puede estar vacío", "bip44")
+  }
+  private static assertPassphrase(passphrase: string): void {
+    if (toUint8Array(passphrase).length > MAX_PASSPHRASE_BYTES) {
+      throw new InvalidArgumentError(`passphrase > ${MAX_PASSPHRASE_BYTES} bytes UTF-8`, "bip44")
+    }
   }
 
   static derivePrivateKey(
@@ -37,7 +43,7 @@ export class Bip44 {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number
+    addressIndex: number,
   ): Uint8Array {
     Bip44.assertSeed(seed)
     return BlockchainWasm.getInstance().bip44DerivePrivkey(seed, purpose, coinType, account, change, addressIndex)
@@ -48,7 +54,7 @@ export class Bip44 {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number
+    addressIndex: number,
   ): Uint8Array {
     Bip44.assertSeed(seed)
     return BlockchainWasm.getInstance().bip44DerivePubkey(seed, purpose, coinType, account, change, addressIndex)
@@ -59,7 +65,7 @@ export class Bip44 {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number
+    addressIndex: number,
   ): Bip44Leaf {
     Bip44.assertSeed(seed)
     return BlockchainWasm.getInstance().bip44DeriveLeaf(seed, purpose, coinType, account, change, addressIndex)
@@ -81,9 +87,10 @@ export class Bip44 {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number
+    addressIndex: number,
   ): Bip44Leaf {
     Bip44.assertMnemonic(mnemonic)
+    Bip44.assertPassphrase(passphrase)
     return BlockchainWasm.getInstance().bip44FromMnemonicDerive(
       mnemonic,
       passphrase,
@@ -91,7 +98,7 @@ export class Bip44 {
       coinType,
       account,
       change,
-      addressIndex
+      addressIndex,
     )
   }
   static fromMnemonicXpub(
@@ -99,9 +106,10 @@ export class Bip44 {
     passphrase: string,
     purpose: number,
     coinType: number,
-    account: number
+    account: number,
   ): string {
     Bip44.assertMnemonic(mnemonic)
+    Bip44.assertPassphrase(passphrase)
     return BlockchainWasm.getInstance().bip44FromMnemonicXpub(mnemonic, passphrase, purpose, coinType, account)
   }
   static fromMnemonicXprv(
@@ -109,9 +117,10 @@ export class Bip44 {
     passphrase: string,
     purpose: number,
     coinType: number,
-    account: number
+    account: number,
   ): string {
     Bip44.assertMnemonic(mnemonic)
+    Bip44.assertPassphrase(passphrase)
     return BlockchainWasm.getInstance().bip44FromMnemonicXprv(mnemonic, passphrase, purpose, coinType, account)
   }
 }

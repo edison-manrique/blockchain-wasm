@@ -8,7 +8,7 @@
  */
 import { BlockchainWasm } from "./blockchain-wasm"
 import { InvalidArgumentError } from "./errors"
-import { PRIVKEY_BYTES, PUBKEY_COMPRESSED_BYTES, PUBKEY_UNCOMPRESSED_BYTES } from "./types"
+import { isValidPrivateKey, PRIVKEY_BYTES, PUBKEY_COMPRESSED_BYTES, PUBKEY_UNCOMPRESSED_BYTES } from "./types"
 
 export class Secp256k1 {
   private constructor() {}
@@ -17,6 +17,9 @@ export class Secp256k1 {
   static getPublicKey(privateKey: Uint8Array, compressed = true): Uint8Array {
     if (privateKey.length !== PRIVKEY_BYTES) {
       throw new InvalidArgumentError("privateKey debe ser 32 bytes", "secp256k1")
+    }
+    if (!isValidPrivateKey(privateKey)) {
+      throw new InvalidArgumentError("privateKey fuera de rango (0 o ≥ N)", "<modulo>")
     }
     return BlockchainWasm.getInstance().getPublicKey(privateKey, compressed)
   }

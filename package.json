@@ -1,6 +1,6 @@
 {
   "name": "blockchain-wasm",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Motor criptográfico zero-alloc para wallets Bitcoin y Ethereum: un único binario WebAssembly (AssemblyScript) con un wrapper TypeScript ergonómico de clases de dominio. secp256k1, BIP-32/39/44, Schnorr (BIP-340), ECDSA, ECDH, direcciones P2PKH/P2SH-P2WPKH/P2TR/ETH, WIF y PBKDF2 — sin heap, sin memory.grow, isomórfico (Node, Bun, Deno y navegador).",
   "author": "Edison Manrique",
   "license": "Apache-2.0",
@@ -18,11 +18,13 @@
     "dist"
   ],
   "scripts": {
-    "clean": "rimraf dist",
+    "clean": "bun -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "asbuild": "asc assembly/index.ts --target release",
-    "tsbuild": "esbuild src/index.ts --format=esm --bundle --minify --platform=browser --outfile=dist/index.js && tsc --emitDeclarationOnly",
-    "build": "npm run asbuild && npm run tsbuild",
-    "prepublishOnly": "npm run build"
+    "tsbuild": "esbuild src/index.ts --outfile=dist/index.js --format=esm --platform=browser --bundle --minify && tsc --emitDeclarationOnly",
+    "release": "npm run asbuild && npm run tsbuild",
+    "prepublishOnly": "npm run release",
+    "pack": "npm pack --dry-run",
+    "publish": "npm publish --access public"
   },
   "keywords": [
     "wasm",

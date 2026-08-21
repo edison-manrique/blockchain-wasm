@@ -3,15 +3,21 @@
  *  address.ts — class Address (fachada estática de dominio, mainnet)
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * Direcciones Bitcoin (P2PKH / P2SH‑P2WPKH / P2WPKH / P2TR) y Ethereum.
- * Mainnet únicamente (prefijos hardcodeados en el WASM). Valida la frontera
- * (longitud de pubkey) y delega en BlockchainWasm.getInstance().
+ * Direcciones Bitcoin (P2PKH / P2PKH‑uncompressed / P2SH‑P2WPKH / P2WPKH /
+ * P2TR), Ethereum y Tron. Mainnet únicamente (prefijos hardcodeados en el
+ * WASM). Valida la frontera (longitudes, rango de privkey) y delega en
+ * BlockchainWasm.getInstance().
  */
 import { BlockchainWasm } from "./blockchain-wasm"
 import { InvalidArgumentError } from "./errors"
-import { PRIVKEY_BYTES, PUBKEY_COMPRESSED_BYTES, PUBKEY_UNCOMPRESSED_BYTES } from "./types"
+import {
+  PRIVKEY_BYTES,
+  PUBKEY_COMPRESSED_BYTES,
+  PUBKEY_UNCOMPRESSED_BYTES,
+  isValidPrivateKey
+} from "./types"
 
-export type AddressType = "p2pkh" | "p2sh-p2wpkh" | "p2wpkh" | "p2tr" | "eth"
+export type AddressType = "p2pkh" | "p2pkh-uncompressed" | "p2sh-p2wpkh" | "p2wpkh" | "p2tr" | "eth" | "tron"
 
 function assertPubkey(publicKey: Uint8Array): void {
   if (publicKey.length !== PUBKEY_COMPRESSED_BYTES && publicKey.length !== PUBKEY_UNCOMPRESSED_BYTES) {
@@ -26,30 +32,53 @@ export class Address {
     assertPubkey(publicKey)
     return BlockchainWasm.getInstance().btcP2pkh(publicKey)
   }
+
+  /** P2PKH legacy desde pubkey SIN COMPRIMIR (65 B obligatorio). */
+  static p2pkhUncompressed(publicKey: Uint8Array): string {
+    if (publicKey.length !== PUBKEY_UNCOMPRESSED_BYTES) {
+      throw new InvalidArgumentError("publicKey debe ser 65 bytes (uncompressed)", "address")
+    }
+    return BlockchainWasm.getInstance().btcP2pkhUncompressed(publicKey)
+  }
+
   static p2shP2wpkh(publicKey: Uint8Array): string {
     assertPubkey(publicKey)
     return BlockchainWasm.getInstance().btcP2shP2wpkh(publicKey)
   }
+
   static p2wpkh(publicKey: Uint8Array): string {
     assertPubkey(publicKey)
     return BlockchainWasm.getInstance().btcP2wpkh(publicKey)
   }
+
   static p2tr(publicKey: Uint8Array): string {
     assertPubkey(publicKey)
     return BlockchainWasm.getInstance().btcP2tr(publicKey)
   }
+
   static eth(publicKey: Uint8Array): string {
     assertPubkey(publicKey)
     return BlockchainWasm.getInstance().ethAddress(publicKey)
   }
 
+  /** Dirección Tron (TRX) — Keccak256 + Base58Check con prefijo 0x41. */
+  static tron(publicKey: Uint8Array): string {
+    assertPubkey(publicKey)
+    return BlockchainWasm.getInstance().tronAddress(publicKey)
+  }
+
   /** Conveniencia: priv → pubkey → dirección del tipo pedido. */
   static fromPrivateKey(privateKey: Uint8Array, type: AddressType, compressed = true): string {
     if (privateKey.length !== PRIVKEY_BYTES) throw new InvalidArgumentError("privateKey debe ser 32 bytes", "address")
-    const pub = BlockchainWasm.getInstance().getPublicKey(privateKey, compressed)
+    if (!isValidPrivateKey(privateKey)) throw new InvalidArgumentError("privateKey fuera de rango (0 o ≥ N)", "address")
+    // p2pkh-uncompressed y tron SIEMPRE usan pubkey uncompressed (65 B)
+    const useCompressed = type !== "p2pkh-uncompressed" && type !== "tron" && compressed
+    const pub = BlockchainWasm.getInstance().getPublicKey(privateKey, useCompressed)
     switch (type) {
       case "p2pkh":
         return BlockchainWasm.getInstance().btcP2pkh(pub)
+      case "p2pkh-uncompressed":
+        return BlockchainWasm.getInstance().btcP2pkhUncompressed(pub)
       case "p2sh-p2wpkh":
         return BlockchainWasm.getInstance().btcP2shP2wpkh(pub)
       case "p2wpkh":
@@ -58,6 +87,9 @@ export class Address {
         return BlockchainWasm.getInstance().btcP2tr(pub)
       case "eth":
         return BlockchainWasm.getInstance().ethAddress(pub)
+      case "tron":
+        return BlockchainWasm.getInstance().tronAddress(pub)
     }
+    // ✅ switch exhaustivo sobre la unión → ts(2366) resuelto
   }
 }

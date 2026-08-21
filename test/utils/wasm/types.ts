@@ -116,8 +116,8 @@ export interface WasmInstance<T = Record<string, any>> {
   readonly u8: Uint8Array
   syncViews(): void
   num(name: keyof T | string): number
-  write(ptr: number, bytes: Uint8Array): void
-  read(ptr: number, len: number): Uint8Array
+  write(ptr: number, bytes: Uint8Array, offset?: number): void
+  read(ptr: number, len: number, offset?: number): Uint8Array
   writeU256(ptr: number, value: bigint): void
   readU256(ptr: number): bigint
   memoryPages(): number

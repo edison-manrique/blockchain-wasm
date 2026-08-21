@@ -17,7 +17,8 @@ import {
   HASH_BYTES,
   SIG_BYTES,
   HALF_ZONE,
-  toUint8Array
+  toUint8Array,
+  isValidPrivateKey,
 } from "./types"
 import type { EcdsaSignature } from "./types"
 
@@ -32,6 +33,8 @@ function normalizeSig(sig: EcdsaSignature | Uint8Array): Uint8Array {
     if (sig.length !== SIG_BYTES) throw new InvalidArgumentError("signature debe ser 64 bytes", "ecdsa")
     return sig
   }
+  if (sig.r.length !== 32) throw new InvalidArgumentError("signature.r debe ser 32 bytes", "ecdsa")
+  if (sig.s.length !== 32) throw new InvalidArgumentError("signature.s debe ser 32 bytes", "ecdsa")
   const out = new Uint8Array(SIG_BYTES)
   out.set(sig.r, 0)
   out.set(sig.s, 32)
@@ -45,6 +48,9 @@ export class Ecdsa {
   static sign(hash: Uint8Array, privateKey: Uint8Array): EcdsaSignature {
     if (hash.length !== HASH_BYTES) throw new InvalidArgumentError("hash debe ser 32 bytes", "ecdsa")
     if (privateKey.length !== PRIVKEY_BYTES) throw new InvalidArgumentError("privateKey debe ser 32 bytes", "ecdsa")
+    if (!isValidPrivateKey(privateKey)) {
+      throw new InvalidArgumentError("privateKey fuera de rango (0 o ≥ N)", "<modulo>")
+    }
     return BlockchainWasm.getInstance().ecdsaSign(hash, privateKey)
   }
 
@@ -69,11 +75,14 @@ export class Ecdsa {
   static signMessage(
     message: Uint8Array,
     privateKey: Uint8Array,
-    format: number = SignatureFormat.Universal
+    format: number = SignatureFormat.Universal,
   ): EcdsaSignature {
     if (privateKey.length !== PRIVKEY_BYTES) throw new InvalidArgumentError("privateKey debe ser 32 bytes", "ecdsa")
     if (message.length === 0 || message.length > HALF_ZONE) {
       throw new InvalidArgumentError(`message debe ser 1..${HALF_ZONE} bytes`, "ecdsa")
+    }
+    if (!isValidPrivateKey(privateKey)) {
+      throw new InvalidArgumentError("privateKey fuera de rango (0 o ≥ N)", "<modulo>")
     }
     return BlockchainWasm.getInstance().ecdsaSignMessage(message, privateKey, format)
   }
@@ -83,7 +92,7 @@ export class Ecdsa {
     message: Uint8Array,
     signature: EcdsaSignature | Uint8Array,
     publicKey: Uint8Array,
-    format: number = SignatureFormat.Universal
+    format: number = SignatureFormat.Universal,
   ): boolean {
     if (publicKey.length !== PUBKEY_COMPRESSED_BYTES && publicKey.length !== PUBKEY_UNCOMPRESSED_BYTES) {
       throw new InvalidArgumentError("publicKey debe ser 33 o 65 bytes", "ecdsa")
@@ -96,7 +105,7 @@ export class Ecdsa {
   static signTextMessage(
     text: string,
     privateKey: Uint8Array,
-    format: number = SignatureFormat.Universal
+    format: number = SignatureFormat.Universal,
   ): EcdsaSignature {
     return Ecdsa.signMessage(toUint8Array(text), privateKey, format)
   }
@@ -106,7 +115,7 @@ export class Ecdsa {
     text: string,
     signature: EcdsaSignature | Uint8Array,
     publicKey: Uint8Array,
-    format: number = SignatureFormat.Universal
+    format: number = SignatureFormat.Universal,
   ): boolean {
     return Ecdsa.verifyMessage(toUint8Array(text), signature, publicKey, format)
   }

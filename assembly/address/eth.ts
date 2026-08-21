@@ -11,27 +11,51 @@
  * Acepta pubkey uncompressed (64 B / 65 B con 0x04) o compressed (33 B, que se
  * descomprime internamente). Escribe "0x…" (42 B ASCII) en outPtr.
  */
-import { ADDRESS_WORK_PTR, align8 } from "../utils/memory"
+
+import { ADDRESS_WORK_PTR, align8, Memory } from "../utils/memory"
+import { uncompressRaw, isOnCurveXY } from "../utils/pubkey"
 import { keccak256_hash_raw } from "../hash/keccak256"
-import { uncompressRaw } from "../utils/pubkey"
+import { fromBytesPtr } from "../secp256k1/field"
 import { AW_SHA256_TMP, AW_TWEAK, AW_ETH_HEX, AW_ETH_UNCOMP, ADDR_ERR_PUBKEY } from "./constants"
 
 // "0123456789abcdef"
 const HEX_LO: StaticArray<u8> = [
-  0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66
+  0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
 ]
+
+/**
+ * Valida Y² ≡ X³+7 (mod P) para 64 bytes X‖Y en big-endian.
+ * Zero-alloc: limbs temporales en CRYPTO_WORK (disjunto de ADDRESS/HASH_WORK).
+ */
+// @ts-ignore
+@inline
+function validateXY(xy64: usize): bool {
+  const ctx = Memory.save()
+  const x = Memory.alloc(32)
+  const y = Memory.alloc(32)
+  fromBytesPtr(x, xy64)      // X (BE → limbs)
+  fromBytesPtr(y, xy64 + 32) // Y (BE → limbs)
+  const ok: bool = isOnCurveXY(x, y)
+  Memory.restore(ctx)
+  return ok
+}
 
 export function eth_address(outPtr: usize, pubPtr: usize, pubLen: u32): i32 {
   const work = align8(ADDRESS_WORK_PTR)
 
-  // 1. pureKey = 64 bytes de pubkey sin prefijo
+  // 1. pureKey = 64 bytes de pubkey sin prefijo, VALIDADA en la curva
   let pureKeyPtr: usize
   if (pubLen == 65 && load<u8>(pubPtr) == 0x04) {
+    // ✅ FIX (BLOQUE 3): validar (X, Y) antes de hashear
+    if (!validateXY(pubPtr + 1)) return ADDR_ERR_PUBKEY
     pureKeyPtr = pubPtr + 1
   } else if (pubLen == 64) {
+    // ✅ FIX (BLOQUE 3): formato raw X‖Y también se valida
+    if (!validateXY(pubPtr)) return ADDR_ERR_PUBKEY
     pureKeyPtr = pubPtr
   } else if (pubLen == 33) {
     // compressed → descomprimir a AW_ETH_UNCOMP y usar +1
+    // (uncompressRaw ya valida prefijo + curva desde el BLOQUE 1)
     if (uncompressRaw(work + AW_ETH_UNCOMP, pubPtr) < 0) return ADDR_ERR_PUBKEY
     pureKeyPtr = work + AW_ETH_UNCOMP + 1
   } else {
@@ -63,6 +87,5 @@ export function eth_address(outPtr: usize, pubPtr: usize, pubLen: u32): i32 {
     }
     store<u8>(outPtr + 2 + i, c)
   }
-
   return 42
 }

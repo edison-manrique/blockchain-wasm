@@ -37,65 +37,14 @@ export { PARAM_IN_PTR, PARAM_OUT_PTR }
 // ═══════════════════════════════════════════════════════════════════════════
 
 /** Alfabeto Base58 (Bitcoin): "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz" */
+// prettier-ignore
 const ALPHABET: StaticArray<u8> = [
-  0x31,
-  0x32,
-  0x33,
-  0x34,
-  0x35,
-  0x36,
-  0x37,
-  0x38,
-  0x39, // 1-9
-  0x41,
-  0x42,
-  0x43,
-  0x44,
-  0x45,
-  0x46,
-  0x47,
-  0x48, // A-H
-  0x4a,
-  0x4b,
-  0x4c,
-  0x4d,
-  0x4e, // J-N
-  0x50,
-  0x51,
-  0x52,
-  0x53,
-  0x54,
-  0x55,
-  0x56,
-  0x57,
-  0x58,
-  0x59,
-  0x5a, // P-Z
-  0x61,
-  0x62,
-  0x63,
-  0x64,
-  0x65,
-  0x66,
-  0x67,
-  0x68,
-  0x69,
-  0x6a,
-  0x6b, // a-k
-  0x6d,
-  0x6e,
-  0x6f,
-  0x70,
-  0x71,
-  0x72,
-  0x73,
-  0x74,
-  0x75,
-  0x76,
-  0x77,
-  0x78,
-  0x79,
-  0x7a // m-z
+  0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, // 1-9
+  0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48,       // A-H
+  0x4a, 0x4b, 0x4c, 0x4d, 0x4e,                         // J-N
+  0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, // P-Z
+  0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, // a-k
+  0x6d, 0x6e, 0x6f, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a // m-z
 ]
 
 /**
@@ -103,135 +52,16 @@ const ALPHABET: StaticArray<u8> = [
  * 128 entradas (ASCII completo). Generada con:
  *   for i in range(128): table[i] = ALPHABET.index(chr(i)) if chr(i) in ALPHABET else 255
  */
+// prettier-ignore
 const CHAR_TO_IDX: StaticArray<u8> = [
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255, // 0x00-0x0F
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255, // 0x10-0x1F
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255, // 0x20-0x2F
-  255,
-  0,
-  1,
-  2,
-  3,
-  4,
-  5,
-  6,
-  7,
-  8,
-  255,
-  255,
-  255,
-  255,
-  255,
-  255, // 0x30-0x3F ✅ FIX
-  255,
-  9,
-  10,
-  11,
-  12,
-  13,
-  14,
-  15,
-  16,
-  255,
-  17,
-  18,
-  19,
-  20,
-  21,
-  255, // 0x40-0x4F
-  22,
-  23,
-  24,
-  25,
-  26,
-  27,
-  28,
-  29,
-  30,
-  31,
-  32,
-  255,
-  255,
-  255,
-  255,
-  255, // 0x50-0x5F
-  255,
-  33,
-  34,
-  35,
-  36,
-  37,
-  38,
-  39,
-  40,
-  41,
-  42,
-  43,
-  255,
-  44,
-  45,
-  46, // 0x60-0x6F
-  47,
-  48,
-  49,
-  50,
-  51,
-  52,
-  53,
-  54,
-  55,
-  56,
-  57,
-  255,
-  255,
-  255,
-  255,
-  255 // 0x70-0x7F
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0x00-0x0F
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0x10-0x1F
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // 0x20-0x2F
+  255,   0,   1,   2,   3,   4,   5,   6,   7,   8, 255, 255, 255, 255, 255, 255, // 0x30-0x3F ✅ FIX
+  255,   9,  10,  11,  12,  13,  14,  15,  16, 255,  17,  18,  19,  20,  21, 255, // 0x40-0x4F
+   22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  32, 255, 255, 255, 255, 255, // 0x50-0x5F
+  255,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43, 255,  44,  45,  46, // 0x60-0x6F
+   47,  48,  49,  50,  51,  52,  53,  54,  55,  56,  57, 255, 255, 255, 255, 255  // 0x70-0x7F
 ]
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -367,78 +197,25 @@ export function base58_decode_raw(outPtr: usize, srcIdxPtr: usize, srcLen: u32):
 /**
  * [BASE58CHECK ENCODE] payload ‖ checksum(4 B) → índices base58.
  * checksum = SHA256(SHA256(payload))[0..4].
- * Retorna el número de índices escritos.
- * El caller reserva outIdxPtr con tamaño ≥ (payloadLen + 4) * 138/100 + 1.
  *
- * NOTA: usa HASH_WORK para el buffer temporal Y sha256_hash_raw también usa
- * HASH_WORK. Es seguro porque:
- *   1) Copiamos payload a outIdxPtr+offset como buffer temporal (NO en HASH_WORK).
- *   2) sha256_hash_raw usa HASH_WORK internamente (layout fijo del sha2).
- *   3) Después del hash, leemos el resultado y construimos el buffer final.
- *   → Nunca hay solape temporal.
+ * Layout seguro en HASH_WORK (sin solape con el work buffer del encode):
+ *   [0..255]   b58 work buffer (usado por base58_encode_raw)
+ *   [256..287] hash1 (32 B)
+ *   [288..319] hash2 (32 B)
+ *   [320..320+payloadLen+3] payload + checksum (leído por base58_encode_raw)
+ *
+ * Para payloads ≤ 185 B: size ≤ 256, así b58 nunca pisa [256..].
  */
 export function base58check_encode_raw(outIdxPtr: usize, payloadPtr: usize, payloadLen: u32): u32 {
   const scratch = align8(HASH_WORK_PTR)
-  const hash1 = scratch + 256 // [256..287]
-  const hash2 = scratch + 288 // [288..319]
-
-  // Buffer temporal: payload ‖ checksum. Lo construimos en el work buffer.
-  const buf = scratch // [0..255] — suficiente para payload ≤ 252 B
-  memory.copy(buf, payloadPtr, payloadLen)
-
-  // double-SHA256
+  const hash1 = scratch + 256
+  const hash2 = scratch + 288
+  const bufFinal = scratch + 320
+  // Construir payload ‖ checksum en zona segura (no solapa con b58)
+  memory.copy(bufFinal, payloadPtr, payloadLen)
   sha256_hash_raw(hash1, payloadPtr, payloadLen)
   sha256_hash_raw(hash2, hash1, 32)
-
-  // checksum = hash2[0..4]
-  memory.copy(buf + payloadLen, hash2, 4)
-
-  // Base58 encode del buffer completo (payload + 4 bytes checksum)
-  // NOTA: base58_encode_raw usa scratch[0..size] como work buffer,
-  // pero ya terminamos de usar buf. El encode lee de buf y escribe en outIdxPtr.
-  // Como buf ESTÁ en scratch y el encode también usa scratch como work...
-  // → Necesitamos que el encode NO pise buf. Solución: el encode usa scratch
-  //   desde el inicio, y buf también está en scratch. HAY SOLAPE.
-  //
-  // FIX: hacemos el encode pasando buf como srcPtr. El encode primero cuenta
-  // ceros y luego procesa byte a byte. El work buffer (b58) se llena de 0..size.
-  // Si size < payloadLen+4, no pisa los bytes de buf que aún necesita leer.
-  // Pero size = (payloadLen+4)*138/100+1 > payloadLen+4 para payloadLen > 2.
-  // → HAY SOLAPE para inputs > 2 bytes.
-  //
-  // SOLUCIÓN DEFINITIVA: usar outIdxPtr como buffer temporal para el payload+checksum
-  // (el caller lo reserva con tamaño suficiente), y luego hacer encode in-place.
-  // O mejor: copiar payload+checksum a una zona que NO sea scratch.
-  //
-  // La solución más limpia: usar PARAM_IN_PTR como buffer temporal (el caller
-  // ya no lo necesita en este punto), o simplemente hacer el encode directamente
-  // desde payloadPtr + un buffer de 4 bytes separado.
-  //
-  // MEJOR SOLUCIÓN: el encode acepta srcPtr separado. Hacemos:
-  //   1) encode de payloadPtr[0..payloadLen) → outIdxPtr (parcial)
-  //   2) Pero base58 no es concatenativo (no se puede encode por partes).
-  //
-  // SOLUCIÓN FINAL: usar el work buffer DESPUÉS del encode.
-  // El encode lee todo srcPtr primero (byte a byte en el loop), y el work buffer
-  // se usa ACUMULATIVAMENTE. Si ponemos buf al FINAL del work buffer (offset 256-4=252
-  // para un payload de 21+4=25 bytes), no hay solape con el b58 que crece desde 0.
-  //
-  // En la práctica: para Base58Check de direcciones Bitcoin (21 bytes payload + 4 = 25 bytes),
-  // size = 25*138/100+1 = 35. El b58 ocupa [0..34]. buf en [256..280]. NO hay solape. ✓
-  // Para payloads ≤ 185 bytes: size ≤ 256. buf en [256..]. NO hay solape. ✓
-
-  // Re-ubicar buf al final del work buffer para evitar solape con b58
-  const bufSafe = scratch + 256 // después del work buffer de 256 B del encode
-  // Pero hash1/hash2 están en 256/288... los reubicamos:
-  // Layout seguro:
-  //   [0..255]   b58 work buffer (para encode)
-  //   [256..287] hash1
-  //   [288..319] hash2
-  //   [320..320+payloadLen+3] buf (payload + checksum)
-  const bufFinal = scratch + 320
-  memory.copy(bufFinal, payloadPtr, payloadLen)
   memory.copy(bufFinal + payloadLen, hash2, 4)
-
   return base58_encode_raw(outIdxPtr, bufFinal, payloadLen + 4)
 }
 

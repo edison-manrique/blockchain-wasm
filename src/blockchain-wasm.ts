@@ -68,11 +68,17 @@ export class BlockchainWasm {
   }
 
   private static buildImports(imports: WebAssembly.Imports): WebAssembly.Imports {
-    const defaultImports = { env: { abort() {} } }
+    const defaultImports = {
+      env: {
+        abort(msg: number, file: number, line: number, col: number): never {
+          throw new WasmError(`trap at ${file}:${line}:${col}`, "runtime", "TRAP")
+        },
+      },
+    }
     return {
       ...defaultImports,
       ...imports,
-      env: { ...defaultImports.env, ...((imports.env as Record<string, unknown>) || {}) }
+      env: { ...defaultImports.env, ...((imports.env as Record<string, unknown>) || {}) },
     }
   }
 
@@ -96,7 +102,7 @@ export class BlockchainWasm {
 
   static async fromBuffer(
     buffer: ArrayBuffer | Uint8Array,
-    imports: WebAssembly.Imports = {}
+    imports: WebAssembly.Imports = {},
   ): Promise<BlockchainWasm> {
     const finalImports = BlockchainWasm.buildImports(imports)
     const buf = (
@@ -157,7 +163,7 @@ export class BlockchainWasm {
     heap.copyWithin(aux + 1, a.inPtr + 1, a.inPtr + 33) // X → aux
     if (this.exp.uncompressRaw(a.outPtr, aux) < 0) return false
     for (let i = 0; i < 32; i++) {
-      if (heap[a.outPtr + 32 + i] !== heap[a.inPtr + 32 + i]) return false // Y levantada ≠ Y dada
+      if (heap[a.outPtr + 33 + i] !== heap[a.inPtr + 33 + i]) return false // Y levantada ≠ Y dada
     }
     return true
   }
@@ -225,6 +231,23 @@ export class BlockchainWasm {
     return _dec.decode(a.readOutput(len))
   }
 
+  btcP2pkhUncompressed(publicKey: Uint8Array): string {
+    const a = this.allocator
+    a.writeInput(publicKey, 0)
+    const len = this.exp.btc_p2pkh_uncompressed(a.outPtr, a.inPtr, publicKey.length)
+    if (len < 0)
+      throw new WasmError("publicKey inválida para P2PKH uncompressed (debe ser 65 B con 0x04)", "address", len)
+    return _dec.decode(a.readOutput(len))
+  }
+
+  tronAddress(publicKey: Uint8Array): string {
+    const a = this.allocator
+    a.writeInput(publicKey, 0)
+    const len = this.exp.tron_address(a.outPtr, a.inPtr, publicKey.length)
+    if (len < 0) throw new WasmError("publicKey inválida para Tron", "address", len)
+    return _dec.decode(a.readOutput(len))
+  }
+
   // ── PBKDF2 (bajo nivel) ─────────────────────────────────────────────────
 
   pbkdf2Sha512(password: Uint8Array, salt: Uint8Array, iterations: number, dkLen: number): Uint8Array {
@@ -279,7 +302,7 @@ export class BlockchainWasm {
         a.inPtr + HALF_ZONE,
         message.length,
         a.inPtr + 64,
-        publicKey.length
+        publicKey.length,
       ) !== 0
     )
   }
@@ -315,7 +338,7 @@ export class BlockchainWasm {
     return {
       r: heap.slice(a.outPtr, a.outPtr + 32),
       s: heap.slice(a.outPtr + 32, a.outPtr + 64),
-      v: heap[a.outPtr + 64]
+      v: heap[a.outPtr + 64],
     }
   }
 
@@ -347,7 +370,7 @@ export class BlockchainWasm {
     return {
       r: heap.slice(a.outPtr, a.outPtr + 32),
       s: heap.slice(a.outPtr + 32, a.outPtr + 64),
-      v: heap[a.outPtr + 64]
+      v: heap[a.outPtr + 64],
     }
   }
 
@@ -364,7 +387,7 @@ export class BlockchainWasm {
         a.inPtr,
         a.inPtr + 64,
         publicKey.length,
-        format
+        format,
       ) !== 0
     )
   }
@@ -520,7 +543,7 @@ export class BlockchainWasm {
     const a = this.allocator
     a.writeInput(raw, 0)
     this.exp.bip32_get_pubkey(a.outPtr, a.inPtr) // rellena cache interno
-    return this.exp.bip32_fingerprint(a.inPtr) >>> 0
+    return this.exp.bip32_fingerprint(a.outPtr) >>> 0 // <-- CAMBIO: a.outPtr
   }
 
   // ── BIP44 (bajo nivel) ──────────────────────────────────────────────────
@@ -530,7 +553,7 @@ export class BlockchainWasm {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number
+    addressIndex: number,
   ): Uint8Array {
     const a = this.allocator
     a.writeInput(seed, 0)
@@ -542,7 +565,7 @@ export class BlockchainWasm {
       coinType,
       account,
       change,
-      addressIndex
+      addressIndex,
     )
     if (rc < 0) throw new WasmError("BIP44 derivePrivkey falló", "bip44", rc)
     return a.readOutput(32)
@@ -553,7 +576,7 @@ export class BlockchainWasm {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number
+    addressIndex: number,
   ): Uint8Array {
     const a = this.allocator
     a.writeInput(seed, 0)
@@ -565,7 +588,7 @@ export class BlockchainWasm {
       coinType,
       account,
       change,
-      addressIndex
+      addressIndex,
     )
     if (rc < 0) throw new WasmError("BIP44 derivePubkey falló", "bip44", rc)
     return a.readOutput(33)
@@ -577,7 +600,7 @@ export class BlockchainWasm {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number
+    addressIndex: number,
   ): { privateKey: Uint8Array; publicKey: Uint8Array } {
     const a = this.allocator
     a.writeInput(seed, 0)
@@ -590,7 +613,7 @@ export class BlockchainWasm {
       coinType,
       account,
       change,
-      addressIndex
+      addressIndex,
     )
     if (rc < 0) throw new WasmError("BIP44 deriveLeaf falló", "bip44", rc)
     return { privateKey: a.readOutput(32, 0), publicKey: a.readOutput(33, 32) }
@@ -617,7 +640,7 @@ export class BlockchainWasm {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number
+    addressIndex: number,
   ): { privateKey: Uint8Array; publicKey: Uint8Array } {
     const a = this.allocator
     const mnBytes = _enc.encode(mnemonic)
@@ -635,7 +658,7 @@ export class BlockchainWasm {
       coinType,
       account,
       change,
-      addressIndex
+      addressIndex,
     )
     if (rc < 0) throw new WasmError("BIP44 fromMnemonicDerive falló", "bip44", rc)
     return { privateKey: a.readOutput(32, 0), publicKey: a.readOutput(33, 32) }
@@ -645,7 +668,7 @@ export class BlockchainWasm {
     passphrase: string,
     purpose: number,
     coinType: number,
-    account: number
+    account: number,
   ): string {
     const a = this.allocator
     const mnBytes = _enc.encode(mnemonic)
@@ -660,7 +683,7 @@ export class BlockchainWasm {
       passBytes.length,
       purpose,
       coinType,
-      account
+      account,
     )
     if (rc < 0) throw new WasmError("BIP44 fromMnemonicXpub falló", "bip44", rc)
     return _dec.decode(a.readOutput(rc))
@@ -670,7 +693,7 @@ export class BlockchainWasm {
     passphrase: string,
     purpose: number,
     coinType: number,
-    account: number
+    account: number,
   ): string {
     const a = this.allocator
     const mnBytes = _enc.encode(mnemonic)
@@ -685,7 +708,7 @@ export class BlockchainWasm {
       passBytes.length,
       purpose,
       coinType,
-      account
+      account,
     )
     if (rc < 0) throw new WasmError("BIP44 fromMnemonicXprv falló", "bip44", rc)
     return _dec.decode(a.readOutput(rc))

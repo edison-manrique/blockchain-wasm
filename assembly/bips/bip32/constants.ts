@@ -99,6 +99,7 @@ export const BIP32_ERR_HARDENED_FROM_PUB: i32 = -3 // hardened desde xpub
 export const BIP32_ERR_INVALID_PATH: i32 = -4 // path malformado
 export const BIP32_ERR_CHILD_INVALID: i32 = -5 // child key resulta 0 o ≥ N
 export const BIP32_ERR_NOT_PRIVATE: i32 = -6 // operación requiere xprv
+export const BIP32_ERR_PUBKEY_INVALID: i32 = -7 // ✅ NUEVO: pubkey fuera de la curva (CKDpub)
 
 // ═══════════════════════════════════════════════════════════════════════════
 // BIP44 / BIP84 / BIP86 — propósitos y coin types frecuentes

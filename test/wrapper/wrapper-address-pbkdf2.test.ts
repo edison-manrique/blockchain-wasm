@@ -3,8 +3,9 @@ import { BlockchainWasm } from "../../src/blockchain-wasm"
 import { Address } from "../../src/address"
 import { Pbkdf2 } from "../../src/pbkdf2"
 import { bytesToHex, hexToBytes } from "../../src/types"
+import { join } from "path"
 
-const WASM_PATH = "../../dist/blockchain.wasm" // ajusta
+const WASM_PATH = join(import.meta.dirname, "../../dist/blockchain.wasm")
 const PRIV1 = "0000000000000000000000000000000000000000000000000000000000000001"
 const G_COMP = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
 const G_UNCOMP =
@@ -51,11 +52,10 @@ describe("wrapper address + pbkdf2", () => {
 
   // ── Pbkdf2 ──────────────────────────────────────────────────────────────
   test("PBKDF2-SHA512 (vector BIP39: abandon…about, sin passphrase)", () => {
-    const mnemonic =
-      "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+    const mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
     const seed = Pbkdf2.sha512(mnemonic, "mnemonic", 2048, 64)
     expect(bytesToHex(seed)).toBe(
-      "5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4"
+      "5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4",
     )
   })
   test("PBKDF2: dkLen menor es prefijo del mayor (consistencia)", () => {

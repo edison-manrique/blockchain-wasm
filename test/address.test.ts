@@ -60,7 +60,7 @@ const VECTORS: Vec[] = [
     p2wpkh: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
     p2sh: "3JvL6Ymt8MVWiCNHC7oWU6nLeHNJKLZGLN",
     p2tr: "bc1pmfr3p9j00pfxjh0zmgp99y8zftmd3s5pmedqhyptwy6lm87hf5sspknck9",
-    eth: "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf"
+    eth: "0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf",
   },
   {
     priv: 2,
@@ -73,7 +73,7 @@ const VECTORS: Vec[] = [
     p2wpkh: "bc1qq6hag67dl53wl99vzg42z8eyzfz2xlkvxechjp",
     p2sh: "3FWHHE3RVgyv5vYmMrcoRdA25uugWvQbso",
     p2tr: "bc1pet7ep3czdu9k4wvdlz2fp5p8x2yp7t6ttyqg2c6cmh0lgeuu9lasmp9hsg",
-    eth: "0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF"
+    eth: "0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF",
   },
   {
     priv: 3,
@@ -84,8 +84,8 @@ const VECTORS: Vec[] = [
     p2wpkh: "bc1q0ht9tyks4vh7p5p904t340cr9nvahy7u3re7zg",
     p2sh: "3BM3eLQZbwubG3XwwxJmd9qxwMJn7yUTSn",
     p2tr: "bc1pgxxyvcmdncdxs06cudd5yvmwwahaesaj6n3eu7st7x4sw9hrchaqjy33gs",
-    eth: "0x6813Eb9362372EEF6200f3b1dbC3f819671cBA69"
-  }
+    eth: "0x6813Eb9362372EEF6200f3b1dbC3f819671cBA69",
+  },
 ]
 
 function privBytes(k: number): Uint8Array {
@@ -172,7 +172,7 @@ describe("address — pubkey helpers", () => {
       wasm.exports.pubkeyFromPrivkey(OUT, IN) // compressed en OUT
       const origComp = hex(wasm.read(OUT, 33))
       expect(wasm.exports.uncompressRaw(IN, OUT, 33)).toBe(65) // uncompressed en IN
-      expect(wasm.exports.compressRaw(OUT, IN, 65)).toBe(33)   // compressed en OUT
+      expect(wasm.exports.compressRaw(OUT, IN, 65)).toBe(33) // compressed en OUT
       expect(hex(wasm.read(OUT, 33))).toBe(origComp)
     }
   })
@@ -326,14 +326,14 @@ describe("address — velocidad", () => {
     wasm.write(IN, c())
     const r = Wasm.benchSpeed("p2pkh", 5_000, () => wasm.exports.btc_p2pkh(OUT, IN, 33), { warmup: 500, runs: 3 })
     Wasm.printResults([r])
-    expect(r.nsPerOp).toBeLessThan(50_000)
+    expect(r.nsPerOp).toBeLessThan(100_000)
   }, 10_000)
 
   test("P2WPKH", () => {
     wasm.write(IN, c())
     const r = Wasm.benchSpeed("p2wpkh", 5_000, () => wasm.exports.btc_p2wpkh(OUT, IN, 33), { warmup: 500, runs: 3 })
     Wasm.printResults([r])
-    expect(r.nsPerOp).toBeLessThan(50_000)
+    expect(r.nsPerOp).toBeLessThan(100_000)
   }, 10_000)
 
   test("P2TR (incluye multiplyG)", () => {

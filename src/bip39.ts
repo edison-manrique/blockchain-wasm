@@ -9,6 +9,7 @@
  */
 import { BlockchainWasm } from "./blockchain-wasm"
 import { InvalidArgumentError } from "./errors"
+import { toUint8Array, MAX_PASSPHRASE_BYTES } from "./types"
 
 const VALID_STRENGTHS = [128, 160, 192, 224, 256]
 const VALID_ENTROPY_BYTES = [16, 20, 24, 28, 32]
@@ -41,6 +42,10 @@ export class Bip39 {
   /** Mnemónico → seed (64 B) vía PBKDF2-HMAC-SHA512. */
   static mnemonicToSeed(mnemonic: string, passphrase: string = ""): Uint8Array {
     if (mnemonic.length === 0) throw new InvalidArgumentError("mnemonic no puede estar vacío", "bip39")
+    if (toUint8Array(passphrase).length > MAX_PASSPHRASE_BYTES) {
+      // ✅ FIX E5
+      throw new InvalidArgumentError(`passphrase > ${MAX_PASSPHRASE_BYTES} bytes UTF-8`, "bip39")
+    }
     return BlockchainWasm.getInstance().bip39MnemonicToSeed(mnemonic, passphrase)
   }
 

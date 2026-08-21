@@ -4,8 +4,9 @@ import { Ecdh } from "../../src/ecdh"
 import { Schnorr } from "../../src/schnorr"
 import { Secp256k1 } from "../../src/secp256k1"
 import { hexToBytes, bytesToHex } from "../../src/types"
+import { join } from "path"
 
-const WASM_PATH = "../../dist/blockchain.wasm" // ajusta
+const WASM_PATH = join(import.meta.dirname, "../../dist/blockchain.wasm")
 
 const PRIV1 = "0000000000000000000000000000000000000000000000000000000000000001"
 const PRIV2 = "0000000000000000000000000000000000000000000000000000000000000002"
@@ -47,14 +48,14 @@ describe("wrapper ecdh + schnorr", () => {
     const pub2 = Secp256k1.getPublicKey(hexToBytes(PRIV2))
     const pub3 = Secp256k1.getPublicKey(hexToBytes(PRIV3))
     expect(bytesToHex(Ecdh.sharedSecret(hexToBytes(PRIV2), pub3))).toBe(
-      bytesToHex(Ecdh.sharedSecret(hexToBytes(PRIV3), pub2))
+      bytesToHex(Ecdh.sharedSecret(hexToBytes(PRIV3), pub2)),
     )
   })
   test("compressed == uncompressed (misma clave de entrada)", () => {
     const c = Secp256k1.getPublicKey(hexToBytes(PRIV3), true)
     const u = Secp256k1.getPublicKey(hexToBytes(PRIV3), false)
     expect(bytesToHex(Ecdh.sharedSecret(hexToBytes(PRIV2), c))).toBe(
-      bytesToHex(Ecdh.sharedSecret(hexToBytes(PRIV2), u))
+      bytesToHex(Ecdh.sharedSecret(hexToBytes(PRIV2), u)),
     )
   })
   test("ECDH: priv/pub inválidos → lanza", () => {

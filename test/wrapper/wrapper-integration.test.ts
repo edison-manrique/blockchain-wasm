@@ -11,13 +11,14 @@ import {
   Bip32,
   Bip39,
   Bip44,
-  MessageFormats,
+  SignatureFormat,
   bytesToHex,
-  hexToBytes,
-  toUint8Array
+  toUint8Array,
 } from "../../src/index"
+import { join } from "path"
 
-const WASM_PATH = "../../dist/blockchain.wasm" // ajusta
+const WASM_PATH = join(import.meta.dirname, "../../dist/blockchain.wasm")
+
 const MNEMONIC = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
 const SEED =
   "5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4"
@@ -67,8 +68,8 @@ describe("wrapper integración (barrel)", () => {
 
     // 5) ECDSA sign/verify de mensaje
     const msg = toUint8Array("integration test message")
-    const esig = Ecdsa.signMessage(msg, leaf.privateKey, MessageFormats.Bitcoin)
-    expect(Ecdsa.verifyMessage(msg, esig, leaf.publicKey, MessageFormats.Bitcoin)).toBe(true)
+    const esig = Ecdsa.signMessage(msg, leaf.privateKey, SignatureFormat.Bitcoin)
+    expect(Ecdsa.verifyMessage(msg, esig, leaf.publicKey, SignatureFormat.Bitcoin)).toBe(true)
 
     // 6) Schnorr sign/verify
     const msg32 = new Uint8Array(32).fill(0x42)

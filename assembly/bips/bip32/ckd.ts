@@ -132,9 +132,8 @@ function writeU32BE(ptr: usize, val: u32): void {
  * CKDpub: deriva un hijo público desde un padre público (solo non-hardened).
  * childPub = point(IL) + parentPub
  */
- function ckdPub(childPtr: usize, parentPtr: usize, index: u32): i32 {
+function ckdPub(childPtr: usize, parentPtr: usize, index: u32): i32 {
   if (index >= HARDENED_OFFSET) return BIP32_ERR_HARDENED_FROM_PUB
-
   const work = align8(BIP32_WORK_PTR)
 
   // 1. hmacData = pubkey(33) ‖ index_BE(4)
@@ -148,7 +147,9 @@ function writeU32BE(ptr: usize, val: u32): void {
   if (isScalarInvalid(work + BW_IL)) return BIP32_ERR_INVALID_KEY
 
   // 4. childPub = point(IL) + parentPub → compressed (33 B)
-  pointAddPubkeys(work + BW_PUBKEY_TMP, keyDataPtr(parentPtr), work + BW_IL)
+  // ✅ FIX (BLOQUE 3): propagar error si la pubkey del padre está fuera de la curva
+  const rcAdd: i32 = pointAddPubkeys(work + BW_PUBKEY_TMP, keyDataPtr(parentPtr), work + BW_IL)
+  if (rcAdd != BIP32_OK) return rcAdd
 
   // 5. Fingerprint del padre
   const fp: u32 = fingerprint(keyDataPtr(parentPtr))
