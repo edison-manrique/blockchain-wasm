@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Hash Laboratory — BlockchainWasm Playground</title>
+        <link rel="stylesheet" href="css/theme.css" />
+        <style>
+            .byte-grid {
+                display: grid;
+                grid-template-columns: repeat(16, 1fr);
+                gap: 3px;
+            }
+            .byte-chip {
+                background: var(--bg-dark-0);
+                border: 1px solid var(--border-color);
+                border-radius: 3px;
+                font-family: var(--font-mono);
+                font-size: 9px;
+                color: var(--gold-primary);
+                text-align: center;
+                padding: 2px 0;
+                cursor: default;
+            }
+            .byte-chip:hover {
+                border-color: var(--gold-primary);
+                color: var(--gold-hover);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="app-viewport">
+            <header class="app-header">
+                <a href="index.html" class="brand-container">
+                    <div class="brand-logo">⚡</div>
+                    <div class="brand-title">BlockchainWasm <span class="tag">Hash Lab</span></div>
+                </a>
+                <div class="header-status">
+                    <div class="wasm-badge">
+                        <span class="status-dot" id="wasm-status-dot"></span>
+                        <span id="wasm-status-text">Cargando WASM...</span>
+                    </div>
+                </div>
+            </header>
+            <div class="app-body">
+                <nav class="app-sidebar">
+                    <div class="sidebar-title">Módulos Criptográficos</div>
+                    <a href="index.html" class="sidebar-item">
+                        <span>⚡ Dashboard Central</span>
+                        <span class="item-badge">HUB</span>
+                    </a>
+                    <a href="address.html" class="sidebar-item">
+                        <span>📫 Address (BTC/ETH)</span>
+                    </a>
+                    <a href="hash.html" class="sidebar-item active">
+                        <span>🧪 Hash Lab</span>
+                    </a>
+                    <a href="encoding.html" class="sidebar-item">
+                        <span>🔤 Encoding</span>
+                    </a>
+                    <a href="multisig.html" class="sidebar-item">
+                        <span>🤝 MuSig2 / Multisig</span>
+                        <span class="item-badge">BIP327</span>
+                    </a>
+                    <a href="hd-visualizer.html" class="sidebar-item">
+                        <span>🌲 HD Visualizer</span>
+                    </a>
+                    <a href="message-signing.html" class="sidebar-item">
+                        <span>🖋️ Msg Signing</span>
+                    </a>
+                    <a href="vanity.html" class="sidebar-item">
+                        <span>✨ Vanity Search</span>
+                    </a>
+                    <a href="bip39.html" class="sidebar-item">
+                        <span>🌱 BIP-39 Mnemonic</span>
+                        <span class="item-badge">BIP39</span>
+                    </a>
+                    <a href="bip32.html" class="sidebar-item">
+                        <span>🌳 BIP-32 HD Tree</span>
+                        <span class="item-badge">BIP32</span>
+                    </a>
+                    <a href="bip44.html" class="sidebar-item">
+                        <span>💼 BIP-44 Wallet</span>
+                        <span class="item-badge">BIP44</span>
+                    </a>
+                    <a href="ecdsa.html" class="sidebar-item">
+                        <span>✍️ ECDSA Secp256k1</span>
+                        <span class="item-badge">ECDSA</span>
+                    </a>
+                    <a href="schnorr.html" class="sidebar-item">
+                        <span>⚡ Schnorr Taproot</span>
+                        <span class="item-badge">BIP340</span>
+                    </a>
+                    <a href="ecdh.html" class="sidebar-item">
+                        <span>🔐 ECDH Secret</span>
+                        <span class="item-badge">ECDH</span>
+                    </a>
+                    <a href="secp256k1.html" class="sidebar-item">
+                        <span>📈 Curve Secp256k1</span>
+                        <span class="item-badge">SECP</span>
+                    </a>
+                    <a href="pbkdf2.html" class="sidebar-item">
+                        <span>🔑 PBKDF2 SHA-512</span>
+                        <span class="item-badge">KDF</span>
+                    </a>
+                    <a href="wif.html" class="sidebar-item">
+                        <span>🎫 WIF Format</span>
+                        <span class="item-badge">WIF</span>
+                    </a>
+                </nav>
+                <main class="app-content">
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">🧪 Hash Laboratory</h1>
+                            <p class="page-description">
+                                SHA-256 · SHA-512 · Keccak-256 · RIPEMD-160 + composiciones Bitcoin. Hashing por chunks
+                                (zero-alloc WASM), verificación streaming≡one-shot y benchmark off-thread.
+                            </p>
+                        </div>
+                        <div class="btn-group">
+                            <select id="sel-mode" class="select-custom" style="width: auto">
+                                <option value="text" selected>Texto UTF-8</option>
+                                <option value="hex">Hex</option>
+                                <option value="file">Archivo</option>
+                            </select>
+                            <input type="file" id="inp-file" style="display: none" />
+                            <button class="btn btn-primary" id="btn-bench">⚡ Benchmark</button>
+                        </div>
+                    </div>
+
+                    <!-- Entrada -->
+                    <div class="card" style="padding: 10px">
+                        <div class="form-group">
+                            <label class="form-label">Entrada <span class="extra" id="lbl-len">0 B</span></label>
+                            <textarea
+                                id="inp-data"
+                                class="textarea-custom"
+                                rows="2"
+                                placeholder="Escribe texto o pega hex… (en modo Archivo se hashea el fichero completo por chunks)"
+                            ></textarea>
+                        </div>
+                        <div id="alert-stream" class="alert alert-success" style="padding: 5px 10px; font-size: 10px">
+                            ✓ streaming ≡ one-shot (SHA-256)
+                        </div>
+                    </div>
+
+                    <!-- 4 algoritmos -->
+                    <div class="grid-auto">
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"><span class="icon">🟦</span> SHA-256</span
+                                ><span class="item-badge" id="m-sha256">—</span>
+                            </div>
+                            <div class="output-box">
+                                <span id="out-sha256">-</span
+                                ><button class="copy-btn" onclick="window.copyTxt('out-sha256', 'SHA-256')">
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"><span class="icon">🟪</span> SHA-512</span
+                                ><span class="item-badge" id="m-sha512">—</span>
+                            </div>
+                            <div class="output-box">
+                                <span id="out-sha512">-</span
+                                ><button class="copy-btn" onclick="window.copyTxt('out-sha512', 'SHA-512')">
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"><span class="icon">🟨</span> Keccak-256</span
+                                ><span class="item-badge" id="m-keccak256">—</span>
+                            </div>
+                            <div class="output-box">
+                                <span id="out-keccak256">-</span
+                                ><button class="copy-btn" onclick="window.copyTxt('out-keccak256', 'Keccak-256')">
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"><span class="icon">🟥</span> RIPEMD-160</span
+                                ><span class="item-badge" id="m-ripemd160">—</span>
+                            </div>
+                            <div class="output-box">
+                                <span id="out-ripemd160">-</span
+                                ><button class="copy-btn" onclick="window.copyTxt('out-ripemd160', 'RIPEMD-160')">
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Composiciones + vista de bytes -->
+                    <div class="grid-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"><span class="icon"></span> Composiciones Bitcoin</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"
+                                    >double-SHA256 <span class="extra">SHA256(SHA256(x))</span></label
+                                >
+                                <div class="output-box">
+                                    <span id="out-dbl">-</span
+                                    ><button class="copy-btn" onclick="window.copyTxt('out-dbl', 'double-SHA256')">
+                                        Copiar
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"
+                                    >hash160 <span class="extra">RIPEMD160(SHA256(x))</span></label
+                                >
+                                <div class="output-box">
+                                    <span id="out-h160">-</span
+                                    ><button class="copy-btn" onclick="window.copyTxt('out-h160', 'hash160')">
+                                        Copiar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"
+                                    ><span class="icon">🔬</span> Vista de bytes — digest SHA-256</span
+                                >
+                            </div>
+                            <div class="byte-grid" id="byte-grid"></div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+        <script type="module">
+            import { initWasm, copyToClipboard, bytesToHex, hexToBytes, showToast } from "./js/common.js"
+            import { BlockchainWasm } from "../../dist/index.js"
+
+            window.copyTxt = (id, name) => {
+                const t = document.getElementById(id).innerText
+                if (t && t !== "-") copyToClipboard(t, name)
+            }
+
+            await initWasm()
+            const bw = BlockchainWasm.getInstance()
+            const a = bw.getAllocator()
+            const exp = bw.getExports()
+
+            const $ = (id) => document.getElementById(id)
+            const selMode = $("sel-mode"),
+                inpData = $("inp-data"),
+                inpFile = $("inp-file")
+            const lblLen = $("lbl-len"),
+                alertStream = $("alert-stream"),
+                byteGrid = $("byte-grid")
+
+            // Zonas auxiliares dentro de PARAM_IN (4 KB): input[0..2048) | ctx[3072) | padded[3328..)
+            const CTX = a.inPtr + 3072
+            const PAD = a.inPtr + 3328
+            const CHUNK = 2048
+            let fileBytes = null
+            let lastBytes = new Uint8Array(0)
+
+            const fmtLen = (n) =>
+                n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(2)} MB`
+
+            const ALGOS = {
+                sha256: {
+                    out: 32,
+                    create: (c) => exp.sha256_create_ctx(c),
+                    update: (c, p, n) => exp.sha256_update_raw(c, p, n),
+                    final: (c, o) => exp.sha256_final_raw(c, PAD, o)
+                },
+                sha512: {
+                    out: 64,
+                    create: (c) => exp.sha512_create_ctx(c),
+                    update: (c, p, n) => exp.sha512_update_raw(c, p, n),
+                    final: (c, o) => exp.sha512_final_raw(c, PAD, o)
+                },
+                keccak256: {
+                    out: 32,
+                    create: (c) => exp.keccak256_create_ctx(c),
+                    update: (c, p, n) => exp.keccak256_update_raw(c, p, n),
+                    final: (c, o) => exp.keccak256_final_raw(c, o)
+                },
+                ripemd160: {
+                    out: 20,
+                    create: (c) => exp.ripemd160_create_ctx(c),
+                    update: (c, p, n) => exp.ripemd160_update_raw(c, p, n),
+                    final: (c, o) => exp.ripemd160_final_raw(c, PAD, o)
+                }
+            }
+
+            /** Hash por chunks de 2 KB (soporta entradas de MB sin tocar el límite de PARAM_IN). */
+            function streamHash(algo, bytes) {
+                algo.create(CTX)
+                const h = a.getHeap()
+                for (let off = 0; off < bytes.length; off += CHUNK) {
+                    const n = Math.min(CHUNK, bytes.length - off)
+                    h.set(bytes.subarray(off, off + n), a.inPtr)
+                    algo.update(CTX, a.inPtr, n)
+                }
+                algo.final(CTX, a.outPtr)
+                return a.readOutput(algo.out)
+            }
+
+            function renderByteGrid(bytes) {
+                let html = ""
+                for (let i = 0; i < bytes.length; i++) {
+                    html += `<span class="byte-chip" title="byte ${i}">${bytes[i].toString(16).padStart(2, "0")}</span>`
+                }
+                byteGrid.innerHTML = html
+            }
+
+            function update() {
+                let bytes
+                if (selMode.value === "file") bytes = fileBytes || new Uint8Array(0)
+                else if (selMode.value === "hex") bytes = hexToBytes(inpData.value.trim())
+                else bytes = new TextEncoder().encode(inpData.value)
+                lastBytes = bytes
+                lblLen.innerText = fmtLen(bytes.length)
+
+                const dig = {}
+                for (const k of Object.keys(ALGOS)) {
+                    dig[k] = streamHash(ALGOS[k], bytes)
+                    $("out-" + k).innerText = bytesToHex(dig[k])
+                }
+
+                // Composiciones sobre el digest SHA-256 (one-shot, input de 32 B)
+                a.writeInput(dig.sha256, 0)
+                exp.sha256_hash_raw(a.outPtr, a.inPtr, 32)
+                const dbl = a.readOutput(32)
+                exp.ripemd160_hash_raw(a.outPtr, a.inPtr, 32)
+                const h160 = a.readOutput(20)
+                $("out-dbl").innerText = bytesToHex(dbl)
+                $("out-h160").innerText = bytesToHex(h160)
+
+                // Verificación streaming ≡ one-shot (entradas ≤ 2 KB)
+                if (bytes.length <= 2048) {
+                    a.writeInput(bytes, 0)
+                    exp.sha256_hash_raw(a.outPtr, a.inPtr, bytes.length)
+                    const eq = bytesToHex(a.readOutput(32)) === bytesToHex(dig.sha256)
+                    alertStream.className = "alert " + (eq ? "alert-success" : "alert-error")
+                    alertStream.innerText = eq ? "✓ streaming ≡ one-shot (SHA-256)" : "❌ streaming ≠ one-shot"
+                } else {
+                    alertStream.className = "alert alert-success"
+                    alertStream.innerText = "✓ hashing por chunks de 2 KB (input grande)"
+                }
+                renderByteGrid(dig.sha256)
+            }
+
+            // ── Benchmark off-thread ──
+            let worker = null
+            $("btn-bench").addEventListener("click", () => {
+                if (!worker) {
+                    worker = new Worker("./js/hash-worker.js", { type: "module" })
+                    worker.onmessage = (e) => {
+                        const m = e.data
+                        if (m.type === "result") {
+                            $("m-" + m.name).innerText = `${(m.opsPerSec / 1000).toFixed(0)} K/s`
+                        } else if (m.type === "done") {
+                            $("btn-bench").disabled = false
+                            showToast("✓ Benchmark completado")
+                        }
+                    }
+                }
+                $("btn-bench").disabled = true
+                for (const k of Object.keys(ALGOS)) $("m-" + k).innerText = "…"
+                const payload = (lastBytes.length ? lastBytes : new Uint8Array(32).fill(0x61)).slice(0, 4096)
+                worker.postMessage({ command: "bench", bytes: payload }, [payload.buffer])
+            })
+
+            // ── Eventos de entrada ──
+            inpData.addEventListener("input", update)
+            selMode.addEventListener("change", () => {
+                if (selMode.value === "file") inpFile.click()
+                inpData.style.display = selMode.value === "file" ? "none" : ""
+                update()
+            })
+            inpFile.addEventListener("change", async () => {
+                const f = inpFile.files[0]
+                if (!f) return
+                if (f.size > 64 * 1048576) {
+                    showToast("❌ Archivo > 64 MB no soportado")
+                    return
+                }
+                fileBytes = new Uint8Array(await f.arrayBuffer())
+                showToast(`✓ ${f.name} (${fmtLen(fileBytes.length)})`)
+                update()
+            })
+
+            update()
+        </script>
+    </body>
+</html>

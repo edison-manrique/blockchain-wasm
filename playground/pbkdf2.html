@@ -1,157 +1,224 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PBKDF2 SHA-512 — BlockchainWasm Playground</title>
-  <link rel="stylesheet" href="css/theme.css">
-</head>
-<body>
-  <div class="app-viewport">
-    <header class="app-header">
-      <a href="index.html" class="brand-container">
-        <div class="brand-logo">⚡</div>
-        <div class="brand-title">BlockchainWasm <span class="tag">PBKDF2 App</span></div>
-      </a>
-      <div class="header-status">
-        <div class="wasm-badge">
-          <span class="status-dot" id="wasm-status-dot"></span>
-          <span id="wasm-status-text">Cargando WASM...</span>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>PBKDF2 SHA-512 — BlockchainWasm Playground</title>
+        <link rel="stylesheet" href="css/theme.css" />
+    </head>
+    <body>
+        <div class="app-viewport">
+            <header class="app-header">
+                <a href="index.html" class="brand-container">
+                    <div class="brand-logo">⚡</div>
+                    <div class="brand-title">BlockchainWasm <span class="tag">PBKDF2 App</span></div>
+                </a>
+                <div class="header-status">
+                    <div class="wasm-badge">
+                        <span class="status-dot" id="wasm-status-dot"></span>
+                        <span id="wasm-status-text">Cargando WASM...</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="app-body">
+                <nav class="app-sidebar">
+                    <div class="sidebar-title">Módulos Criptográficos</div>
+                    <a href="index.html" class="sidebar-item">
+                        <span>⚡ Dashboard Central</span>
+                        <span class="item-badge">HUB</span>
+                    </a>
+                    <a href="address.html" class="sidebar-item">
+                        <span>📫 Address (BTC/ETH)</span>
+                    </a>
+                    <a href="hash.html" class="sidebar-item">
+                        <span>🧪 Hash Lab</span>
+                    </a>
+                    <a href="encoding.html" class="sidebar-item">
+                        <span>🔤 Encoding</span>
+                    </a>
+                    <a href="multisig.html" class="sidebar-item">
+                        <span>🤝 MuSig2 / Multisig</span>
+                        <span class="item-badge">BIP327</span>
+                    </a>
+                    <a href="hd-visualizer.html" class="sidebar-item">
+                        <span>🌲 HD Visualizer</span>
+                    </a>
+                    <a href="message-signing.html" class="sidebar-item">
+                        <span>🖋️ Msg Signing</span>
+                    </a>
+                    <a href="vanity.html" class="sidebar-item">
+                        <span>✨ Vanity Search</span>
+                    </a>
+                    <a href="bip39.html" class="sidebar-item">
+                        <span>🌱 BIP-39 Mnemonic</span>
+                        <span class="item-badge">BIP39</span>
+                    </a>
+                    <a href="bip32.html" class="sidebar-item">
+                        <span>🌳 BIP-32 HD Tree</span>
+                        <span class="item-badge">BIP32</span>
+                    </a>
+                    <a href="bip44.html" class="sidebar-item">
+                        <span>💼 BIP-44 Wallet</span>
+                        <span class="item-badge">BIP44</span>
+                    </a>
+                    <a href="ecdsa.html" class="sidebar-item">
+                        <span>✍️ ECDSA Secp256k1</span>
+                        <span class="item-badge">ECDSA</span>
+                    </a>
+                    <a href="schnorr.html" class="sidebar-item">
+                        <span>⚡ Schnorr Taproot</span>
+                        <span class="item-badge">BIP340</span>
+                    </a>
+                    <a href="ecdh.html" class="sidebar-item">
+                        <span>🔐 ECDH Secret</span>
+                        <span class="item-badge">ECDH</span>
+                    </a>
+                    <a href="secp256k1.html" class="sidebar-item">
+                        <span>📈 Curve Secp256k1</span>
+                        <span class="item-badge">SECP</span>
+                    </a>
+                    <a href="pbkdf2.html" class="sidebar-item active">
+                        <span>🔑 PBKDF2 SHA-512</span>
+                        <span class="item-badge">KDF</span>
+                    </a>
+                    <a href="wif.html" class="sidebar-item">
+                        <span>🎫 WIF Format</span>
+                        <span class="item-badge">WIF</span>
+                    </a>
+                </nav>
+
+                <main class="app-content">
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">🔑 PBKDF2-SHA-512 Key Derivation Laboratory</h1>
+                            <p class="page-description">
+                                Derivación de clave resistente a fuerza bruta basada en HMAC-SHA-512 con medición de
+                                rendimiento en ms.
+                            </p>
+                        </div>
+                        <button class="btn btn-primary" id="btn-calc">⚡ Ejecutar Benchmark PBKDF2</button>
+                    </div>
+
+                    <div class="grid-2">
+                        <!-- Parámetros -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"><span class="icon">⚙️</span> Parámetros KDF</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Contraseña (Password / Master Secret)</label>
+                                <input
+                                    type="text"
+                                    id="input-pass"
+                                    class="input-text"
+                                    value="abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Salt (Sal de Derivación)</label>
+                                <input type="text" id="input-salt" class="input-text" value="mnemonicTREZOR" />
+                            </div>
+
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label class="form-label">Iteraciones (Iterations)</label>
+                                    <input type="number" id="input-iter" class="input-text" value="2048" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Longitud de Clave (dkLen Bytes)</label>
+                                    <input type="number" id="input-dklen" class="input-text" value="64" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Resultado y Benchmark -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"><span class="icon">📊</span> Resultado & Benchmark WASM</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label"
+                                    >Tiempo de Ejecución <span class="extra" id="lbl-time">0.00 ms</span></label
+                                >
+                                <div
+                                    class="alert alert-success"
+                                    id="bench-badge"
+                                    style="font-weight: 700; font-size: 16px"
+                                >
+                                    ⚡ Listo para Benchmark
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Derived Key Result (Hexadecimal)</label>
+                                <div class="output-box" style="min-height: 80px">
+                                    <span id="txt-key-res">-</span>
+                                    <button class="copy-btn" onclick="window.copyTxt('txt-key-res', 'Derived Key')">
+                                        Copiar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
         </div>
-      </div>
-    </header>
 
-    <div class="app-body">
-      <nav class="app-sidebar">
-        <div class="sidebar-title">Módulos</div>
-        <a href="index.html" class="sidebar-item"><span>⚡ Dashboard</span></a>
-        <a href="address.html" class="sidebar-item"><span>📫 Address (BTC/ETH)</span></a>
-        <a href="bip39.html" class="sidebar-item"><span>🌱 BIP-39 Mnemonic</span></a>
-        <a href="bip32.html" class="sidebar-item"><span>🌳 BIP-32 HD Tree</span></a>
-        <a href="bip44.html" class="sidebar-item"><span>💼 BIP-44 Wallet</span></a>
-        <a href="ecdsa.html" class="sidebar-item"><span>✍️ ECDSA Secp256k1</span></a>
-        <a href="schnorr.html" class="sidebar-item"><span>⚡ Schnorr Taproot</span></a>
-        <a href="ecdh.html" class="sidebar-item"><span>🔐 ECDH Secret</span></a>
-        <a href="secp256k1.html" class="sidebar-item"><span>📈 Curve Secp256k1</span></a>
-        <a href="pbkdf2.html" class="sidebar-item active"><span>🔑 PBKDF2 SHA-512</span></a>
-        <a href="wif.html" class="sidebar-item"><span>🎫 WIF Format</span></a>
-      </nav>
+        <script type="module">
+            import { initWasm, bytesToHex, copyToClipboard } from "./js/common.js"
+            import { Pbkdf2 } from "../../dist/index.js"
 
-      <main class="app-content">
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">🔑 PBKDF2-SHA-512 Key Derivation Laboratory</h1>
-            <p class="page-description">Derivación de clave resistente a fuerza bruta basada en HMAC-SHA-512 con medición de rendimiento en ms.</p>
-          </div>
-          <button class="btn btn-primary" id="btn-calc">⚡ Ejecutar Benchmark PBKDF2</button>
-        </div>
+            window.copyTxt = (id, name) => {
+                const text = document.getElementById(id).innerText
+                if (text !== "-") copyToClipboard(text, name)
+            }
 
-        <div class="grid-2">
-          <!-- Parámetros -->
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title"><span class="icon">⚙️</span> Parámetros KDF</span>
-            </div>
+            await initWasm()
 
-            <div class="form-group">
-              <label class="form-label">Contraseña (Password / Master Secret)</label>
-              <input type="text" id="input-pass" class="input-text" value="abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about">
-            </div>
+            const inputPass = document.getElementById("input-pass")
+            const inputSalt = document.getElementById("input-salt")
+            const inputIter = document.getElementById("input-iter")
+            const inputDklen = document.getElementById("input-dklen")
+            const btnCalc = document.getElementById("btn-calc")
+            const lblTime = document.getElementById("lbl-time")
+            const benchBadge = document.getElementById("bench-badge")
 
-            <div class="form-group">
-              <label class="form-label">Salt (Sal de Derivación)</label>
-              <input type="text" id="input-salt" class="input-text" value="mnemonicTREZOR">
-            </div>
+            function runPbkdf2() {
+                try {
+                    const pass = inputPass.value
+                    const salt = inputSalt.value
+                    const iter = parseInt(inputIter.value) || 2048
+                    const dkLen = parseInt(inputDklen.value) || 64
 
-            <div class="grid-2">
-              <div class="form-group">
-                <label class="form-label">Iteraciones (Iterations)</label>
-                <input type="number" id="input-iter" class="input-text" value="2048">
-              </div>
+                    const t0 = performance.now()
+                    const derivedKey = Pbkdf2.sha512(pass, salt, iter, dkLen)
+                    const t1 = performance.now()
 
-              <div class="form-group">
-                <label class="form-label">Longitud de Clave (dkLen Bytes)</label>
-                <input type="number" id="input-dklen" class="input-text" value="64">
-              </div>
-            </div>
-          </div>
+                    const elapsed = (t1 - t0).toFixed(2)
+                    lblTime.innerText = `${elapsed} ms`
+                    benchBadge.innerText = `⚡ ${iter} Iteraciones completadas en ${elapsed} ms`
 
-          <!-- Resultado y Benchmark -->
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title"><span class="icon">📊</span> Resultado & Benchmark WASM</span>
-            </div>
+                    document.getElementById("txt-key-res").innerText = bytesToHex(derivedKey)
+                } catch (err) {
+                    console.error(err)
+                    benchBadge.className = "alert alert-error"
+                    benchBadge.innerText = "❌ Error: " + err.message
+                }
+            }
 
-            <div class="form-group">
-              <label class="form-label">Tiempo de Ejecución <span class="extra" id="lbl-time">0.00 ms</span></label>
-              <div class="alert alert-success" id="bench-badge" style="font-weight: 700; font-size: 16px;">
-                ⚡ Listo para Benchmark
-              </div>
-            </div>
+            btnCalc.addEventListener("click", runPbkdf2)
+            inputPass.addEventListener("input", runPbkdf2)
+            inputSalt.addEventListener("input", runPbkdf2)
+            inputIter.addEventListener("input", runPbkdf2)
+            inputDklen.addEventListener("input", runPbkdf2)
 
-            <div class="form-group">
-              <label class="form-label">Derived Key Result (Hexadecimal)</label>
-              <div class="output-box" style="min-height: 80px;">
-                <span id="txt-key-res">-</span>
-                <button class="copy-btn" onclick="window.copyTxt('txt-key-res', 'Derived Key')">Copiar</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  </div>
-
-  <script type="module">
-    import { initWasm, bytesToHex, copyToClipboard } from "./js/common.js";
-    import { Pbkdf2 } from "../../dist/index.js";
-
-    window.copyTxt = (id, name) => {
-      const text = document.getElementById(id).innerText;
-      if (text !== "-") copyToClipboard(text, name);
-    };
-
-    await initWasm();
-
-    const inputPass = document.getElementById("input-pass");
-    const inputSalt = document.getElementById("input-salt");
-    const inputIter = document.getElementById("input-iter");
-    const inputDklen = document.getElementById("input-dklen");
-    const btnCalc = document.getElementById("btn-calc");
-    const lblTime = document.getElementById("lbl-time");
-    const benchBadge = document.getElementById("bench-badge");
-
-    function runPbkdf2() {
-      try {
-        const pass = inputPass.value;
-        const salt = inputSalt.value;
-        const iter = parseInt(inputIter.value) || 2048;
-        const dkLen = parseInt(inputDklen.value) || 64;
-
-        const t0 = performance.now();
-        const derivedKey = Pbkdf2.sha512(pass, salt, iter, dkLen);
-        const t1 = performance.now();
-
-        const elapsed = (t1 - t0).toFixed(2);
-        lblTime.innerText = `${elapsed} ms`;
-        benchBadge.innerText = `⚡ ${iter} Iteraciones completadas en ${elapsed} ms`;
-
-        document.getElementById("txt-key-res").innerText = bytesToHex(derivedKey);
-      } catch (err) {
-        console.error(err);
-        benchBadge.className = "alert alert-error";
-        benchBadge.innerText = "❌ Error: " + err.message;
-      }
-    }
-
-    btnCalc.addEventListener("click", runPbkdf2);
-    inputPass.addEventListener("input", runPbkdf2);
-    inputSalt.addEventListener("input", runPbkdf2);
-    inputIter.addEventListener("input", runPbkdf2);
-    inputDklen.addEventListener("input", runPbkdf2);
-
-    // Initial setup
-    runPbkdf2();
-  </script>
-</body>
+            // Initial setup
+            runPbkdf2()
+        </script>
+    </body>
 </html>

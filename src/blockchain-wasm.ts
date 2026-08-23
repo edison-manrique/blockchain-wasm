@@ -14,7 +14,15 @@
  * string ni spread; fail‑fast de `memory` en el constructor; validación de
  * frontera en las fachadas (no aquí).
  */
-import { AsmExports, getGlobalValue, WifKey, HALF_ZONE, EcdsaSignature } from "./types"
+import {
+  AsmExports,
+  getGlobalValue,
+  WifKey,
+  HALF_ZONE,
+  EcdsaSignature,
+  MUSIG_PUBNONCE_BYTES,
+  MUSIG_AGGNONCE_BYTES
+} from "./types"
 import { WasmAllocator } from "./allocator"
 import { WasmError, NotInitializedError, MissingExportError } from "./errors"
 import { EntropySource } from "./csprng"
@@ -72,13 +80,13 @@ export class BlockchainWasm {
       env: {
         abort(msg: number, file: number, line: number, col: number): never {
           throw new WasmError(`trap at ${file}:${line}:${col}`, "runtime", "TRAP")
-        },
-      },
+        }
+      }
     }
     return {
       ...defaultImports,
       ...imports,
-      env: { ...defaultImports.env, ...((imports.env as Record<string, unknown>) || {}) },
+      env: { ...defaultImports.env, ...((imports.env as Record<string, unknown>) || {}) }
     }
   }
 
@@ -102,7 +110,7 @@ export class BlockchainWasm {
 
   static async fromBuffer(
     buffer: ArrayBuffer | Uint8Array,
-    imports: WebAssembly.Imports = {},
+    imports: WebAssembly.Imports = {}
   ): Promise<BlockchainWasm> {
     const finalImports = BlockchainWasm.buildImports(imports)
     const buf = (
@@ -302,28 +310,216 @@ export class BlockchainWasm {
         a.inPtr + HALF_ZONE,
         message.length,
         a.inPtr + 64,
-        publicKey.length,
+        publicKey.length
       ) !== 0
     )
   }
 
-  /** Escribe las x-only contiguas directo en el heap (sin concat/alloc intermedia). */
-  schnorrAggregatePubkeys(publicKeys: Uint8Array[]): Uint8Array {
+  // ── MuSig2 BIP-326 (bajo nivel) ─────────────────────────────────────────
+
+  // ── MuSig2 BIP-326 (bajo nivel) — ✅ FIX v3.0 ───────────────────────────
+
+  /** L = H("KeyAgg list", pk1‖…‖pkn) → 32 B. pubkeys deben ser 33 B compressed. */
+  musig2KeyAggListHash(pubkeys: Uint8Array[]): Uint8Array {
     const a = this.allocator
-    const heap = a.getHeap()
-    for (let i = 0; i < publicKeys.length; i++) heap.set(publicKeys[i], a.inPtr + i * 32)
-    const rc = this.exp.schnorr_aggregate_pubkeys(a.outPtr, a.inPtr, publicKeys.length)
-    if (rc < 0) throw new WasmError("agregación de pubkeys Schnorr falló", "schnorr", rc)
+    let off = 0
+    for (let i = 0; i < pubkeys.length; i++) {
+      a.writeInput(pubkeys[i], off)
+      off += 33 // ✅ 33 B compressed
+    }
+    const rc = this.exp.musig2_keyagg_list_hash(a.outPtr, a.inPtr, pubkeys.length)
+    if (rc < 0) throw new WasmError("KeyAggListHash falló", "musig2", rc)
     return a.readOutput(32)
   }
 
-  schnorrAggregatePrivkeys(privateKeys: Uint8Array[]): Uint8Array {
+  /** Coeficiente a_i en formato interno (limbs LE). Pasarlo TAL CUAL a partialSign/Verify. */
+  musig2KeyAggCoeff(L: Uint8Array, pk: Uint8Array): Uint8Array {
     const a = this.allocator
-    const heap = a.getHeap()
-    for (let i = 0; i < privateKeys.length; i++) heap.set(privateKeys[i], a.inPtr + i * 32)
-    const rc = this.exp.schnorr_aggregate_privkeys(a.outPtr, a.inPtr, privateKeys.length)
-    if (rc < 0) throw new WasmError("agregación de privkeys Schnorr falló", "schnorr", rc)
+    a.writeInput(L, 0)
+    a.writeInput(pk, 32)
+    const rc = this.exp.musig2_keyagg_coeff(a.outPtr, a.inPtr, a.inPtr + 32)
+    if (rc < 0) throw new WasmError("KeyAggCoeff falló", "musig2", rc)
     return a.readOutput(32)
+  }
+
+  /** KeyAgg: pubs@IN+0 (33 B each, compressed) → { q, gacc }. gacc = Q.y parity (0=even, 1=odd). */
+  musig2KeyAgg(pubkeys: Uint8Array[]): { q: Uint8Array; gacc: number } {
+    const a = this.allocator
+    let off = 0
+    for (let i = 0; i < pubkeys.length; i++) {
+      a.writeInput(pubkeys[i], off)
+      off += 33 // ✅ 33 B compressed (matching keyagg.ts which uses cpointToPoint)
+    }
+    const rc = this.exp.musig2_keyagg(a.outPtr, a.outPtr + 32, a.inPtr, pubkeys.length)
+    if (rc < 0) throw new WasmError("KeyAgg falló", "musig2", rc)
+    return { q: a.readOutput(32, 0), gacc: a.getHeap()[a.outPtr + 32] }
+  }
+
+  /**
+   * NonceGen: secrand@0 | sk@32 | pk@64 | aggother@128 | msg@192.
+   * ✅ v3.1: secNonce = 97 B (k1‖k2‖pk), pubNonce = 66 B (compressed).
+   * Layout: OUT[0..96]=secNonce, OUT[97..162]=pubNonce.
+   */
+  musig2NonceGen(
+    secrand: Uint8Array,
+    pk: Uint8Array,
+    sk?: Uint8Array,
+    aggotherpk?: Uint8Array,
+    msg?: Uint8Array
+  ): { secNonce: Uint8Array; pubNonce: Uint8Array } {
+    const a = this.allocator
+    a.writeInput(secrand, 0)
+    const skPtr = sk ? a.writeInput(sk, 32) : 0
+    a.writeInput(pk, 64)  // pk33 always present
+    const aggPtr = aggotherpk ? a.writeInput(aggotherpk, 128) : 0
+    let msgPtr = 0
+    let msgLen = 0
+    if (msg && msg.length > 0) {
+      msgPtr = a.writeInput(msg, 192)
+      msgLen = msg.length
+    }
+    // 10 args: out_k97, out_r66, secrand, skPtr, pk33, aggPtr, msgPtr, msgLen, extPtr=0, extLen=0
+    const rc = this.exp.musig2_nonce_gen(
+      a.outPtr,       // out_k97: secNonce (97 B)
+      a.outPtr + 97,  // out_r66: pubNonce (66 B)
+      a.inPtr,        // secrand32
+      skPtr,          // skPtr (0 if none)
+      a.inPtr + 64,   // pk33
+      aggPtr,         // aggotherpkPtr (0 if none)
+      msgPtr,         // msgPtr (0 if none)
+      msgLen,         // msgLen
+      0,              // extPtr = 0
+      0               // extLen = 0
+    )
+    if (rc < 0) throw new WasmError("NonceGen falló", "musig2", rc)
+    return {
+      secNonce: a.readOutput(97, 0),   // ✅ 97 bytes
+      pubNonce: a.readOutput(66, 97)   // ✅ 66 bytes at offset 97
+    }
+  }
+
+  /**
+   * NonceAgg: nonces@IN+0 (stride 66).
+   * ✅ v3.1: stride 66, salida 66 B, máx 62 nonces (4096/66).
+   */
+  musig2NonceAgg(pubNonces: Uint8Array[]): Uint8Array {
+    if (pubNonces.length * MUSIG_PUBNONCE_BYTES > 2 * HALF_ZONE) {
+      throw new WasmError("NonceAgg: demasiados nonces para PARAM_IN (máx 62)", "musig2", -1)
+    }
+    const a = this.allocator
+    let off = 0
+    for (let i = 0; i < pubNonces.length; i++) {
+      a.writeInput(pubNonces[i], off)
+      off += MUSIG_PUBNONCE_BYTES // ✅ FIX: 64 → 66
+    }
+    const rc = this.exp.musig2_nonce_agg(a.outPtr, a.inPtr, pubNonces.length)
+    if (rc < 0) throw new WasmError("NonceAgg falló", "musig2", rc)
+    return a.readOutput(MUSIG_AGGNONCE_BYTES) // ✅ FIX: 64 → 66
+  }
+
+  /**
+   * SessionInit: aggNonce@0 (66 B) | q@72 | msg@104 → session(97 B).
+   * ✅ v3.1 FIX CRÍTICO: antes q@64 pisaba aggnonce[64..65] y msg@96 solapaba.
+   */
+  musig2SessionInit(aggNonce: Uint8Array, q: Uint8Array, msg: Uint8Array): Uint8Array {
+    const a = this.allocator
+    a.writeInput(aggNonce, 0) // 0..65
+    a.writeInput(q, 72) // ✅ 72..103 (alineado, sin solape)
+    a.writeInput(msg, 104) // ✅ 104..
+    const rc = this.exp.musig2_session_init(a.outPtr, a.inPtr, a.inPtr + 72, a.inPtr + 104, msg.length)
+    if (rc < 0) throw new WasmError("SessionInit falló", "musig2", rc)
+    return a.readOutput(97)
+  }
+
+  /**
+   * PartialVerify: s@0 (32 B) | session@32 (97 B) | pubnonce@160 (66 B) | pk@232 (33 B) | coeff@272 (32 B).
+   */
+  musig2PartialVerify(
+    s: Uint8Array,
+    session: Uint8Array,
+    gacc: number,
+    pubNonce: Uint8Array,
+    pk: Uint8Array,
+    coeff: Uint8Array
+  ): boolean {
+    const a = this.allocator
+    a.writeInput(s, 0)          // 0..31
+    a.writeInput(session, 32)   // 32..128 (97 B)
+    a.writeInput(pubNonce, 160) // 160..225 (66 B)
+    a.writeInput(pk, 232)       // 232..264 (33 B)
+    a.writeInput(coeff, 272)    // 272..303 (32 B)
+    return (
+      this.exp.musig2_partial_verify(a.inPtr, a.inPtr + 32, gacc, a.inPtr + 160, a.inPtr + 232, a.inPtr + 272) !== 0
+    )
+  }
+
+  /** PartialSign: session@0 (97 B) | secnonce@128 (97 B) | priv@232 (32 B) | coeff@264 (32 B) → s(32 B). */
+  musig2PartialSign(
+    session: Uint8Array,
+    gacc: number,
+    secNonce: Uint8Array,
+    priv: Uint8Array,
+    coeff: Uint8Array
+  ): Uint8Array {
+    const a = this.allocator
+    a.writeInput(session, 0)     // 0..96
+    a.writeInput(secNonce, 128)  // 128..224 (97 B)
+    a.writeInput(priv, 232)      // 232..263 (32 B)
+    a.writeInput(coeff, 264)     // 264..295 (32 B)
+    const rc = this.exp.musig2_partial_sign(a.outPtr, a.inPtr, gacc, a.inPtr + 128, a.inPtr + 232, a.inPtr + 264)
+    if (rc < 0) throw new WasmError("PartialSign falló", "musig2", rc)
+    return a.readOutput(32)
+  }
+
+  /** PartialSigAgg: partials@IN+0 (count × 32) → s(32 B). */
+  musig2PartialSigAgg(partials: Uint8Array[]): Uint8Array {
+    const a = this.allocator
+    let off = 0
+    for (let i = 0; i < partials.length; i++) {
+      a.writeInput(partials[i], off)
+      off += 32
+    }
+    const rc = this.exp.musig2_partial_sig_agg(a.outPtr, a.inPtr, partials.length)
+    if (rc < 0) throw new WasmError("PartialSigAgg falló", "musig2", rc)
+    return a.readOutput(32)
+  }
+
+  /**
+   * SignAll (tests): privs@IN+0 | msg@IN+count*32 | secrands@IN+HALF_ZONE.
+   * Layout exige count*32 + msgLen ≤ HALF_ZONE y count*32 ≤ HALF_ZONE (≤ 64 signers).
+   */
+  musig2SignAll(
+    privkeys: Uint8Array[],
+    msg: Uint8Array,
+    secrands: Uint8Array[]
+  ): { signature: Uint8Array; aggregatedPubkey: Uint8Array } {
+    const count = privkeys.length
+    if (count * 32 + msg.length > HALF_ZONE || count * 32 > HALF_ZONE) {
+      throw new WasmError("SignAll: demasiados signers/msg para PARAM_IN (máx ~64)", "musig2", -1)
+    }
+    const a = this.allocator
+    let off = 0
+    for (let i = 0; i < count; i++) {
+      a.writeInput(privkeys[i], off)
+      off += 32
+    }
+    a.writeInput(msg, off)
+    let rOff = 0
+    for (let i = 0; i < count; i++) {
+      a.writeInput(secrands[i], HALF_ZONE + rOff)
+      rOff += 32
+    }
+    const rc = this.exp.musig2_sign_all(
+      a.outPtr,
+      a.outPtr + 64,
+      a.inPtr,
+      count,
+      a.inPtr + off,
+      msg.length,
+      a.inPtr + HALF_ZONE
+    )
+    if (rc < 0) throw new WasmError("SignAll falló", "musig2", rc)
+    return { signature: a.readOutput(64, 0), aggregatedPubkey: a.readOutput(32, 64) }
   }
 
   // ── ECDSA (bajo nivel) ──────────────────────────────────────────────────
@@ -338,7 +534,7 @@ export class BlockchainWasm {
     return {
       r: heap.slice(a.outPtr, a.outPtr + 32),
       s: heap.slice(a.outPtr + 32, a.outPtr + 64),
-      v: heap[a.outPtr + 64],
+      v: heap[a.outPtr + 64]
     }
   }
 
@@ -370,7 +566,7 @@ export class BlockchainWasm {
     return {
       r: heap.slice(a.outPtr, a.outPtr + 32),
       s: heap.slice(a.outPtr + 32, a.outPtr + 64),
-      v: heap[a.outPtr + 64],
+      v: heap[a.outPtr + 64]
     }
   }
 
@@ -387,7 +583,7 @@ export class BlockchainWasm {
         a.inPtr,
         a.inPtr + 64,
         publicKey.length,
-        format,
+        format
       ) !== 0
     )
   }
@@ -553,7 +749,7 @@ export class BlockchainWasm {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number,
+    addressIndex: number
   ): Uint8Array {
     const a = this.allocator
     a.writeInput(seed, 0)
@@ -565,7 +761,7 @@ export class BlockchainWasm {
       coinType,
       account,
       change,
-      addressIndex,
+      addressIndex
     )
     if (rc < 0) throw new WasmError("BIP44 derivePrivkey falló", "bip44", rc)
     return a.readOutput(32)
@@ -576,7 +772,7 @@ export class BlockchainWasm {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number,
+    addressIndex: number
   ): Uint8Array {
     const a = this.allocator
     a.writeInput(seed, 0)
@@ -588,7 +784,7 @@ export class BlockchainWasm {
       coinType,
       account,
       change,
-      addressIndex,
+      addressIndex
     )
     if (rc < 0) throw new WasmError("BIP44 derivePubkey falló", "bip44", rc)
     return a.readOutput(33)
@@ -600,7 +796,7 @@ export class BlockchainWasm {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number,
+    addressIndex: number
   ): { privateKey: Uint8Array; publicKey: Uint8Array } {
     const a = this.allocator
     a.writeInput(seed, 0)
@@ -613,7 +809,7 @@ export class BlockchainWasm {
       coinType,
       account,
       change,
-      addressIndex,
+      addressIndex
     )
     if (rc < 0) throw new WasmError("BIP44 deriveLeaf falló", "bip44", rc)
     return { privateKey: a.readOutput(32, 0), publicKey: a.readOutput(33, 32) }
@@ -640,7 +836,7 @@ export class BlockchainWasm {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number,
+    addressIndex: number
   ): { privateKey: Uint8Array; publicKey: Uint8Array } {
     const a = this.allocator
     const mnBytes = _enc.encode(mnemonic)
@@ -658,7 +854,7 @@ export class BlockchainWasm {
       coinType,
       account,
       change,
-      addressIndex,
+      addressIndex
     )
     if (rc < 0) throw new WasmError("BIP44 fromMnemonicDerive falló", "bip44", rc)
     return { privateKey: a.readOutput(32, 0), publicKey: a.readOutput(33, 32) }
@@ -668,7 +864,7 @@ export class BlockchainWasm {
     passphrase: string,
     purpose: number,
     coinType: number,
-    account: number,
+    account: number
   ): string {
     const a = this.allocator
     const mnBytes = _enc.encode(mnemonic)
@@ -683,7 +879,7 @@ export class BlockchainWasm {
       passBytes.length,
       purpose,
       coinType,
-      account,
+      account
     )
     if (rc < 0) throw new WasmError("BIP44 fromMnemonicXpub falló", "bip44", rc)
     return _dec.decode(a.readOutput(rc))
@@ -693,7 +889,7 @@ export class BlockchainWasm {
     passphrase: string,
     purpose: number,
     coinType: number,
-    account: number,
+    account: number
   ): string {
     const a = this.allocator
     const mnBytes = _enc.encode(mnemonic)
@@ -708,7 +904,7 @@ export class BlockchainWasm {
       passBytes.length,
       purpose,
       coinType,
-      account,
+      account
     )
     if (rc < 0) throw new WasmError("BIP44 fromMnemonicXprv falló", "bip44", rc)
     return _dec.decode(a.readOutput(rc))

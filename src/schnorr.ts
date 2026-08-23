@@ -14,12 +14,6 @@ import { BlockchainWasm } from "./blockchain-wasm"
 import { InvalidArgumentError } from "./errors"
 import { PRIVKEY_BYTES, XONLY_BYTES, SIG_BYTES, HALF_ZONE, toUint8Array, isValidPrivateKey } from "./types"
 
-const MAX_AGG = 128 // 128 * 32 = 4096 = PARAM_IN
-
-function assertXonly(p: Uint8Array): void {
-  if (p.length !== XONLY_BYTES) throw new InvalidArgumentError("x-only pubkey debe ser 32 bytes", "schnorr")
-}
-
 export class Schnorr {
   private constructor() {}
 
@@ -53,30 +47,6 @@ export class Schnorr {
       throw new InvalidArgumentError("publicKey (x-only) debe ser 32 bytes", "schnorr")
     if (message.length > HALF_ZONE) throw new InvalidArgumentError(`message debe ser <= ${HALF_ZONE} bytes`, "schnorr")
     return BlockchainWasm.getInstance().schnorrVerify(signature, message, publicKey)
-  }
-
-  /** Agregación naive de x-only pubkeys (sin coeficientes MuSig). */
-  static aggregatePublicKeys(publicKeys: Uint8Array[]): Uint8Array {
-    if (publicKeys.length === 0 || publicKeys.length > MAX_AGG) {
-      throw new InvalidArgumentError(`publicKeys debe tener 1..${MAX_AGG} elementos`, "schnorr")
-    }
-    for (let i = 0; i < publicKeys.length; i++) assertXonly(publicKeys[i])
-    return BlockchainWasm.getInstance().schnorrAggregatePubkeys(publicKeys)
-  }
-
-  /** Agregación naive de privkeys (consistente con aggregatePublicKeys). */
-  static aggregatePrivateKeys(privateKeys: Uint8Array[]): Uint8Array {
-    if (privateKeys.length === 0 || privateKeys.length > MAX_AGG) {
-      throw new InvalidArgumentError(`privateKeys debe tener 1..${MAX_AGG} elementos`, "schnorr")
-    }
-    for (let i = 0; i < privateKeys.length; i++) {
-      if (privateKeys[i].length !== PRIVKEY_BYTES)
-        throw new InvalidArgumentError("cada privateKey debe ser 32 bytes", "schnorr")
-      if (!isValidPrivateKey(privateKeys[i]))
-        // ✅ FIX E6
-        throw new InvalidArgumentError(`privateKeys[${i}] fuera de rango (0 o ≥ N)`, "schnorr")
-    }
-    return BlockchainWasm.getInstance().schnorrAggregatePrivkeys(privateKeys)
   }
 
   /** Firma un mensaje de texto: hashea según formato y firma el hash con BIP‑340. */

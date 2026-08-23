@@ -3,16 +3,7 @@
  *  index.ts — Punto de entrada público del wrapper blockchain-wasm
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * Expone SOLO las clases de dominio (fachadas estáticas + HDKey encadenable),
- * el singleton, utilidades puras y tipos. Re-exports selectivos para evitar
- * colisiones de nombres entre types.ts y los módulos de dominio.
- *
- *   import { BlockchainWasm, Bip39, Bip44, Address, Schnorr, bytesToHex } from "blockchain-wasm"
- *
- *   await BlockchainWasm.fromBuffer(wasmBytes)        // 1) cargar (una vez)
- *   const seed = Bip39.mnemonicToSeed(mnemonic)       // 2) usar las fachadas
- *   const { publicKey } = Bip44.deriveKeys(seed, 44, 0, 0, 0, 0)
- *   const addr = Address.p2wpkh(publicKey)
+ * ✅ FIX v3.0: Añadida exportación de Musig2 y tipos relacionados.
  */
 
 // ── Singleton + allocator ─────────────────────────────────────────────────
@@ -25,6 +16,7 @@ export { Wif } from "./wif"
 export { Address } from "./address"
 export { Ecdsa, SignatureFormat } from "./ecdsa"
 export { Schnorr } from "./schnorr"
+export { Musig2 } from "./musig2" // ✅ FIX v3.0
 export { Ecdh } from "./ecdh"
 export { Pbkdf2 } from "./pbkdf2"
 export { Bip32, HDKey } from "./bip32"
@@ -55,12 +47,21 @@ export {
   HASH_BYTES,
   SIG_BYTES,
   HALF_ZONE,
+  // ✅ FIX v3.0: Constantes MuSig2
+  MUSIG_PUBNONCE_BYTES,
+  MUSIG_AGGNONCE_BYTES,
+  MUSIG_SECNONCE_BYTES,
+  MUSIG_SESSION_BYTES,
+  MUSIG_SIG_BYTES,
+  MUSIG_MAX_SIGNERS
 } from "./types"
 
-// ── Tipos (type-only; cada uno desde su fuente canónica) ──────────────────
+// ── Tipos (type-only) ─────────────────────────────────────────────────────
 export type { AsmExports, MessageFormat, PrivateKey, PublicKey, Seed, Mnemonic } from "./types"
 export type { WifKey } from "./wif"
 export type { AddressType } from "./address"
 export type { EcdsaSignature } from "./ecdsa"
 export type { Bip44Leaf } from "./bip44"
 export type { RandomBytesGenerator, EntropySourceOptions } from "./csprng"
+// ✅ FIX v3.0: Tipos MuSig2
+export type { Musig2KeyAggResult, Musig2NoncePair, Musig2Session } from "./types"

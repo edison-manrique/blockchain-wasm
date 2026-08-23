@@ -1,177 +1,291 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Address Module — BlockchainWasm Playground</title>
-  <link rel="stylesheet" href="css/theme.css">
-</head>
-<body>
-  <div class="app-viewport">
-    <header class="app-header">
-      <a href="index.html" class="brand-container">
-        <div class="brand-logo">⚡</div>
-        <div class="brand-title">BlockchainWasm <span class="tag">Address App</span></div>
-      </a>
-      <div class="header-status">
-        <div class="wasm-badge">
-          <span class="status-dot" id="wasm-status-dot"></span>
-          <span id="wasm-status-text">Cargando WASM...</span>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Address Module — BlockchainWasm Playground</title>
+        <link rel="stylesheet" href="css/theme.css" />
+    </head>
+    <body>
+        <div class="app-viewport">
+            <header class="app-header">
+                <a href="index.html" class="brand-container">
+                    <div class="brand-logo">⚡</div>
+                    <div class="brand-title">BlockchainWasm <span class="tag">Address App</span></div>
+                </a>
+                <div class="header-status">
+                    <div class="wasm-badge">
+                        <span class="status-dot" id="wasm-status-dot"></span>
+                        <span id="wasm-status-text">Cargando WASM...</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="app-body">
+                <nav class="app-sidebar">
+                    <div class="sidebar-title">Módulos Criptográficos</div>
+                    <a href="index.html" class="sidebar-item">
+                        <span>⚡ Dashboard Central</span>
+                        <span class="item-badge">HUB</span>
+                    </a>
+                    <a href="address.html" class="sidebar-item active">
+                        <span>📫 Address (BTC/ETH)</span>
+                    </a>
+                    <a href="hash.html" class="sidebar-item">
+                        <span>🧪 Hash Lab</span>
+                    </a>
+                    <a href="encoding.html" class="sidebar-item">
+                        <span>🔤 Encoding</span>
+                    </a>
+                    <a href="multisig.html" class="sidebar-item">
+                        <span>🤝 MuSig2 / Multisig</span>
+                        <span class="item-badge">BIP327</span>
+                    </a>
+                    <a href="hd-visualizer.html" class="sidebar-item">
+                        <span>🌲 HD Visualizer</span>
+                    </a>
+                    <a href="message-signing.html" class="sidebar-item">
+                        <span>🖋️ Msg Signing</span>
+                    </a>
+                    <a href="vanity.html" class="sidebar-item">
+                        <span>✨ Vanity Search</span>
+                    </a>
+                    <a href="bip39.html" class="sidebar-item">
+                        <span>🌱 BIP-39 Mnemonic</span>
+                        <span class="item-badge">BIP39</span>
+                    </a>
+                    <a href="bip32.html" class="sidebar-item">
+                        <span>🌳 BIP-32 HD Tree</span>
+                        <span class="item-badge">BIP32</span>
+                    </a>
+                    <a href="bip44.html" class="sidebar-item">
+                        <span>💼 BIP-44 Wallet</span>
+                        <span class="item-badge">BIP44</span>
+                    </a>
+                    <a href="ecdsa.html" class="sidebar-item">
+                        <span>✍️ ECDSA Secp256k1</span>
+                        <span class="item-badge">ECDSA</span>
+                    </a>
+                    <a href="schnorr.html" class="sidebar-item">
+                        <span>⚡ Schnorr Taproot</span>
+                        <span class="item-badge">BIP340</span>
+                    </a>
+                    <a href="ecdh.html" class="sidebar-item">
+                        <span>🔐 ECDH Secret</span>
+                        <span class="item-badge">ECDH</span>
+                    </a>
+                    <a href="secp256k1.html" class="sidebar-item">
+                        <span>📈 Curve Secp256k1</span>
+                        <span class="item-badge">SECP</span>
+                    </a>
+                    <a href="pbkdf2.html" class="sidebar-item">
+                        <span>🔑 PBKDF2 SHA-512</span>
+                        <span class="item-badge">KDF</span>
+                    </a>
+                    <a href="wif.html" class="sidebar-item">
+                        <span>🎫 WIF Format</span>
+                        <span class="item-badge">WIF</span>
+                    </a>
+                </nav>
+
+                <main class="app-content">
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">📫 Address Module Laboratory</h1>
+                            <p class="page-description">
+                                Generación instantánea de direcciones Bitcoin (P2PKH, P2SH, SegWit, Taproot) y Ethereum
+                                EIP-55.
+                            </p>
+                        </div>
+                        <button class="btn btn-primary" id="btn-random">🎲 Generar Clave Aleatoria</button>
+                    </div>
+
+                    <div class="grid-2">
+                        <!-- Entrada de Datos -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"><span class="icon">🔑</span> Claves de Entrada</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Clave Privada (32-bytes Hex)</label>
+                                <input
+                                    type="text"
+                                    id="input-privkey"
+                                    class="input-text"
+                                    placeholder="e.g. 1111111111111111111111111111111111111111111111111111111111111111"
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Clave Pública Comprimida (33-bytes Hex)</label>
+                                <div class="output-box" id="box-pub-comp">
+                                    <span id="txt-pub-comp">-</span>
+                                    <button
+                                        class="copy-btn"
+                                        onclick="window.copyTxt('txt-pub-comp', 'Pubkey Comprimida')"
+                                    >
+                                        Copiar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Clave Pública Descomprimida (65-bytes Hex)</label>
+                                <div class="output-box" id="box-pub-uncomp">
+                                    <span id="txt-pub-uncomp">-</span>
+                                    <button
+                                        class="copy-btn"
+                                        onclick="window.copyTxt('txt-pub-uncomp', 'Pubkey Descomprimida')"
+                                    >
+                                        Copiar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Resultados de Direcciones -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"><span class="icon">🏷️</span> Direcciones Derivadas</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label"
+                                    >Bitcoin P2PKH Legacy (Base58Check - Comprimido) <span class="extra">1...</span></label
+                                >
+                                <div class="output-box">
+                                    <span id="addr-p2pkh">-</span>
+                                    <button class="copy-btn" onclick="window.copyTxt('addr-p2pkh', 'P2PKH')">
+                                        Copiar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label"
+                                    >Bitcoin P2PKH Uncompressed (Legacy 65B) <span class="extra">1...</span></label
+                                >
+                                <div class="output-box">
+                                    <span id="addr-p2pkh-uncomp">-</span>
+                                    <button class="copy-btn" onclick="window.copyTxt('addr-p2pkh-uncomp', 'P2PKH Uncomp')">
+                                        Copiar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label"
+                                    >Bitcoin P2SH-P2WPKH (Nested SegWit) <span class="extra">3...</span></label
+                                >
+                                <div class="output-box">
+                                    <span id="addr-p2sh">-</span>
+                                    <button class="copy-btn" onclick="window.copyTxt('addr-p2sh', 'P2SH')">
+                                        Copiar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label"
+                                    >Bitcoin P2WPKH (Native SegWit Bech32) <span class="extra">bc1q...</span></label
+                                >
+                                <div class="output-box">
+                                    <span id="addr-p2wpkh">-</span>
+                                    <button class="copy-btn" onclick="window.copyTxt('addr-p2wpkh', 'P2WPKH')">
+                                        Copiar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label"
+                                    >Bitcoin P2TR (Taproot Bech32m) <span class="extra">bc1p...</span></label
+                                >
+                                <div class="output-box">
+                                    <span id="addr-p2tr">-</span>
+                                    <button class="copy-btn" onclick="window.copyTxt('addr-p2tr', 'P2TR')">
+                                        Copiar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label"
+                                    >Ethereum EIP-55 Checksummed Address <span class="extra">0x...</span></label
+                                >
+                                <div class="output-box">
+                                    <span id="addr-eth">-</span>
+                                    <button class="copy-btn" onclick="window.copyTxt('addr-eth', 'Ethereum')">
+                                        Copiar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label"
+                                    >Tron (TRX) Base58Check Address <span class="extra">T...</span></label
+                                >
+                                <div class="output-box">
+                                    <span id="addr-tron">-</span>
+                                    <button class="copy-btn" onclick="window.copyTxt('addr-tron', 'Tron')">
+                                        Copiar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
         </div>
-      </div>
-    </header>
 
-    <div class="app-body">
-      <nav class="app-sidebar">
-        <div class="sidebar-title">Módulos</div>
-        <a href="index.html" class="sidebar-item"><span>⚡ Dashboard</span></a>
-        <a href="address.html" class="sidebar-item active"><span>📫 Address (BTC/ETH)</span></a>
-        <a href="vanity.html" class="sidebar-item"><span>✨ Vanity Search</span></a>
-        <a href="bip39.html" class="sidebar-item"><span>🌱 BIP-39 Mnemonic</span></a>
-        <a href="bip32.html" class="sidebar-item"><span>🌳 BIP-32 HD Tree</span></a>
-        <a href="bip44.html" class="sidebar-item"><span>💼 BIP-44 Wallet</span></a>
-        <a href="ecdsa.html" class="sidebar-item"><span>✍️ ECDSA Secp256k1</span></a>
-        <a href="schnorr.html" class="sidebar-item"><span>⚡ Schnorr Taproot</span></a>
-        <a href="ecdh.html" class="sidebar-item"><span>🔐 ECDH Secret</span></a>
-        <a href="secp256k1.html" class="sidebar-item"><span>📈 Curve Secp256k1</span></a>
-        <a href="pbkdf2.html" class="sidebar-item"><span>🔑 PBKDF2 SHA-512</span></a>
-        <a href="wif.html" class="sidebar-item"><span>🎫 WIF Format</span></a>
-      </nav>
+        <script type="module">
+            import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard } from "./js/common.js"
+            import { Secp256k1, Address } from "../../dist/index.js"
 
-      <main class="app-content">
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">📫 Address Module Laboratory</h1>
-            <p class="page-description">Generación instantánea de direcciones Bitcoin (P2PKH, P2SH, SegWit, Taproot) y Ethereum EIP-55.</p>
-          </div>
-          <button class="btn btn-primary" id="btn-random">🎲 Generar Clave Aleatoria</button>
-        </div>
+            window.copyTxt = (id, name) => {
+                const text = document.getElementById(id).innerText
+                if (text !== "-") copyToClipboard(text, name)
+            }
 
-        <div class="grid-2">
-          <!-- Entrada de Datos -->
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title"><span class="icon">🔑</span> Claves de Entrada</span>
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">Clave Privada (32-bytes Hex)</label>
-              <input type="text" id="input-privkey" class="input-text" placeholder="e.g. 1111111111111111111111111111111111111111111111111111111111111111">
-            </div>
+            await initWasm()
 
-            <div class="form-group">
-              <label class="form-label">Clave Pública Comprimida (33-bytes Hex)</label>
-              <div class="output-box" id="box-pub-comp">
-                <span id="txt-pub-comp">-</span>
-                <button class="copy-btn" onclick="window.copyTxt('txt-pub-comp', 'Pubkey Comprimida')">Copiar</button>
-              </div>
-            </div>
+            const inputPriv = document.getElementById("input-privkey")
+            const btnRandom = document.getElementById("btn-random")
 
-            <div class="form-group">
-              <label class="form-label">Clave Pública Descomprimida (65-bytes Hex)</label>
-              <div class="output-box" id="box-pub-uncomp">
-                <span id="txt-pub-uncomp">-</span>
-                <button class="copy-btn" onclick="window.copyTxt('txt-pub-uncomp', 'Pubkey Descomprimida')">Copiar</button>
-              </div>
-            </div>
-          </div>
+            function updateAddresses() {
+                try {
+                    const hex = inputPriv.value.trim()
+                    const privBytes = parseHexInput(hex)
+                    if (privBytes.length !== 32) return
 
-          <!-- Resultados de Direcciones -->
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title"><span class="icon">🏷️</span> Direcciones Derivadas</span>
-            </div>
+                    const pubComp = Secp256k1.getPublicKey(privBytes, true)
+                    const pubUncomp = Secp256k1.getPublicKey(privBytes, false)
 
-            <div class="form-group">
-              <label class="form-label">Bitcoin P2PKH Legacy (Base58Check) <span class="extra">Ruta 1...</span></label>
-              <div class="output-box">
-                <span id="addr-p2pkh">-</span>
-                <button class="copy-btn" onclick="window.copyTxt('addr-p2pkh', 'P2PKH')">Copiar</button>
-              </div>
-            </div>
+                    document.getElementById("txt-pub-comp").innerText = bytesToHex(pubComp)
+                    document.getElementById("txt-pub-uncomp").innerText = bytesToHex(pubUncomp)
 
-            <div class="form-group">
-              <label class="form-label">Bitcoin P2SH-P2WPKH (Nested SegWit) <span class="extra">Ruta 3...</span></label>
-              <div class="output-box">
-                <span id="addr-p2sh">-</span>
-                <button class="copy-btn" onclick="window.copyTxt('addr-p2sh', 'P2SH')">Copiar</button>
-              </div>
-            </div>
+                    document.getElementById("addr-p2pkh").innerText = Address.p2pkh(pubComp)
+                    document.getElementById("addr-p2pkh-uncomp").innerText = Address.p2pkhUncompressed(pubUncomp)
+                    document.getElementById("addr-p2sh").innerText = Address.p2shP2wpkh(pubComp)
+                    document.getElementById("addr-p2wpkh").innerText = Address.p2wpkh(pubComp)
+                    document.getElementById("addr-p2tr").innerText = Address.p2tr(pubComp)
+                    document.getElementById("addr-eth").innerText = Address.eth(pubUncomp)
+                    document.getElementById("addr-tron").innerText = Address.tron(pubUncomp)
+                } catch (err) {
+                    console.error(err)
+                }
+            }
 
-            <div class="form-group">
-              <label class="form-label">Bitcoin P2WPKH (Native SegWit Bech32) <span class="extra">bc1q...</span></label>
-              <div class="output-box">
-                <span id="addr-p2wpkh">-</span>
-                <button class="copy-btn" onclick="window.copyTxt('addr-p2wpkh', 'P2WPKH')">Copiar</button>
-              </div>
-            </div>
+            inputPriv.addEventListener("input", updateAddresses)
+            btnRandom.addEventListener("click", () => {
+                inputPriv.value = getRandomHexKey()
+                updateAddresses()
+            })
 
-            <div class="form-group">
-              <label class="form-label">Bitcoin P2TR (Taproot Bech32m) <span class="extra">bc1p...</span></label>
-              <div class="output-box">
-                <span id="addr-p2tr">-</span>
-                <button class="copy-btn" onclick="window.copyTxt('addr-p2tr', 'P2TR')">Copiar</button>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Ethereum EIP-55 Checksummed Address <span class="extra">0x...</span></label>
-              <div class="output-box">
-                <span id="addr-eth">-</span>
-                <button class="copy-btn" onclick="window.copyTxt('addr-eth', 'Ethereum')">Copiar</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  </div>
-
-  <script type="module">
-    import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard } from "./js/common.js";
-    import { Secp256k1, Address } from "../../dist/index.js";
-
-    window.copyTxt = (id, name) => {
-      const text = document.getElementById(id).innerText;
-      if (text !== "-") copyToClipboard(text, name);
-    };
-
-    await initWasm();
-
-    const inputPriv = document.getElementById("input-privkey");
-    const btnRandom = document.getElementById("btn-random");
-
-    function updateAddresses() {
-      try {
-        const hex = inputPriv.value.trim();
-        const privBytes = parseHexInput(hex);
-        if (privBytes.length !== 32) return;
-
-        const pubComp = Secp256k1.getPublicKey(privBytes, true);
-        const pubUncomp = Secp256k1.getPublicKey(privBytes, false);
-
-        document.getElementById("txt-pub-comp").innerText = bytesToHex(pubComp);
-        document.getElementById("txt-pub-uncomp").innerText = bytesToHex(pubUncomp);
-
-        document.getElementById("addr-p2pkh").innerText = Address.p2pkh(pubComp);
-        document.getElementById("addr-p2sh").innerText = Address.p2shP2wpkh(pubComp);
-        document.getElementById("addr-p2wpkh").innerText = Address.p2wpkh(pubComp);
-        document.getElementById("addr-p2tr").innerText = Address.p2tr(pubComp);
-        document.getElementById("addr-eth").innerText = Address.eth(pubUncomp);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    inputPriv.addEventListener("input", updateAddresses);
-    btnRandom.addEventListener("click", () => {
-      inputPriv.value = getRandomHexKey();
-      updateAddresses();
-    });
-
-    // Auto-generar al inicio
-    inputPriv.value = getRandomHexKey();
-    updateAddresses();
-  </script>
-</body>
+            // Auto-generar al inicio
+            inputPriv.value = getRandomHexKey()
+            updateAddresses()
+        </script>
+    </body>
 </html>

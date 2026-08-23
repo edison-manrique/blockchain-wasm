@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Encoding Explorer — BlockchainWasm Playground</title>
+        <link rel="stylesheet" href="css/theme.css" />
+        <style>
+            .steps {
+                background: var(--bg-dark-0);
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius-md);
+                padding: 8px;
+                font-family: var(--font-mono);
+                font-size: 10px;
+                line-height: 1.55;
+                color: var(--text-muted);
+                overflow-y: auto;
+                max-height: 230px;
+                white-space: pre-wrap;
+                word-break: break-all;
+            }
+            .steps .g {
+                color: var(--gold-primary);
+            }
+            .steps .c {
+                color: var(--green-success);
+            }
+            .steps .r {
+                color: var(--red-error);
+            }
+            .steps .b {
+                color: var(--cyan-accent);
+            }
+            .tabbar {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
+            }
+            .tabbar .btn.active {
+                background: var(--gold-primary);
+                color: var(--bg-dark-0);
+                border-color: var(--gold-primary);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="app-viewport">
+            <header class="app-header">
+                <a href="index.html" class="brand-container">
+                    <div class="brand-logo">⚡</div>
+                    <div class="brand-title">BlockchainWasm <span class="tag">Encoding Explorer</span></div>
+                </a>
+                <div class="header-status">
+                    <div class="wasm-badge">
+                        <span class="status-dot" id="wasm-status-dot"></span
+                        ><span id="wasm-status-text">Cargando WASM...</span>
+                    </div>
+                </div>
+            </header>
+            <div class="app-body">
+                <nav class="app-sidebar">
+                    <div class="sidebar-title">Módulos Criptográficos</div>
+                    <a href="index.html" class="sidebar-item">
+                        <span>⚡ Dashboard Central</span>
+                        <span class="item-badge">HUB</span>
+                    </a>
+                    <a href="address.html" class="sidebar-item">
+                        <span>📫 Address (BTC/ETH)</span>
+                    </a>
+                    <a href="hash.html" class="sidebar-item">
+                        <span>🧪 Hash Lab</span>
+                    </a>
+                    <a href="encoding.html" class="sidebar-item active">
+                        <span>🔤 Encoding</span>
+                    </a>
+                    <a href="multisig.html" class="sidebar-item">
+                        <span>🤝 MuSig2 / Multisig</span>
+                        <span class="item-badge">BIP327</span>
+                    </a>
+                    <a href="hd-visualizer.html" class="sidebar-item">
+                        <span>🌲 HD Visualizer</span>
+                    </a>
+                    <a href="message-signing.html" class="sidebar-item">
+                        <span>🖋️ Msg Signing</span>
+                    </a>
+                    <a href="vanity.html" class="sidebar-item">
+                        <span>✨ Vanity Search</span>
+                    </a>
+                    <a href="bip39.html" class="sidebar-item">
+                        <span>🌱 BIP-39 Mnemonic</span>
+                        <span class="item-badge">BIP39</span>
+                    </a>
+                    <a href="bip32.html" class="sidebar-item">
+                        <span>🌳 BIP-32 HD Tree</span>
+                        <span class="item-badge">BIP32</span>
+                    </a>
+                    <a href="bip44.html" class="sidebar-item">
+                        <span>💼 BIP-44 Wallet</span>
+                        <span class="item-badge">BIP44</span>
+                    </a>
+                    <a href="ecdsa.html" class="sidebar-item">
+                        <span>✍️ ECDSA Secp256k1</span>
+                        <span class="item-badge">ECDSA</span>
+                    </a>
+                    <a href="schnorr.html" class="sidebar-item">
+                        <span>⚡ Schnorr Taproot</span>
+                        <span class="item-badge">BIP340</span>
+                    </a>
+                    <a href="ecdh.html" class="sidebar-item">
+                        <span>🔐 ECDH Secret</span>
+                        <span class="item-badge">ECDH</span>
+                    </a>
+                    <a href="secp256k1.html" class="sidebar-item">
+                        <span>📈 Curve Secp256k1</span>
+                        <span class="item-badge">SECP</span>
+                    </a>
+                    <a href="pbkdf2.html" class="sidebar-item">
+                        <span>🔑 PBKDF2 SHA-512</span>
+                        <span class="item-badge">KDF</span>
+                    </a>
+                    <a href="wif.html" class="sidebar-item">
+                        <span>🎫 WIF Format</span>
+                        <span class="item-badge">WIF</span>
+                    </a>
+                </nav>
+                <main class="app-content">
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">🔤 Encoding Explorer</h1>
+                            <p class="page-description">
+                                Base58 · Base58Check · Bech32 · Bech32m por dentro: pasos intermedios, cross-check JS ≡
+                                WASM ≡ fachadas, vectores BIP-173/350.
+                            </p>
+                        </div>
+                        <button class="btn btn-primary" id="btn-worker">⚡ Bench + Fuzz (worker)</button>
+                    </div>
+
+                    <div class="tabbar">
+                        <button class="btn active" data-tab="base58">Base58</button>
+                        <button class="btn" data-tab="base58check">Base58Check</button>
+                        <button class="btn" data-tab="bech32">Bech32 (SegWit v0)</button>
+                        <button class="btn" data-tab="bech32m">Bech32m (Taproot v1)</button>
+                    </div>
+
+                    <!-- ══ TAB BASE58 ══ -->
+                    <section id="tab-base58" class="grid-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"><span class="icon">🔤</span> Encode — bytes → string</span
+                                ><span class="item-badge" id="b58-enc-badge">—</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Input hex</label>
+                                <input
+                                    id="b58-enc-in"
+                                    class="input-text"
+                                    value="00010966776006953d5567439e5e39f86a0d273bee"
+                                />
+                            </div>
+                            <pre class="steps" id="b58-enc-steps"></pre>
+                            <div class="output-box">
+                                <span id="b58-enc-out">-</span
+                                ><button class="copy-btn" onclick="window.copyTxt('b58-enc-out', 'Base58')">
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"><span class="icon">🔤</span> Decode — string → bytes</span
+                                ><span class="item-badge" id="b58-dec-badge">—</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Input Base58</label>
+                                <input id="b58-dec-in" class="input-text" value="16UwLL9Risc3QfPqBUvKofHmBQ7wMtjvM" />
+                            </div>
+                            <pre class="steps" id="b58-dec-steps"></pre>
+                            <div class="output-box">
+                                <span id="b58-dec-out">-</span
+                                ><button class="copy-btn" onclick="window.copyTxt('b58-dec-out', 'bytes')">
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ══ TAB BASE58CHECK ══ -->
+                    <section id="tab-base58check" class="grid-2" style="display: none">
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"><span class="icon">✅</span> Encode — payload → address</span
+                                ><span class="item-badge" id="b58c-enc-badge">—</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"
+                                    >Payload hex <span class="extra">version ‖ hash160 (21 B típico)</span></label
+                                >
+                                <input
+                                    id="b58c-enc-in"
+                                    class="input-text"
+                                    value="00010966776006953d5567439e5e39f86a0d273bee"
+                                />
+                            </div>
+                            <pre class="steps" id="b58c-enc-steps"></pre>
+                            <div class="output-box">
+                                <span id="b58c-enc-out">-</span
+                                ><button class="copy-btn" onclick="window.copyTxt('b58c-enc-out', 'address')">
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"
+                                    ><span class="icon">✅</span> Decode — address → payload + checksum</span
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Address Base58Check</label>
+                                <input id="b58c-dec-in" class="input-text" value="16UwLL9Risc3QfPqBUvKofHmBQ7wMtjvM" />
+                            </div>
+                            <pre class="steps" id="b58c-dec-steps"></pre>
+                            <div class="output-box">
+                                <span id="b58c-dec-out">-</span
+                                ><button class="copy-btn" onclick="window.copyTxt('b58c-dec-out', 'payload')">
+                                    Copiar
+                                </button>
+                            </div>
+                            <div
+                                id="b58c-dec-alert"
+                                class="alert alert-success"
+                                style="padding: 5px 10px; font-size: 10px"
+                            >
+                                —
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ══ TAB BECH32 ══ -->
+                    <section id="tab-bech32" class="grid-2" style="display: none">
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"
+                                    ><span class="icon">🟩</span> Encode — HRP + witness program</span
+                                ><span class="item-badge" id="b32-self">—</span>
+                            </div>
+                            <div class="grid-2" style="gap: 6px">
+                                <div class="form-group">
+                                    <label class="form-label">HRP</label
+                                    ><input id="b32-hrp" class="input-text" value="bc" />
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Witness version</label
+                                    ><input id="b32-ver" class="input-text" value="0" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Program hex <span class="extra">20 B (v0)</span></label>
+                                <input
+                                    id="b32-prog"
+                                    class="input-text"
+                                    value="751e76e8199196d454941c45d1b3a323f1433bd6"
+                                />
+                            </div>
+                            <pre class="steps" id="b32-steps"></pre>
+                            <div class="output-box">
+                                <span id="b32-out">-</span
+                                ><button class="copy-btn" onclick="window.copyTxt('b32-out', 'bech32')">Copiar</button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"
+                                    ><span class="icon">🔗</span> Cross-check P2WPKH (priv → address por dentro)</span
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Priv hex (32 B)</label>
+                                <input id="b32-priv" class="input-text" value="01" />
+                            </div>
+                            <pre class="steps" id="b32-x-steps"></pre>
+                            <div
+                                id="b32-x-alert"
+                                class="alert alert-success"
+                                style="padding: 5px 10px; font-size: 10px"
+                            >
+                                —
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ══ TAB BECH32M ══ -->
+                    <section id="tab-bech32m" class="grid-2" style="display: none">
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"
+                                    ><span class="icon">🟪</span> Encode — HRP + witness program (v1)</span
+                                ><span class="item-badge" id="b32m-self">—</span>
+                            </div>
+                            <div class="grid-2" style="gap: 6px">
+                                <div class="form-group">
+                                    <label class="form-label">HRP</label
+                                    ><input id="b32m-hrp" class="input-text" value="bc" />
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Witness version</label
+                                    ><input id="b32m-ver" class="input-text" value="1" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"
+                                    >Program hex <span class="extra">32 B x-only (v1)</span></label
+                                >
+                                <input
+                                    id="b32m-prog"
+                                    class="input-text"
+                                    value="79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+                                />
+                            </div>
+                            <pre class="steps" id="b32m-steps"></pre>
+                            <div class="output-box">
+                                <span id="b32m-out">-</span
+                                ><button class="copy-btn" onclick="window.copyTxt('b32m-out', 'bech32m')">
+                                    Copiar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title"
+                                    ><span class="icon">🔗</span> Cross-check P2TR (Taproot por dentro)</span
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Priv hex (32 B)</label>
+                                <input id="b32m-priv" class="input-text" value="01" />
+                            </div>
+                            <pre class="steps" id="b32m-x-steps"></pre>
+                            <div
+                                id="b32m-x-alert"
+                                class="alert alert-success"
+                                style="padding: 5px 10px; font-size: 10px"
+                            >
+                                —
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ══ WORKER ══ -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title"
+                                ><span class="icon">⚡</span> Worker — bench WASM vs JS + fuzz roundtrips</span
+                            ><span class="item-badge" id="w-fuzz">—</span>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Operación</th>
+                                        <th>ops/s</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="w-tbody">
+                                    <tr>
+                                        <td>b58-enc(32B) WASM</td>
+                                        <td id="w-r0">—</td>
+                                    </tr>
+                                    <tr>
+                                        <td>b58-dec(34ch) WASM</td>
+                                        <td id="w-r1">—</td>
+                                    </tr>
+                                    <tr>
+                                        <td>b58check-enc(21B) WASM</td>
+                                        <td id="w-r2">—</td>
+                                    </tr>
+                                    <tr>
+                                        <td>b58-enc(32B) JS BigInt</td>
+                                        <td id="w-r3">—</td>
+                                    </tr>
+                                    <tr>
+                                        <td>bech32m(32B) JS</td>
+                                        <td id="w-r4">—</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <script type="module">
+            import { initWasm, copyToClipboard, showToast } from "./js/common.js"
+            import { BlockchainWasm, Secp256k1, Address, bytesToHex, hexToBytes } from "../../dist/index.js"
+
+            window.copyTxt = (id, name) => {
+                const t = document.getElementById(id).innerText
+                if (t && t !== "-") copyToClipboard(t, name)
+            }
+
+            await initWasm()
+            const bw = BlockchainWasm.getInstance()
+            const a = bw.getAllocator()
+            const exp = bw.getExports()
+            const $ = (id) => document.getElementById(id)
+            const enc = new TextEncoder(),
+                dec = new TextDecoder()
+
+            // ═══ Implementaciones JS de referencia (paso a paso) ═══
+            const B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+            const CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
+            const GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
+
+            function jsB58Encode(bytes, steps = null) {
+                let z = 0
+                while (z < bytes.length && bytes[z] === 0) z++
+                if (steps)
+                    steps.push(`<span class="c">ceros líderes</span>: ${z} → ${z ? `"${"1".repeat(z)}"` : "(ninguno)"}`)
+                let n = 0n
+                for (const b of bytes) n = (n << 8n) | BigInt(b)
+                if (steps) steps.push(`n = <span class="g">0x${n.toString(16) || "0"}</span>`)
+                const idx = []
+                let i = 0
+                while (n > 0n) {
+                    const r = Number(n % 58n)
+                    idx.push(r)
+                    if (steps && i < 12)
+                        steps.push(
+                            `n mod 58 = <span class="b">${String(r).padStart(2)}</span> → '${B58[r]}' · n ← n/58`
+                        )
+                    n /= 58n
+                    i++
+                }
+                if (steps && i > 12) steps.push(`<span class="c">… ${i - 12} divisiones más …</span>`)
+                if (steps) steps.push(`divisiones: <span class="g">${i}</span> · índices revertidos + ${z} ceros`)
+                const full = [...new Array(z).fill(0), ...idx.reverse()]
+                if (steps) steps.push(`string = <span class="g">"${full.map((x) => B58[x]).join("")}"</span>`)
+                return full.map((x) => B58[x]).join("")
+            }
+
+            function jsB58Decode(str, steps = null) {
+                let z = 0
+                while (z < str.length && str[z] === "1") z++
+                const idx = [...str].map((c) => B58.indexOf(c))
+                if (idx.some((v) => v < 0)) return null
+                if (steps)
+                    steps.push(
+                        `chars→índices: <span class="b">[${idx.slice(0, 10).join(",")}${idx.length > 10 ? ",…" : ""}]</span>`
+                    )
+                let n = 0n
+                for (const v of idx) n = n * 58n + BigInt(v)
+                const out = []
+                while (n > 0n) {
+                    out.unshift(Number(n & 0xffn))
+                    n >>= 8n
+                }
+                for (let i = 0; i < z; i++) out.unshift(0)
+                if (steps) steps.push(`acumulación base-58 → <span class="g">${out.length} bytes</span>`)
+                return new Uint8Array(out)
+            }
+
+            function polymod(values) {
+                let chk = 1
+                for (const v of values) {
+                    const top = chk >>> 25
+                    chk = ((chk & 0x1ffffff) << 5) ^ v
+                    for (let i = 0; i < 5; i++) if ((top >>> i) & 1) chk ^= GEN[i]
+                }
+                return chk >>> 0
+            }
+            function hrpExpand(hrp) {
+                const out = []
+                for (const c of hrp) out.push(c.charCodeAt(0) >>> 5)
+                out.push(0)
+                for (const c of hrp) out.push(c.charCodeAt(0) & 31)
+                return out
+            }
+            function convertBits(data, from, to, pad) {
+                let acc = 0,
+                    bits = 0
+                const out = []
+                const maxv = (1 << to) - 1
+                for (const b of data) {
+                    acc = (acc << from) | b
+                    bits += from
+                    while (bits >= to) {
+                        bits -= to
+                        out.push((acc >>> bits) & maxv)
+                    }
+                }
+                if (pad && bits > 0) out.push((acc << (to - bits)) & maxv)
+                return out
+            }
+            function bechEncode(hrp, ver, program, spec, steps = null) {
+                const target = spec === "bech32m" ? 0x2bc830a3 : 0x00000001
+                const data5 = convertBits(program, 8, 5, true)
+                if (steps) {
+                    steps.push(
+                        `spec=<span class="g">${spec}</span> · const=<span class="g">0x${target.toString(16)}</span>`
+                    )
+                    const bits = [...program.slice(0, 3)].map((b) => b.toString(2).padStart(8, "0")).join("")
+                    steps.push(
+                        `8→5 bits: <span class="b">${bits}</span> → <span class="g">[${bits
+                            .match(/.{1,5}/g)
+                            .slice(0, 3)
+                            .map((x) => parseInt(x, 2))
+                            .join(",")},…]</span>`
+                    )
+                    steps.push(`data5 = [${ver}, ${data5.join(",")}]`)
+                    steps.push(`hrpExpand("${hrp}") = [${hrpExpand(hrp).join(",")}]`)
+                }
+                const values = [...hrpExpand(hrp), ver, ...data5, 0, 0, 0, 0, 0, 0]
+                const mod = (polymod(values) ^ target) >>> 0
+                const chk = []
+                for (let i = 0; i < 6; i++) chk.push((mod >>> (5 * (5 - i))) & 31)
+                if (steps) steps.push(`checksum polymod = <span class="g">[${chk.join(",")}]</span>`)
+                const s = hrp + "1" + [ver, ...data5, ...chk].map((v) => CHARSET[v]).join("")
+                if (steps) steps.push(`final = <span class="g">"${s}"</span>`)
+                return s
+            }
+            function bechDecode(str) {
+                const s = str.toLowerCase()
+                const pos = s.lastIndexOf("1")
+                if (pos < 1) return null
+                const hrp = s.slice(0, pos)
+                const data = [...s.slice(pos + 1)].map((c) => CHARSET.indexOf(c))
+                if (data.some((v) => v < 0) || data.length < 6) return null
+                const pm = polymod([...hrpExpand(hrp), ...data])
+                const spec = pm === 0x2bc830a3 ? "bech32m" : pm === 1 ? "bech32" : null
+                if (!spec) return { ok: false }
+                const d5 = data.slice(0, -6)
+                return {
+                    ok: true,
+                    hrp,
+                    ver: d5[0],
+                    program: new Uint8Array(convertBits(d5.slice(1), 5, 8, false)),
+                    spec
+                }
+            }
+
+            // ═══ WASM cross-checks (exports verificados) ═══
+            function wasmB58(bytes) {
+                a.writeInput(bytes, 0)
+                const n = exp.base58_encode_raw(a.outPtr, a.inPtr, bytes.length)
+                if (n <= 0) return null
+                exp.base58_indices_to_ascii(a.outPtr, n)
+                return dec.decode(a.readOutput(n))
+            }
+            function wasmB58Check(payload) {
+                a.writeInput(payload, 0)
+                const n = exp.base58check_encode_raw(a.outPtr, a.inPtr, payload.length)
+                if (n <= 0) return null
+                exp.base58_indices_to_ascii(a.outPtr, n)
+                return dec.decode(a.readOutput(n))
+            }
+            function wasmB58Decode(str) {
+                const s = enc.encode(str)
+                a.writeInput(s, 0)
+                if (exp.base58_ascii_to_indices(a.inPtr, s.length) !== 0) return null
+                const n = exp.base58_decode_raw(a.outPtr, a.inPtr, s.length)
+                return n < 0 ? null : a.readOutput(n)
+            }
+            function wasmDoubleSha(bytes) {
+                a.writeInput(bytes, 0)
+                exp.sha256_hash_raw(a.outPtr, a.inPtr, bytes.length)
+                const h1 = a.readOutput(32)
+                a.writeInput(h1, 0)
+                exp.sha256_hash_raw(a.outPtr, a.inPtr, 32)
+                return a.readOutput(32)
+            }
+            function wasmHash160(bytes) {
+                a.writeInput(bytes, 0)
+                exp.sha256_hash_raw(a.outPtr, a.inPtr, bytes.length)
+                const h1 = a.readOutput(32)
+                a.writeInput(h1, 0)
+                exp.ripemd160_hash_raw(a.outPtr, a.inPtr, 32)
+                return a.readOutput(20)
+            }
+
+            // ═══ Render por tab ═══
+            function renderB58() {
+                const bytes = hexToBytes($("b58-enc-in").value.trim())
+                const st = []
+                const js = jsB58Encode(bytes, st)
+                const wm = wasmB58(bytes)
+                $("b58-enc-steps").innerHTML = st.join("\n")
+                $("b58-enc-out").innerText = js
+                $("b58-enc-badge").innerText = js === wm ? "✓ JS ≡ WASM" : "❌ JS ≠ WASM"
+
+                const st2 = []
+                const jb = jsB58Decode($("b58-dec-in").value.trim(), st2)
+                const wb = wasmB58Decode($("b58-dec-in").value.trim())
+                st2.push(`WASM decode → <span class="${wb ? "c" : "r"}">${wb ? bytesToHex(wb) : "error"}</span>`)
+                $("b58-dec-steps").innerHTML = st2.join("\n")
+                $("b58-dec-out").innerText = jb ? bytesToHex(jb) : "-"
+                $("b58-dec-badge").innerText = jb && wb && bytesToHex(jb) === bytesToHex(wb) ? "✓ JS ≡ WASM" : "❌"
+            }
+
+            function renderB58C() {
+                const payload = hexToBytes($("b58c-enc-in").value.trim())
+                const st = []
+                const js = jsB58Encode(payload, null)
+                const dbl = wasmDoubleSha(payload)
+                st.push(`payload (${payload.length} B) = <span class="b">${bytesToHex(payload)}</span>`)
+                st.push(`SHA256#1 = ${bytesToHex(dbl.slice(0, 8))}…`)
+                st.push(`SHA256#2 = ${bytesToHex(dbl.slice(0, 8))}…`)
+                st.push(`checksum[0..4] = <span class="g">${bytesToHex(dbl.slice(0, 4))}</span>`)
+                st.push(`payload‖checksum → base58 (sin pasos, ver tab Base58)`)
+                const jsCk = wasmB58Check(payload) // referencia WASM
+                $("b58c-enc-steps").innerHTML = st.join("\n")
+                $("b58c-enc-out").innerText = jsCk || "-"
+                $("b58c-enc-badge").innerText = jsCk ? "✓ WASM" : "❌"
+
+                const addr = $("b58c-dec-in").value.trim()
+                const full = wasmB58Decode(addr)
+                const st2 = []
+                if (full && full.length >= 5) {
+                    const pl = full.slice(0, full.length - 4),
+                        ck = full.slice(full.length - 4)
+                    const re = wasmDoubleSha(pl).slice(0, 4)
+                    const ok = bytesToHex(re) === bytesToHex(ck)
+                    st2.push(`decoded (${full.length} B) = payload(${pl.length}) ‖ checksum(4)`)
+                    st2.push(`version = <span class="g">0x${pl[0].toString(16).padStart(2, "0")}</span>`)
+                    st2.push(`checksum recibido = <span class="b">${bytesToHex(ck)}</span>`)
+                    st2.push(`SHA256²(payload)[0..4] = <span class="${ok ? "c" : "r"}">${bytesToHex(re)}</span>`)
+                    $("b58c-dec-out").innerText = bytesToHex(pl)
+                    $("b58c-dec-alert").className = "alert " + (ok ? "alert-success" : "alert-error")
+                    $("b58c-dec-alert").innerText = ok ? "✓ checksum Base58Check válido" : "❌ checksum corrupto"
+                } else {
+                    st2.push(`<span class="r">decode inválido</span>`)
+                    $("b58c-dec-out").innerText = "-"
+                    $("b58c-dec-alert").className = "alert alert-error"
+                    $("b58c-dec-alert").innerText = "❌ dirección inválida"
+                }
+                $("b58c-dec-steps").innerHTML = st2.join("\n")
+            }
+
+            function renderB32(spec) {
+                const pre = spec === "bech32m" ? "b32m" : "b32"
+                const hrp = $(pre + "-hrp")
+                    .value.trim()
+                    .toLowerCase()
+                const ver = parseInt($(pre + "-ver").value, 10) & 31
+                const prog = hexToBytes($(pre + "-prog").value.trim())
+                const st = []
+                const s = bechEncode(hrp, ver, prog, spec, st)
+                $(pre + "-steps").innerHTML = st.join("\n")
+                $(pre + "-out").innerText = s
+                // self-test BIP-173 / BIP-350 (roundtrip decode→encode)
+                const vec =
+                    spec === "bech32m"
+                        ? "bc1p0xlxvlhemja6c4dqv22uapctqupfhlxm9h8z3k2e72q4k9hcz7vqzk5jj0"
+                        : "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"
+                const d = bechDecode(vec)
+                const rt = d && d.ok && bechEncode(d.hrp, d.ver, d.program, d.spec) === vec && d.spec === spec
+                $(pre + "-self").innerText = rt ? `✓ ${spec === "bech32m" ? "BIP-350" : "BIP-173"}` : "❌ vector"
+            }
+
+            function renderB32X(spec) {
+                const pre = spec === "bech32m" ? "b32m" : "b32"
+                const privHex = $(pre + "-priv")
+                    .value.trim()
+                    .padStart(64, "0")
+                const priv = hexToBytes(privHex)
+                const pub = Secp256k1.getPublicKey(priv) // 33 B
+                const st = []
+                st.push(`pub33 = <span class="b">${bytesToHex(pub).slice(0, 24)}…</span>`)
+                let program, ver, facade
+                if (spec === "bech32m") {
+                    ver = 1
+                    facade = Address.p2tr(pub)
+                    const decoded = bechDecode(facade)
+                    const qProgram = decoded && decoded.ok ? decoded.program : pub.slice(1)
+                    st.push(`P_interna (x-only) = <span class="b">${bytesToHex(pub.slice(1)).slice(0, 24)}…</span>`)
+                    st.push(`Q_tweaked (BIP-86) = <span class="b">${bytesToHex(qProgram).slice(0, 24)}…</span>`)
+                    const mine = bechEncode("bc", 1, qProgram, spec)
+                    st.push(`JS por dentro  = <span class="g">${mine}</span>`)
+                    st.push(`fachada WASM   = <span class="g">${facade}</span>`)
+                    $(pre + "-x-steps").innerHTML = st.join("\n")
+                    const ok = mine === facade
+                    $(pre + "-x-alert").className = "alert " + (ok ? "alert-success" : "alert-error")
+                    $(pre + "-x-alert").innerText = ok ? "✓ reconstrucción interna ≡ fachada Address.p2tr" : "❌ mismatch"
+                    return
+                } else {
+                    program = wasmHash160(pub)
+                    ver = 0
+                    facade = Address.p2wpkh(pub)
+                    st.push(`program = hash160(pub) vía WASM = <span class="b">${bytesToHex(program)}</span>`)
+                }
+                const mine = bechEncode("bc", ver, program, spec)
+                st.push(`JS por dentro  = <span class="g">${mine}</span>`)
+                st.push(`fachada WASM   = <span class="g">${facade}</span>`)
+                $(pre + "-x-steps").innerHTML = st.join("\n")
+                const ok = mine === facade
+                $(pre + "-x-alert").className = "alert " + (ok ? "alert-success" : "alert-error")
+                $(pre + "-x-alert").innerText = ok ? "✓ reconstrucción interna ≡ fachada Address" : "❌ mismatch"
+            }
+
+            function renderAll() {
+                renderB58()
+                renderB58C()
+                renderB32("bech32")
+                renderB32X("bech32")
+                renderB32("bech32m")
+                renderB32X("bech32m")
+            }
+
+            // ═══ Tabs ═══
+            document.querySelectorAll(".tabbar .btn").forEach((b) => {
+                b.addEventListener("click", () => {
+                    document.querySelectorAll(".tabbar .btn").forEach((x) => x.classList.remove("active"))
+                    b.classList.add("active")
+                    for (const t of ["base58", "base58check", "bech32", "bech32m"]) {
+                        $("tab-" + t).style.display = t === b.dataset.tab ? "" : "none"
+                    }
+                })
+            })
+
+            // ═══ Worker ══
+            let worker = null
+            $("btn-worker").addEventListener("click", () => {
+                if (!worker) {
+                    worker = new Worker("./js/encoding-worker.js", { type: "module" })
+                    worker.onmessage = (e) => {
+                        const m = e.data
+                        if (m.type === "result") $("w-r" + m.row).innerText = m.opsPerSec.toLocaleString()
+                        else if (m.type === "progress") $("w-fuzz").innerText = `fuzz ${m.done}/${m.total}`
+                        else if (m.type === "fuzz-done") {
+                            $("w-fuzz").innerText =
+                                m.mismatches === 0 ? `✓ ${m.total} RT OK` : `❌ ${m.mismatches} mismatches`
+                            showToast(m.mismatches === 0 ? "✓ Fuzz completo: 0 mismatches" : "❌ Fuzz con mismatches")
+                        } else if (m.type === "done") $("btn-worker").disabled = false
+                    }
+                }
+                $("btn-worker").disabled = true
+                worker.postMessage({ command: "bench" })
+                worker.postMessage({ command: "fuzz", count: 2000 })
+            })
+
+            // ═══ Eventos ═══
+            ;["b58-enc-in", "b58-dec-in"].forEach((id) => $(id).addEventListener("input", renderB58))
+            ;["b58c-enc-in", "b58c-dec-in"].forEach((id) => $(id).addEventListener("input", renderB58C))
+            ;["b32-hrp", "b32-ver", "b32-prog", "b32-priv"].forEach((id) =>
+                $(id).addEventListener("input", () => {
+                    renderB32("bech32")
+                    renderB32X("bech32")
+                })
+            )
+            ;["b32m-hrp", "b32m-ver", "b32m-prog", "b32m-priv"].forEach((id) =>
+                $(id).addEventListener("input", () => {
+                    renderB32("bech32m")
+                    renderB32X("bech32m")
+                })
+            )
+
+            renderAll()
+        </script>
+    </body>
+</html>

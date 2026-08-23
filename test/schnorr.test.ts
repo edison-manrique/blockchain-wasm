@@ -275,38 +275,17 @@ describe("schnorr — verify rechaza firmas inválidas", () => {
 // 5) AGREGACIÓN (propiedad + roundtrip, autocontenido)
 // ═══════════════════════════════════════════════════════════════════════════
 
-describe("schnorr — agregación naive", () => {
+describe("schnorr — MuSig2 tag hashes (M1)", () => {
   beforeAll(useDefault, 300_000)
-
-  test("count=0 → error", () => {
-    expect(wasm.exports.schnorr_aggregate_pubkeys(OUT, IN, 0)).toBeLessThan(0)
-    expect(wasm.exports.schnorr_aggregate_privkeys(OUT, IN, 0)).toBeLessThan(0)
-  })
-
-  test("get_pubkey(agg_priv) == agg_pub  (propiedad, priv=1,2)", () => {
-    const aggP = aggPub([XONLY_G, XONLY_2G])
-    const aggD = aggPriv([PRIV1, "0000000000000000000000000000000000000000000000000000000000000002"])
-    expect(getPub(aggD)).toBe(aggP)
-  })
-
-  test("sign(agg_priv) verifica con agg_pub", () => {
-    const aggP = aggPub([XONLY_G, XONLY_2G])
-    const aggD = aggPriv([PRIV1, "0000000000000000000000000000000000000000000000000000000000000002"])
-    const msg = "243f6a8885a308d313198a2e03707344a4093822299f31d0082efa98ec4e6c89"
-    const aux = "0000000000000000000000000000000000000000000000000000000000000000"
-    const sig = sign(aggD, msg, aux)
-    expect(verify(sig, msg, aggP)).toBe(1)
-  })
-
-  test("agregación de 3 claves: propiedad + verify", () => {
-    const pubs = [XONLY_G, XONLY_2G, VEC[0].pub]
-    const privs = [PRIV1, "0000000000000000000000000000000000000000000000000000000000000002", VEC[0].priv]
-    const aggP = aggPub(pubs)
-    const aggD = aggPriv(privs)
-    expect(getPub(aggD)).toBe(aggP)
-    const msg = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-    const aux = "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a"
-    expect(verify(sign(aggD, msg, aux), msg, aggP)).toBe(1)
+  test("MUSIG_TAG_HASHES == SHA256(tags) de node:crypto", () => {
+    const { createHash } = require("node:crypto")
+    const tags = ["KeyAgg list", "KeyAgg coefficient", "MuSig/aux", "MuSig/nonce", "MuSig/noncecoef"]
+    const ptr = wasm.exports.musigTagHashesPtr()
+    const buf = wasm.read(ptr, 160)
+    for (let i = 0; i < tags.length; i++) {
+      const want = createHash("sha256").update(tags[i]).digest("hex")
+      expect(hex(buf.slice(i * 32, i * 32 + 32))).toBe(want)
+    }
   })
 })
 

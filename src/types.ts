@@ -53,7 +53,7 @@ export interface AsmExports {
     sigPtr64: number,
     pubPtr: number,
     pubLen: number,
-    format: number,
+    format: number
   ) => number
 
   // ── schnorr ──
@@ -65,10 +65,55 @@ export interface AsmExports {
     msgPtr: number,
     msgLen: number,
     pubPtr32: number,
-    pubLen: number,
+    pubLen: number
   ) => number
-  schnorr_aggregate_pubkeys: (out32: number, pubsPtr: number, count: number) => number
-  schnorr_aggregate_privkeys: (out32: number, privsPtr: number, count: number) => number
+
+  musigTagHashesPtr: () => number
+
+  // ── musig2 (BIP-327) ─────────────────────────────────────────────────────
+  musig2_keyagg_list_hash: (out32: number, pubsPtr: number, count: number) => number
+  musig2_keyagg_coeff: (out32: number, L32: number, pkBE33: number) => number
+  musig2_keyagg: (out_q32: number, out_gacc8: number, pubsPtr: number, count: number) => number
+  musig2_nonce_gen: (
+    out_k97: number,
+    out_r66: number,
+    secrand32: number,
+    skPtr: number,
+    pk33: number,
+    aggotherpkPtr: number,
+    msgPtr: number,
+    msgLen: number,
+    extPtr: number,
+    extLen: number
+  ) => number
+  musig2_nonce_agg: (out_r66: number, noncesPtr: number, count: number) => number
+  musig2_session_init: (out97: number, aggNonce66: number, q32: number, msgPtr: number, msgLen: number) => number
+  musig2_partial_sign: (
+    out_s32: number,
+    session97: number,
+    gacc8: number,
+    secnonce97: number,
+    priv32: number,
+    coeff32: number
+  ) => number
+  musig2_partial_verify: (
+    s32: number,
+    session97: number,
+    gacc8: number,
+    pubnonce66: number,
+    pk33: number,
+    coeff32: number
+  ) => number
+  musig2_partial_sig_agg: (out_s32: number, partialsPtr: number, count: number) => number
+  musig2_sign_all: (
+    out64: number,
+    out_q32: number,
+    privsPtr: number,
+    count: number,
+    msgPtr: number,
+    msgLen: number,
+    secrandPtr: number
+  ) => number
 
   // ── ecdh ──
   ecdh_shared_secret: (out33: number, privPtr32: number, pubPtr: number, pubLen: number) => number
@@ -81,7 +126,7 @@ export interface AsmExports {
     saltPtr: number,
     saltLen: number,
     iterations: number,
-    dkLen: number,
+    dkLen: number
   ) => void
 
   // ── bip32 ──
@@ -93,7 +138,7 @@ export interface AsmExports {
     parentPtr: number,
     purpose: number,
     coinType: number,
-    account: number,
+    account: number
   ) => number
   bip32_serialize_xpub: (outPtr: number, xkeyPtr: number) => number
   bip32_serialize_xprv: (outPtr: number, xkeyPtr: number) => number
@@ -123,7 +168,7 @@ export interface AsmExports {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number,
+    addressIndex: number
   ) => number
   bip44_derive_pubkey: (
     out33: number,
@@ -133,7 +178,7 @@ export interface AsmExports {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number,
+    addressIndex: number
   ) => number
   bip44_derive_leaf: (
     outPriv32: number,
@@ -144,7 +189,7 @@ export interface AsmExports {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number,
+    addressIndex: number
   ) => number
   bip44_account_xpub: (
     outPtr: number,
@@ -152,7 +197,7 @@ export interface AsmExports {
     seedLen: number,
     purpose: number,
     coinType: number,
-    account: number,
+    account: number
   ) => number
   bip44_account_xprv: (
     outPtr: number,
@@ -160,7 +205,7 @@ export interface AsmExports {
     seedLen: number,
     purpose: number,
     coinType: number,
-    account: number,
+    account: number
   ) => number
   bip44_from_mnemonic_derive: (
     outPriv32: number,
@@ -173,7 +218,7 @@ export interface AsmExports {
     coinType: number,
     account: number,
     change: number,
-    addressIndex: number,
+    addressIndex: number
   ) => number
   bip44_from_mnemonic_xpub: (
     outPtr: number,
@@ -183,7 +228,7 @@ export interface AsmExports {
     passLen: number,
     purpose: number,
     coinType: number,
-    account: number,
+    account: number
   ) => number
   bip44_from_mnemonic_xprv: (
     outPtr: number,
@@ -193,7 +238,7 @@ export interface AsmExports {
     passLen: number,
     purpose: number,
     coinType: number,
-    account: number,
+    account: number
   ) => number
 
   // ── hash (uso interno / canary de tests) ──
@@ -214,6 +259,14 @@ export const HASH_BYTES = 32
 export const SIG_BYTES = 64
 export const HALF_ZONE = 2048 // mitad de PARAM_IN/OUT (4096): input | aux
 
+// ✅ v3.1: BIP-327 estricto (compressed 33+33)
+export const MUSIG_PUBNONCE_BYTES = 66 // cbytes(R1) ‖ cbytes(R2)
+export const MUSIG_AGGNONCE_BYTES = 66 // cbytes_ext(R1) ‖ cbytes_ext(R2)
+export const MUSIG_SECNONCE_BYTES = 97 // k1 ‖ k2 ‖ pk = 32+32+33 (BIP-327 rc.2+)
+export const MUSIG_SESSION_BYTES = 97  // b ‖ e ‖ Rx ‖ g_R = 32+32+32+1
+export const MUSIG_SIG_BYTES = 64
+export const MUSIG_MAX_SIGNERS = 128
+
 // ── Tipos de dominio ──────────────────────────────────────────────────────
 export interface WifKey {
   privateKey: Uint8Array
@@ -223,6 +276,24 @@ export interface EcdsaSignature {
   r: Uint8Array
   s: Uint8Array
   v: number
+}
+/** ✅ FIX v3.0: Resultado de Musig2.keyAgg */
+export interface Musig2KeyAggResult {
+  aggregatedPubkey: Uint8Array // Q.x (32 B, x-only)
+  gacc: number // 0 = Y par, 1 = Y impar
+}
+
+/** ✅ FIX v3.0: Par de nonces de Musig2.nonceGen */
+export interface Musig2NoncePair {
+  secNonce: Uint8Array // k1‖k2 (64 B — NUNCA compartir)
+  pubNonce: Uint8Array // R1.x‖R2.x (64 B — público)
+}
+
+/** ✅ FIX v3.0: Sesión MuSig2 */
+export interface Musig2Session {
+  data: Uint8Array // 97 B opacos (b‖e‖Rx‖g)
+  aggNonce: Uint8Array
+  aggregatedPubkey: Uint8Array
 }
 export type MessageFormat = 0 | 1 | 2 // Universal | Bitcoin | Ethereum
 export type PrivateKey = Uint8Array

@@ -226,6 +226,27 @@ export class EntropySource {
     this.fillInto(ptr, SCALAR_BYTES)
   }
 
+  // ── Dominio MuSig2 (variantes que devuelven Uint8Array) ─────────────────
+
+  /** Secret random de 32 B para musig2_nonce_gen. */
+  musigSecrand(): Uint8Array {
+    return this.bytes(SCALAR_BYTES)
+  }
+
+  /** Array de `n` secret randoms (uno por signer). */
+  musigSecrands(n: number): Uint8Array[] {
+    const out: Uint8Array[] = []
+    for (let i = 0; i < n; i++) out.push(this.bytes(SCALAR_BYTES))
+    return out
+  }
+
+  // ── Dominio MuSig2 (variantes zero-copia en memoria WASM) ───────────────
+
+  /** Secret random de 32 B en `ptr` (para musig2_nonce_gen). */
+  musigSecrandInto(ptr: number): void {
+    this.fillInto(ptr, SCALAR_BYTES)
+  }
+
   // ── Interno ─────────────────────────────────────────────────────────────
 
   private _requireMemory(): void {
