@@ -12,7 +12,7 @@
 
 ### FEAT-1 — BIP-327 MuSig2 (Multifirma Schnorr de 2 Rondas)
 
-Motor completo de firma múltiple Schnorr compatible con Bitcoin Taproot, resistente al ataque *rogue-key*.
+Motor completo de firma múltiple Schnorr compatible con Bitcoin Taproot, resistente al ataque _rogue-key_.
 
 - **WASM:** `assembly/signatures/schnorr/musig2/` — `keyagg.ts`, `nonce.ts`, `sign.ts`, `index.ts`.
   - `musig2_key_agg` + coeficientes $a_i$ (HashAHAI determinísticos, anti-rogue).
@@ -41,6 +41,7 @@ Motor completo de firma múltiple Schnorr compatible con Bitcoin Taproot, resist
 ### FEAT-4 — Laboratorio BIP-32 xpub & xprv (`playground/bip32.html`)
 
 Reescrito como laboratorio educativo interactivo de 3 pestañas:
+
 1. **Explorador de Árbol HD** — seed → `xprv` / `xpub` en cualquier ruta, con profundidad, fingerprint e índice.
 2. **Cartera Watch-Only** — simulador real de derivación pública desde `xpub` sin claves privadas; demuestra por qué las rutas hardened (`'`) son imposibles con `xpub`.
 3. **Anatomía de 78 Bytes** — desglose de los campos `Version / Depth / Parent FP / Child Index / Chain Code / Key Data` con regla de oro de seguridad hardened.
@@ -48,6 +49,7 @@ Reescrito como laboratorio educativo interactivo de 3 pestañas:
 ### FEAT-5 — Medición de Memoria en Benchmark
 
 `test/bench.ts` ahora reporta:
+
 - Páginas de memoria WASM antes y después de todos los benchmarks.
 - Delta de WASM `memory.grow` — garantía **ZERO-GROW** verificada en cada ejecución.
 - Delta del heap JS de Bun — impacto recolectable por GC.
@@ -56,33 +58,34 @@ Reescrito como laboratorio educativo interactivo de 3 pestañas:
 
 ## 🐛 Bugs corregidos
 
-| ID | Archivo | Fix |
-| --- | --- | --- |
-| FIX-10 | `playground/encoding.html` | Bech32m Taproot cross-check mostraba ❌ porque comparaba la clave interna $P$ (sin tweak) con `Address.p2tr` que aplica $Q = P + \text{TapTweak}(P)\cdot G$ (BIP-86). Ahora decodifica la dirección con `bechDecode` para extraer $Q$ y valida que `bechEncode("bc", 1, Q, "bech32m") === Address.p2tr(pub)` → muestra ✓ correctamente. |
-| FIX-11 | `test/bench.ts` — `makeKeyStream` | El buffer compartido de la stream de claves era mutatado en el mismo tick de JS entre la llamada a `getPublicKey` (que modifica el input buffer) y la subsiguiente llamada a `Address.eth/tron`, haciendo que se pasara una pubkey alterada de 33 B a `eth_address`/`tron_address` que exigen 65 B → `WasmError -1`. Corregido con `buf.slice()` (copia por iteración) y base scalar 32 bits (sin riesgo de overflow del campo). |
-| FIX-12 | `playground/bip44.html` | Default `purpose` en el `<select>` estaba marcado en `49` (Nested SegWit) en lugar de `44` (Legacy). Corregido con `selected` en la opción `44`. |
+| ID     | Archivo                           | Fix                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------ | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FIX-10 | `playground/encoding.html`        | Bech32m Taproot cross-check mostraba ❌ porque comparaba la clave interna $P$ (sin tweak) con `Address.p2tr` que aplica $Q = P + \text{TapTweak}(P)\cdot G$ (BIP-86). Ahora decodifica la dirección con `bechDecode` para extraer $Q$ y valida que `bechEncode("bc", 1, Q, "bech32m") === Address.p2tr(pub)` → muestra ✓ correctamente.                                                                                        |
+| FIX-11 | `test/bench.ts` — `makeKeyStream` | El buffer compartido de la stream de claves era mutado en el mismo tick de JS entre la llamada a `getPublicKey` (que modifica el input buffer) y la subsiguiente llamada a `Address.eth/tron`, haciendo que se pasara una pubkey alterada de 33 B a `eth_address`/`tron_address` que exigen 65 B → `WasmError -1`. Corregido con `buf.slice()` (copia por iteración) y base scalar 32 bits (sin riesgo de overflow del campo). |
+| FIX-12 | `playground/bip44.html`           | Default `purpose` en el `<select>` estaba marcado en `49` (Nested SegWit) en lugar de `44` (Legacy). Corregido con `selected` en la opción `44`.                                                                                                                                                                                                                                                                               |
 
 ---
 
 ## ⚡ Rendimiento (medido con `bun test/bench.ts` en x86_64)
 
-| Operación | Rendimiento |
-| --- | --- |
-| `Secp256k1.getPublicKey` (compressed 33B) | **~54,000 ops/s** |
-| `Secp256k1.compress` (65→33) | **~2,020,000 ops/s** |
-| `Address.p2pkhUncompressed` (Legacy 65B) | **~230,500 ops/s** |
-| `Address.eth` (EIP-55) | **~205,500 ops/s** |
-| `Address.tron` (Base58Check `T...`) | **~188,300 ops/s** |
-| `End-to-End priv → tron` | **~41,800 dir/s** |
-| `End-to-End priv → p2wpkh` | **~15,900 dir/s** |
-| `Schnorr.getPublicKey` (x-only 32B) | **~80,300 ops/s** |
-| `Musig2.partialSign` (32B psig) | **~75,100 ops/s** |
-| `Musig2.partialSigAgg` (3 firmantes) | **~3,045,000 ops/s** |
-| `Musig2.keyAgg` (3 firmantes → Q) | **~1,200 ops/s** |
-| `BIP-39 generate` (128 bits) | **~757,800 ops/s** |
-| `BIP-32 fromSeed` | **~422,400 ops/s** |
+| Operación                                 | Rendimiento          |
+| ----------------------------------------- | -------------------- |
+| `Secp256k1.getPublicKey` (compressed 33B) | **~54,000 ops/s**    |
+| `Secp256k1.compress` (65→33)              | **~2,020,000 ops/s** |
+| `Address.p2pkhUncompressed` (Legacy 65B)  | **~230,500 ops/s**   |
+| `Address.eth` (EIP-55)                    | **~205,500 ops/s**   |
+| `Address.tron` (Base58Check `T...`)       | **~188,300 ops/s**   |
+| `End-to-End priv → tron`                  | **~41,800 dir/s**    |
+| `End-to-End priv → p2wpkh`                | **~15,900 dir/s**    |
+| `Schnorr.getPublicKey` (x-only 32B)       | **~80,300 ops/s**    |
+| `Musig2.partialSign` (32B psig)           | **~75,100 ops/s**    |
+| `Musig2.partialSigAgg` (3 firmantes)      | **~3,045,000 ops/s** |
+| `Musig2.keyAgg` (3 firmantes → Q)         | **~1,200 ops/s**     |
+| `BIP-39 generate` (128 bits)              | **~757,800 ops/s**   |
+| `BIP-32 fromSeed`                         | **~422,400 ops/s**   |
 
 **Garantía Zero-Alloc (verificada en benchmark completo):**
+
 - WASM `memory.grow` = **0 páginas (0 bytes)**. 11 páginas estáticas (704 KB) — sin crecimiento.
 - Bun Heap Δ ≈ 2.3 MB (recolectable por GC, no alocaciones WASM).
 
@@ -90,20 +93,21 @@ Reescrito como laboratorio educativo interactivo de 3 pestañas:
 
 ## 🧪 Validación de la release
 
-| Área | Cobertura | Resultado |
-| --- | --- | --- |
-| BIP-327 MuSig2 | 15 vectores oficiales: `keyAgg`, `nonceGen`, `nonceAgg`, `sign_verify`, `sig_agg` | ✅ 15/15 pass |
-| BIP-340 Schnorr | Vectores oficiales + firmas end-to-end | ✅ pass |
-| Address (BTC/ETH/Tron) | 27 tests — P2PKH/P2SH/P2WPKH/P2TR/ETH/Tron/SS58/Solana/Cardano | ✅ 27/27 pass |
-| BIP-44 multi-coin | 19 tests — derivación seed, mnemónico, xpub/xprv, ETH | ✅ 19/19 pass |
-| TypeScript typecheck | `tsc --noEmit` sobre todo el codebase | ✅ 0 errores |
-| Bech32m cross-check | `bechEncode("bc", 1, Q_tweaked) === Address.p2tr(pub)` | ✅ match |
+| Área                   | Cobertura                                                                         | Resultado     |
+| ---------------------- | --------------------------------------------------------------------------------- | ------------- |
+| BIP-327 MuSig2         | 15 vectores oficiales: `keyAgg`, `nonceGen`, `nonceAgg`, `sign_verify`, `sig_agg` | ✅ 15/15 pass |
+| BIP-340 Schnorr        | Vectores oficiales + firmas end-to-end                                            | ✅ pass       |
+| Address (BTC/ETH/Tron) | 27 tests — P2PKH/P2SH/P2WPKH/P2TR/ETH/Tron                                        | ✅ 27/27 pass |
+| BIP-44 multi-coin      | 19 tests — derivación seed, mnemónico, xpub/xprv, ETH                             | ✅ 19/19 pass |
+| TypeScript typecheck   | `tsc --noEmit` sobre todo el codebase                                             | ✅ 0 errores  |
+| Bech32m cross-check    | `bechEncode("bc", 1, Q_tweaked) === Address.p2tr(pub)`                            | ✅ match      |
 
 ---
 
 ## ⚠️ Compatibilidad
 
 **API pública:** sin roturas. Adiciones:
+
 - `Musig2` (nuevo): `keyAgg`, `keyAggCoeffs`, `nonceGen`, `nonceAgg`, `sessionInit`, `partialSign`, `partialVerify`, `partialSigAgg`, `signAll`.
 - `Address.tron(pub65)` y `Address.fromPrivateKey(priv, "tron")` (ya disponible desde 2.1.0 a nivel WASM; ahora completo en playground y benchmark).
 - `Bip44.COIN_TRON = 195`.
