@@ -421,7 +421,7 @@
     </div>
 
     <script type="module">
-      import { BlockchainWasm, Secp256k1, Ecdsa, Address, hexToBytes, bytesToHex } from "./dist/index.js"
+      import { BlockchainWasm, Secp256k1, Ecdsa, Address, hexToBytes, bytesToHex } from "../dist/index.js"
 
       const wasm = await BlockchainWasm.load()
       console.log("BlockchainWasm cargado para Anvil Wallet")
@@ -661,7 +661,14 @@
       }
 
       // ── Sign and Send Transaction ──
-      async function signAndSendTx(fromIdx, toAddress, amountEth, gasPriceGwei = 20, gasLimit = 21000, explicitNonce = null) {
+      async function signAndSendTx(
+        fromIdx,
+        toAddress,
+        amountEth,
+        gasPriceGwei = 20,
+        gasLimit = 21000,
+        explicitNonce = null
+      ) {
         const startTime = performance.now()
         const sender = accounts[fromIdx]
         if (!sender) throw new Error("Emisor no válido")
@@ -670,7 +677,9 @@
         if (cleanTo.length !== 40) throw new Error("Dirección destino inválida (debe ser 20 bytes)")
 
         if (sender.address.toLowerCase() === toAddress.toLowerCase()) {
-          throw new Error("El emisor y el destinatario son la misma cuenta. Selecciona una cuenta de destino diferente.")
+          throw new Error(
+            "El emisor y el destinatario son la misma cuenta. Selecciona una cuenta de destino diferente."
+          )
         }
 
         // 1. Get nonce (o usar nonce explícito para ráfagas)
