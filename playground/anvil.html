@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Anvil EVM Wallet & Transaction Validator — BlockchainWasm</title>
+        <link rel="stylesheet" href="css/theme.css" />
+        <style>
+            .account-list {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                overflow-y: auto;
+                max-height: calc(100vh - 240px);
+                padding-right: 4px;
+            }
+            .acc-card {
+                background: var(--bg-dark-2);
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius-md);
+                padding: 8px 10px;
+                cursor: pointer;
+                transition: var(--transition-fast);
+                position: relative;
+            }
+            .acc-card:hover {
+                border-color: var(--gold-primary);
+                background: var(--bg-dark-3);
+            }
+            .acc-card.selected {
+                border-color: var(--gold-primary);
+                background: var(--gold-muted);
+                box-shadow: 0 0 8px rgba(240, 185, 11, 0.2);
+            }
+            .acc-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 4px;
+            }
+            .acc-idx {
+                font-size: 11px;
+                font-weight: 700;
+                color: var(--gold-primary);
+            }
+            .acc-bal {
+                font-size: 12px;
+                font-weight: 700;
+                color: var(--green-success);
+                font-family: var(--font-mono);
+            }
+            .acc-addr {
+                font-size: 11px;
+                font-family: var(--font-mono);
+                color: var(--text-muted);
+                word-break: break-all;
+            }
+            .acc-nonce {
+                font-size: 10px;
+                color: var(--text-dim);
+            }
+            .tx-step-box {
+                background: var(--bg-dark-0);
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius-sm);
+                padding: 6px 8px;
+                font-family: var(--font-mono);
+                font-size: 11px;
+                color: var(--text-muted);
+                word-break: break-all;
+                max-height: 70px;
+                overflow-y: auto;
+            }
+            .history-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 11px;
+            }
+            .history-table th {
+                text-align: left;
+                padding: 6px 8px;
+                background: var(--bg-dark-3);
+                color: var(--text-muted);
+                font-weight: 600;
+                border-bottom: 1px solid var(--border-color);
+            }
+            .history-table td {
+                padding: 6px 8px;
+                border-bottom: 1px solid var(--border-color);
+                font-family: var(--font-mono);
+            }
+            .history-table tr:hover {
+                background: var(--bg-dark-2);
+            }
+            .chip-btn {
+                background: var(--bg-dark-4);
+                border: 1px solid var(--border-color);
+                color: var(--text-main);
+                padding: 2px 8px;
+                border-radius: 10px;
+                font-size: 11px;
+                cursor: pointer;
+                transition: var(--transition-fast);
+            }
+            .chip-btn:hover {
+                border-color: var(--gold-primary);
+                color: var(--gold-primary);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="app-viewport">
+            <!-- Header -->
+            <header class="app-header">
+                <a href="index.html" class="brand-container">
+                    <div class="brand-logo">⚡</div>
+                    <div class="brand-title">BlockchainWasm <span class="tag">Anvil EVM Wallet</span></div>
+                </a>
+                <div class="header-status">
+                    <div class="wasm-badge">
+                        <span class="status-dot" id="anvil-dot" style="background:#848E9C"></span>
+                        <span id="anvil-status-text">Conectando Anvil (8545)...</span>
+                    </div>
+                    <div class="wasm-badge">
+                        <span class="status-dot active"></span>
+                        <span id="wasm-status-text">WASM v3.2.0 Zero-Alloc</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Split -->
+            <div class="app-body">
+                <!-- Sidebar -->
+                <nav class="app-sidebar">
+                    <div class="sidebar-title">Módulos Criptográficos</div>
+                    <a href="index.html" class="sidebar-item">
+                        <span>⚡ Dashboard Central</span>
+                    </a>
+                    <a href="anvil.html" class="sidebar-item active">
+                        <span>🔨 Anvil EVM Wallet</span>
+                        <span class="item-badge" style="background:var(--gold-muted);color:var(--gold-primary)">TESTNET</span>
+                    </a>
+                    <a href="multisig.html" class="sidebar-item">
+                        <span>🤝 MuSig2 Multisig</span>
+                        <span class="item-badge">BIP327</span>
+                    </a>
+                    <a href="bip44.html" class="sidebar-item">
+                        <span>💼 BIP-44 Derivador</span>
+                    </a>
+                    <a href="address.html" class="sidebar-item">
+                        <span>📫 Direcciones BTC/ETH/TRX</span>
+                    </a>
+                    <a href="ecdsa.html" class="sidebar-item">
+                        <span>✍️ ECDSA Secp256k1</span>
+                    </a>
+                    <a href="schnorr.html" class="sidebar-item">
+                        <span>⚡ Schnorr Taproot</span>
+                    </a>
+                    <a href="encoding.html" class="sidebar-item">
+                        <span>🔤 Encoding Lab</span>
+                    </a>
+                    <a href="hash.html" class="sidebar-item">
+                        <span>🧪 Hash Lab</span>
+                    </a>
+                    <a href="bip39.html" class="sidebar-item">
+                        <span>🌱 BIP-39 Mnemónicos</span>
+                    </a>
+                    <a href="bip32.html" class="sidebar-item">
+                        <span>🌳 BIP-32 xpub/xprv</span>
+                    </a>
+                </nav>
+
+                <!-- 3 Columns Layout: Accounts (Left) | Send & Sign (Center) | History & Stress (Right) -->
+                <main class="app-main" style="display:grid;grid-template-columns:300px 1fr 340px;gap:12px;padding:12px;overflow:hidden">
+                    
+                    <!-- COL 1: Cuentas Anvil -->
+                    <div class="panel-card" style="display:flex;flex-direction:column;gap:8px">
+                        <div class="panel-header" style="justify-content:space-between">
+                            <span class="panel-title">🏦 Cuentas Anvil (RPC)</span>
+                            <button id="btn-refresh-all" class="btn btn-secondary" style="padding:2px 6px;font-size:10px">↻ Refrescar</button>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-muted);display:flex;justify-content:space-between;padding:0 2px">
+                            <span>Mnemónico: <code>test … junk</code></span>
+                            <span id="lbl-chain-id">Chain ID: 31337</span>
+                        </div>
+                        <div class="account-list" id="account-list">
+                            <!-- Populated dynamically -->
+                            <div style="text-align:center;padding:20px;color:var(--text-muted)">Cargando cuentas...</div>
+                        </div>
+                    </div>
+
+                    <!-- COL 2: Transferir & Firma WASM -->
+                    <div class="panel-card" style="display:flex;flex-direction:column;gap:10px;overflow-y:auto">
+                        <div class="panel-header">
+                            <span class="panel-title">💸 Transferir ETH (Firma ECDSA en WASM)</span>
+                            <span class="badge" style="background:var(--gold-muted);color:var(--gold-primary);font-size:10px;padding:2px 6px;border-radius:4px">EIP-155 Real Tx</span>
+                        </div>
+
+                        <!-- Formulario de Envío -->
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                            <div class="form-group">
+                                <label class="form-label">Cuenta Origen (From)</label>
+                                <input type="text" id="tx-from-addr" class="input-text" readonly style="font-family:var(--font-mono);font-size:11px;background:var(--bg-dark-1)" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Destinatario Rápido (To)</label>
+                                <select id="tx-to-select" class="input-text" style="font-size:11px">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Dirección Destino Personalizada</label>
+                            <input type="text" id="tx-to-custom" class="input-text" placeholder="0x..." style="font-family:var(--font-mono);font-size:11px" />
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:flex-end">
+                            <div class="form-group">
+                                <label class="form-label">Monto (ETH)</label>
+                                <input type="number" id="tx-amount" class="input-text" value="1.0" step="0.1" min="0.0001" style="font-family:var(--font-mono);font-size:12px;font-weight:700" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Gas Price (Gwei)</label>
+                                <input type="number" id="tx-gas-price" class="input-text" value="20" style="font-family:var(--font-mono);font-size:11px" />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Gas Limit</label>
+                                <input type="number" id="tx-gas-limit" class="input-text" value="21000" style="font-family:var(--font-mono);font-size:11px" />
+                            </div>
+                        </div>
+
+                        <!-- Presets de Monto -->
+                        <div style="display:flex;gap:6px;align-items:center">
+                            <span style="font-size:10px;color:var(--text-muted)">Presets:</span>
+                            <button class="chip-btn" onclick="setAmount('0.1')">0.1 ETH</button>
+                            <button class="chip-btn" onclick="setAmount('0.5')">0.5 ETH</button>
+                            <button class="chip-btn" onclick="setAmount('1.0')">1.0 ETH</button>
+                            <button class="chip-btn" onclick="setAmount('5.0')">5.0 ETH</button>
+                            <button class="chip-btn" onclick="setAmount('10.0')">10 ETH</button>
+                        </div>
+
+                        <!-- Botón Principal -->
+                        <button id="btn-send-tx" class="btn btn-primary" style="padding:10px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px">
+                            <span>⚡ Firmar con WASM & Transferir en Anvil</span>
+                        </button>
+
+                        <!-- Pipeline Criptográfico de la Firma (Live Breakdown) -->
+                        <div style="margin-top:6px;border-top:1px solid var(--border-color);padding-top:8px">
+                            <div style="font-size:11px;font-weight:700;color:var(--gold-primary);margin-bottom:6px">
+                                🔍 Desglose de Ejecución Criptográfica (WASM Zero-Alloc)
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                                <div>
+                                    <span style="font-size:10px;color:var(--text-muted)">1. Keccak256 Hash del Tx no firmado:</span>
+                                    <div class="tx-step-box" id="inspect-txhash">-</div>
+                                </div>
+                                <div>
+                                    <span style="font-size:10px;color:var(--text-muted)">2. Firma ECDSA WASM { r, s, v }:</span>
+                                    <div class="tx-step-box" id="inspect-sig">-</div>
+                                </div>
+                            </div>
+                            <div style="margin-top:6px">
+                                <span style="font-size:10px;color:var(--text-muted)">3. Raw Transaction RLP Final transmitida a Anvil:</span>
+                                <div class="tx-step-box" id="inspect-rawtx" style="max-height:45px">-</div>
+                            </div>
+                        </div>
+
+                        <!-- Resultado / Recibo -->
+                        <div id="tx-receipt-card" style="display:none;background:rgba(14,203,129,0.08);border:1px solid var(--green-success);border-radius:var(--radius-sm);padding:8px">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                                <span style="font-weight:700;color:var(--green-success);font-size:11px">✓ Transacción Confirmada en Bloque</span>
+                                <span id="receipt-block" style="font-family:var(--font-mono);font-size:11px;font-weight:700">#0</span>
+                            </div>
+                            <div style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);word-break:break-all">
+                                Tx Hash: <span id="receipt-hash" style="color:var(--text-main)">-</span>
+                            </div>
+                            <div style="font-size:10px;color:var(--text-dim);margin-top:2px">
+                                Gas Usado: <span id="receipt-gas">-</span> | Latencia WASM + RPC: <span id="receipt-time">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COL 3: Stress Test & Historial -->
+                    <div class="panel-card" style="display:flex;flex-direction:column;gap:10px">
+                        <div class="panel-header">
+                            <span class="panel-title">⚡ Stress Test de Firma WASM</span>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-muted);line-height:1.4">
+                            Ejecuta múltiples firmas ECDSA en ráfaga con nonces incrementales consecutivos y las transmite a Anvil para certificar robustez.
+                        </div>
+
+                        <div style="display:flex;gap:6px">
+                            <button id="btn-stress-5" class="btn btn-secondary" style="flex:1;font-size:11px">5 Txs en Ráfaga</button>
+                            <button id="btn-stress-10" class="btn btn-secondary" style="flex:1;font-size:11px">10 Txs en Ráfaga</button>
+                        </div>
+                        <div id="stress-progress" style="font-size:11px;font-family:var(--font-mono);color:var(--gold-primary);display:none">
+                            Enviando: <span id="stress-count">0/5</span>...
+                        </div>
+
+                        <div class="panel-header" style="margin-top:6px;border-top:1px solid var(--border-color);padding-top:8px">
+                            <span class="panel-title">📜 Historial de Transacciones</span>
+                            <span id="tx-count-badge" style="font-size:10px;color:var(--text-muted)">0 txs</span>
+                        </div>
+                        <div style="overflow-y:auto;flex:1;max-height:calc(100vh - 350px)">
+                            <table class="history-table">
+                                <thead>
+                                    <tr>
+                                        <th>Bloque</th>
+                                        <th>Valor</th>
+                                        <th>De → A</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-tbody">
+                                    <tr>
+                                        <td colspan="4" style="text-align:center;color:var(--text-dim);padding:14px">Sin transacciones aún</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </main>
+            </div>
+        </div>
+
+        <script type="module">
+            import { BlockchainWasm, Secp256k1, Ecdsa, Address, hexToBytes, bytesToHex } from "./dist/index.js";
+
+            const wasm = await BlockchainWasm.load();
+            console.log("BlockchainWasm cargado para Anvil Wallet");
+
+            // 10 Anvil default private keys & precalculated accounts
+            const ANVIL_KEYS = [
+                "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+                "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+                "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
+                "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6",
+                "0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a",
+                "0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba",
+                "0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e",
+                "0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356",
+                "0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97",
+                "0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6"
+            ];
+
+            let accounts = [];
+            let selectedSenderIdx = 0;
+            let txHistory = [];
+            const RPC_URL = "http://127.0.0.1:8545";
+
+            // ── Keccak256 via WASM Direct Export ──
+            function keccak256(data) {
+                const a = wasm.allocator;
+                a.writeInput(data, 0);
+                wasm.exp.keccak256_hash_raw(a.outPtr, a.inPtr, data.length);
+                return a.readOutput(32);
+            }
+
+            // ── BigInt to BE bytes helper ──
+            function bigIntToBytes(bi) {
+                let hex = bi.toString(16);
+                if (hex.length % 2 !== 0) hex = "0" + hex;
+                return hexToBytes(hex);
+            }
+
+            // ── RLP Encoder ──
+            function rlpEncode(item) {
+                if (item instanceof Uint8Array) {
+                    if (item.length === 1 && item[0] < 0x80) return item;
+                    if (item.length <= 55) {
+                        const res = new Uint8Array(1 + item.length);
+                        res[0] = 0x80 + item.length;
+                        res.set(item, 1);
+                        return res;
+                    } else {
+                        const lenBytes = bigIntToBytes(BigInt(item.length));
+                        const res = new Uint8Array(1 + lenBytes.length + item.length);
+                        res[0] = 0xb7 + lenBytes.length;
+                        res.set(lenBytes, 1);
+                        res.set(item, 1 + lenBytes.length);
+                        return res;
+                    }
+                } else if (typeof item === "bigint" || typeof item === "number") {
+                    const bi = BigInt(item);
+                    if (bi === 0n) return new Uint8Array([0x80]);
+                    return rlpEncode(bigIntToBytes(bi));
+                } else if (Array.isArray(item)) {
+                    const encodedItems = item.map(rlpEncode);
+                    const totalLen = encodedItems.reduce((sum, it) => sum + it.length, 0);
+                    let prefix;
+                    if (totalLen <= 55) {
+                        prefix = new Uint8Array([0xc0 + totalLen]);
+                    } else {
+                        const lenBytes = bigIntToBytes(BigInt(totalLen));
+                        prefix = new Uint8Array(1 + lenBytes.length);
+                        prefix[0] = 0xf7 + lenBytes.length;
+                        prefix.set(lenBytes, 1);
+                    }
+                    const res = new Uint8Array(prefix.length + totalLen);
+                    res.set(prefix, 0);
+                    let offset = prefix.length;
+                    for (const it of encodedItems) {
+                        res.set(it, offset);
+                        offset += it.length;
+                    }
+                    return res;
+                } else if (typeof item === "string") {
+                    if (item.startsWith("0x")) {
+                        const hex = item.slice(2);
+                        if (hex === "" || hex === "0" || hex === "00") return new Uint8Array([0x80]);
+                        return rlpEncode(hexToBytes(hex.length % 2 === 1 ? "0" + hex : hex));
+                    }
+                    return rlpEncode(new TextEncoder().encode(item));
+                }
+                throw new Error("Elemento no soportado para RLP: " + item);
+            }
+
+            // ── JSON-RPC Client ──
+            let rpcId = 1;
+            async function rpc(method, params = []) {
+                const res = await fetch(RPC_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ jsonrpc: "2.0", id: rpcId++, method, params })
+                }).then(r => r.json());
+                if (res.error) throw new Error(res.error.message);
+                return res.result;
+            }
+
+            // ── Build Accounts ──
+            function initAccounts() {
+                accounts = ANVIL_KEYS.map((privHex, i) => {
+                    const priv = hexToBytes(privHex.slice(2));
+                    const address = Address.fromPrivateKey(priv, "eth");
+                    return {
+                        index: i,
+                        privHex,
+                        priv,
+                        address,
+                        balanceEth: "0.0",
+                        nonce: 0
+                    };
+                });
+            }
+
+            // ── Refresh Balances & Nonces ──
+            async function refreshAccounts() {
+                try {
+                    const blockHex = await rpc("eth_blockNumber");
+                    const blockNum = parseInt(blockHex, 16);
+                    document.getElementById("anvil-dot").style.background = "var(--green-success)";
+                    document.getElementById("anvil-status-text").textContent = `Anvil Conectado (Bloque #${blockNum})`;
+
+                    for (const acc of accounts) {
+                        const balHex = await rpc("eth_getBalance", [acc.address, "latest"]);
+                        const nonceHex = await rpc("eth_getTransactionCount", [acc.address, "latest"]);
+                        acc.balanceEth = (Number(BigInt(balHex)) / 1e18).toFixed(4);
+                        acc.nonce = parseInt(nonceHex, 16);
+                    }
+                    renderAccounts();
+                    updateFormSender();
+                } catch (err) {
+                    document.getElementById("anvil-dot").style.background = "var(--red-error)";
+                    document.getElementById("anvil-status-text").textContent = "Anvil Desconectado (" + err.message + ")";
+                }
+            }
+
+            function renderAccounts() {
+                const list = document.getElementById("account-list");
+                list.innerHTML = "";
+                const selectTo = document.getElementById("tx-to-select");
+                const currentSelectVal = selectTo.value;
+                selectTo.innerHTML = "";
+
+                accounts.forEach((acc, i) => {
+                    const card = document.createElement("div");
+                    card.className = "acc-card" + (i === selectedSenderIdx ? " selected" : "");
+                    card.onclick = () => {
+                        selectedSenderIdx = i;
+                        renderAccounts();
+                        updateFormSender();
+                    };
+                    card.innerHTML = `
+                        <div class="acc-header">
+                            <span class="acc-idx">Cuenta #${acc.index}</span>
+                            <span class="acc-bal">${acc.balanceEth} ETH</span>
+                        </div>
+                        <div class="acc-addr">${acc.address}</div>
+                        <div class="acc-nonce">Nonce: ${acc.nonce}</div>
+                    `;
+                    list.appendChild(card);
+
+                    // Add to dropdown
+                    if (i !== selectedSenderIdx) {
+                        const opt = document.createElement("option");
+                        opt.value = acc.address;
+                        opt.textContent = `Cuenta #${acc.index} (${acc.address.slice(0, 8)}… - ${acc.balanceEth} ETH)`;
+                        selectTo.appendChild(opt);
+                    }
+                });
+
+                if (currentSelectVal && selectTo.querySelector(`option[value="${currentSelectVal}"]`)) {
+                    selectTo.value = currentSelectVal;
+                }
+            }
+
+            function updateFormSender() {
+                const acc = accounts[selectedSenderIdx];
+                if (!acc) return;
+                document.getElementById("tx-from-addr").value = `${acc.address} (Saldo: ${acc.balanceEth} ETH, Nonce: ${acc.nonce})`;
+                const toSelect = document.getElementById("tx-to-select");
+                if (toSelect.options.length > 0 && !document.getElementById("tx-to-custom").value) {
+                    document.getElementById("tx-to-custom").value = toSelect.value;
+                }
+            }
+
+            document.getElementById("tx-to-select").addEventListener("change", (e) => {
+                document.getElementById("tx-to-custom").value = e.target.value;
+            });
+
+            window.setAmount = (val) => {
+                document.getElementById("tx-amount").value = val;
+            };
+
+            // ── Sign and Send Transaction ──
+            async function signAndSendTx(fromIdx, toAddress, amountEth, gasPriceGwei = 20, gasLimit = 21000) {
+                const startTime = performance.now();
+                const sender = accounts[fromIdx];
+                if (!sender) throw new Error("Emisor no válido");
+
+                // 1. Get fresh nonce & chainId
+                const nonceHex = await rpc("eth_getTransactionCount", [sender.address, "latest"]);
+                const nonce = BigInt(nonceHex);
+                const chainId = 31337n;
+
+                const gasPrice = BigInt(Math.round(gasPriceGwei * 1e9));
+                const gasLimitBig = BigInt(gasLimit);
+                const cleanTo = toAddress.startsWith("0x") ? toAddress.slice(2) : toAddress;
+                const toBytes = hexToBytes(cleanTo);
+                const value = BigInt(Math.round(parseFloat(amountEth) * 1e18));
+                const data = new Uint8Array(0);
+
+                // 2. Unsigned EIP-155 RLP
+                const unsignedFields = [nonce, gasPrice, gasLimitBig, toBytes, value, data, chainId, 0n, 0n];
+                const unsignedRlp = rlpEncode(unsignedFields);
+
+                // 3. Keccak256 hash
+                const txHashToSign = keccak256(unsignedRlp);
+
+                // 4. ECDSA Sign in WASM
+                const sig = Ecdsa.sign(txHashToSign, sender.priv);
+                const v = chainId * 2n + 35n + BigInt(sig.v);
+
+                // 5. Signed EIP-155 RLP
+                const signedFields = [nonce, gasPrice, gasLimitBig, toBytes, value, data, v, sig.r, sig.s];
+                const signedRlp = rlpEncode(signedFields);
+                const rawTxHex = "0x" + bytesToHex(signedRlp);
+
+                // Inspector updates
+                document.getElementById("inspect-txhash").textContent = "0x" + bytesToHex(txHashToSign);
+                document.getElementById("inspect-sig").textContent = `r: ${bytesToHex(sig.r).slice(0, 12)}…\ns: ${bytesToHex(sig.s).slice(0, 12)}…\nv: ${v} (recId: ${sig.v})`;
+                document.getElementById("inspect-rawtx").textContent = rawTxHex;
+
+                // 6. Broadcast to Anvil
+                const txHashBroadcast = await rpc("eth_sendRawTransaction", [rawTxHex]);
+
+                // 7. Wait / poll for receipt
+                let receipt = null;
+                for (let poll = 0; poll < 10; poll++) {
+                    receipt = await rpc("eth_getTransactionReceipt", [txHashBroadcast]);
+                    if (receipt) break;
+                    await new Promise(r => setTimeout(r, 80));
+                }
+
+                const elapsedMs = (performance.now() - startTime).toFixed(1);
+                const blockNum = receipt ? parseInt(receipt.blockNumber, 16) : "-";
+                const gasUsed = receipt ? parseInt(receipt.gasUsed, 16) : 21000;
+
+                // Update UI Receipt
+                const rCard = document.getElementById("tx-receipt-card");
+                rCard.style.display = "block";
+                document.getElementById("receipt-block").textContent = `Bloque #${blockNum}`;
+                document.getElementById("receipt-hash").textContent = txHashBroadcast;
+                document.getElementById("receipt-gas").textContent = `${gasUsed} gas`;
+                document.getElementById("receipt-time").textContent = `${elapsedMs} ms`;
+
+                // Add to history
+                addHistoryEntry({
+                    block: blockNum,
+                    value: amountEth + " ETH",
+                    from: sender.address,
+                    to: toAddress,
+                    hash: txHashBroadcast,
+                    status: receipt && receipt.status === "0x1" ? "SUCCESS" : "MINED"
+                });
+
+                // Refresh balances
+                await refreshAccounts();
+
+                return { txHash: txHashBroadcast, receipt, elapsedMs };
+            }
+
+            function addHistoryEntry(tx) {
+                txHistory.unshift(tx);
+                document.getElementById("tx-count-badge").textContent = `${txHistory.length} txs`;
+                const tbody = document.getElementById("history-tbody");
+                tbody.innerHTML = "";
+                txHistory.slice(0, 20).forEach(item => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td style="color:var(--gold-primary);font-weight:700">#${item.block}</td>
+                        <td style="color:var(--green-success);font-weight:700">${item.value}</td>
+                        <td>
+                            <div style="font-size:10px">${item.from.slice(0, 6)}… → ${item.to.slice(0, 6)}…</div>
+                            <div style="font-size:9px;color:var(--text-dim)">${item.hash.slice(0, 14)}…</div>
+                        </td>
+                        <td><span style="color:var(--green-success);font-weight:700">✓ OK</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // ── Event Handlers ──
+            document.getElementById("btn-refresh-all").addEventListener("click", refreshAccounts);
+
+            document.getElementById("btn-send-tx").addEventListener("click", async () => {
+                const btn = document.getElementById("btn-send-tx");
+                const toAddr = document.getElementById("tx-to-custom").value.trim();
+                const amount = document.getElementById("tx-amount").value.trim();
+                const gasPrice = parseFloat(document.getElementById("tx-gas-price").value) || 20;
+                const gasLimit = parseInt(document.getElementById("tx-gas-limit").value) || 21000;
+
+                if (!toAddr || !toAddr.startsWith("0x") || toAddr.length !== 42) {
+                    alert("Por favor introduce una dirección Ethereum válida (0x... 42 caracteres)");
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.innerHTML = "<span>⏳ Firmando en WASM y Transmitiendo...</span>";
+                try {
+                    await signAndSendTx(selectedSenderIdx, toAddr, amount, gasPrice, gasLimit);
+                } catch (err) {
+                    alert("Error en la transacción: " + err.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = "<span>⚡ Firmar con WASM & Transferir en Anvil</span>";
+                }
+            });
+
+            // ── Stress Test ──
+            async function runStressTest(count) {
+                const prog = document.getElementById("stress-progress");
+                const countLbl = document.getElementById("stress-count");
+                prog.style.display = "block";
+
+                const toAddr = accounts[(selectedSenderIdx + 1) % accounts.length].address;
+                for (let i = 1; i <= count; i++) {
+                    countLbl.textContent = `${i}/${count}`;
+                    await signAndSendTx(selectedSenderIdx, toAddr, "0.01", 20, 21000);
+                    await new Promise(r => setTimeout(r, 60));
+                }
+                prog.style.display = "none";
+            }
+
+            document.getElementById("btn-stress-5").addEventListener("click", () => runStressTest(5));
+            document.getElementById("btn-stress-10").addEventListener("click", () => runStressTest(10));
+
+            // Init
+            initAccounts();
+            await refreshAccounts();
+        </script>
+    </body>
+</html>
