@@ -2,11 +2,11 @@
 
 Motor criptográfico de alto rendimiento para wallets Bitcoin, Ethereum y Tron, compilado en WebAssembly (WASM) con AssemblyScript y empaquetado con un wrapper TypeScript Zero-Allocation.
 
-Reúne en un único binario optimizado toda la pila de criptografía de claves: **secp256k1** (field/point/GLV), **BIP-32 / BIP-39 / BIP-44** (HD wallets multi-moneda), multifirma **MuSig2 (BIP-327)**, firmas **Schnorr (BIP-340)** y **ECDSA** (con prefijos de mensaje Bitcoin/Ethereum), **ECDH**, direcciones **P2PKH / P2PKH-Uncompressed / P2SH-P2WPKH / P2WPKH / P2TR / ETH / TRON**, **WIF**, **PBKDF2-HMAC-SHA512** y hashing (**SHA-256 / Keccak-256 / RIPEMD-160 / BLAKE2b**) — con rendimiento extremo (~230K direcciones P2PKH-uncomp/s, ~205K direcciones ETH/s, ~188K direcciones Tron/s, ~54K getPublicKey/s, ~75K MuSig2 partialSign/s, ~3M SigAgg/s, ~2M compress/s) y **0 % de presión sobre el Garbage Collector (GC)**.
+Reúne en un único binario optimizado toda la pila de criptografía de claves: **secp256k1** (field/point/GLV), **BIP-32 / BIP-39 / BIP-44** (HD wallets multi-moneda), multifirma **MuSig2 (BIP-327)**, firmas **Schnorr (BIP-340)** y **ECDSA** (con prefijos de mensaje Bitcoin/Ethereum), **ECDH**, direcciones **P2PKH / P2PKH-Uncompressed / P2SH-P2WPKH / P2WPKH / P2TR / ETH / TRON**, **WIF**, **PBKDF2-HMAC-SHA512** y hashing (**SHA-256 / Keccak-256 / RIPEMD-160 / BLAKE2b**) — con rendimiento extremo (~235K dir P2PKH-uncomp/s, ~207K dir ETH/s, ~190K dir Tron/s, ~56K getPublicKey/s, ~78K MuSig2 partialSign/s, ~2.9M SigAgg/s, ~2.1M compress/s) y **0 % de presión sobre el Garbage Collector (GC)**.
 
 ## 🚀 Características Principales
 
-- ⚡ **Máximo Rendimiento**: núcleo secp256k1 (multiplicación de puntos con GLV + precomputación del generador) desplegado en WebAssembly; ~54K `getPublicKey`/s, ~230K direcciones/s (P2PKH uncompressed), ~205K ETH/s, ~188K Tron/s, ~75K MuSig2 partialSign/s, ~3M SigAgg/s, ~2M compress/s, con memoria completamente plana bajo carga.
+- ⚡ **Máximo Rendimiento**: núcleo secp256k1 (multiplicación de puntos con GLV + precomputación del generador) desplegado en WebAssembly; ~56K `getPublicKey`/s, ~235K dir/s (P2PKH uncompressed), ~207K ETH/s, ~190K Tron/s, ~78K MuSig2 partialSign/s, ~2.9M SigAgg/s, ~2.1M compress/s, con memoria completamente plana bajo carga.
 - 🧹 **Zero-Alloc (Cero Alocaciones GC en WASM)**: alocador `arena` estático (`save/restore`) y regiones de I/O planas (`PARAM_IN` / `PARAM_OUT` de 4 KB) — `WASM memory.grow = 0 B` verificado bajo carga en todos los módulos; la única asignación es el `Uint8Array` de salida que se entrega al usuario.
 - 🤝 **MuSig2 (BIP-327 Multi-Signature)**: esquema completo de multifirma Schnorr de 2 rondas compatible con Bitcoin Taproot. Agregación segura de claves con coeficientes $a_i$ resistentes al ataque *rogue-key*, nonces de 2 rondas (secnonce de 97 B, pubnonce de 66 B), firmas parciales $s_i$, verificación individual y agregación en firma BIP-340 de 64 bytes indistinguible de una firma ordinaria.
 - 🌐 **Multiplataforma / Isomórfico**: funciona sin modificaciones en Node.js, Bun, Deno y Navegadores Web (Vite, Webpack, o directo vía CDN con [esm.sh](https://esm.sh/blockchain-wasm@latest)). CSPRNG con fail-fast si el entorno no expone Web Crypto.
@@ -159,37 +159,44 @@ Medido con `bun test/bench.ts` sobre procesador x86_64, claves distintas por ite
 
 | Dominio / Módulo | Operación | Rendimiento (ops/s) |
 | --- | --- | --- |
-| **Secp256k1** | `getPublicKey` (compressed 33B) | **~54,000 ops/s** |
-| **Secp256k1** | `getPublicKey` (uncompressed 65B) | **~55,000 ops/s** |
-| **Secp256k1** | `compress` (65→33) | **~2,020,000 ops/s** |
-| **Secp256k1** | `uncompress` (33→65) | **~22,500 ops/s** |
-| **Address** | `p2pkhUncompressed` (Legacy 65B) | **~230,000 ops/s** |
-| **Address** | `eth` (EIP-55) | **~205,000 ops/s** |
-| **Address** | `tron` (Base58Check `T...`) | **~188,000 ops/s** |
-| **Address** | `p2wpkh` (Native SegWit `bc1q...`) | **~23,000 ops/s** |
-| **Address** | `p2tr` (Taproot `bc1p...`) | **~9,700 ops/s** |
-| **End-to-End** | `priv → tron` | **~42,000 dir/s** |
-| **End-to-End** | `priv → p2wpkh` | **~16,000 dir/s** |
-| **End-to-End** | `priv → p2pkh` | **~15,500 dir/s** |
-| **End-to-End** | `priv → eth` | **~15,400 dir/s** |
-| **Schnorr** | `getPublicKey` (x-only 32B) | **~80,000 ops/s** |
-| **Schnorr** | `sign` (BIP-340) | **~13,200 ops/s** |
-| **Schnorr** | `verify` (BIP-340) | **~3,150 ops/s** |
-| **MuSig2 (BIP-327)** | `partialSign` (psig 32B) | **~75,000 ops/s** |
-| **MuSig2 (BIP-327)** | `partialSigAgg` (agregación de firmas) | **~3,045,000 ops/s** |
-| **MuSig2 (BIP-327)** | `nonceGen` (97B sec / 66B pub) | **~8,800 ops/s** |
-| **MuSig2 (BIP-327)** | `keyAgg` (3 signers → Q) | **~1,200 ops/s** |
-| **ECDSA** | `sign` (deterministic RFC 6979) | **~13,300 ops/s** |
-| **ECDSA** | `verify` | **~2,800 ops/s** |
-| **ECDH** | `sharedSecret` | **~3,250 ops/s** |
-| **WIF** | `decode` | **~250,000 ops/s** |
-| **WIF** | `encode` | **~190,000 ops/s** |
-| **BIP-39** | `entropyToMnemonic` | **~851,000 ops/s** |
-| **BIP-39** | `generate` (128 bits) | **~757,000 ops/s** |
-| **BIP-39** | `validate` | **~462,000 ops/s** |
-| **BIP-32** | `fromSeed` | **~422,000 ops/s** |
-| **BIP-32** | `toXprv` | **~53,000 ops/s** |
-| **BIP-32** | `derive` (1 nivel hardened) | **~17,000 ops/s** |
+| **Secp256k1** | `getPublicKey` (compressed 33B) | **~56,500 ops/s** |
+| **Secp256k1** | `getPublicKey` (uncompressed 65B) | **~57,500 ops/s** |
+| **Secp256k1** | `compress` (65→33) | **~2,108,000 ops/s** |
+| **Secp256k1** | `uncompress` (33→65) | **~22,800 ops/s** |
+| **Address** | `p2pkhUncompressed` (Legacy 65B) | **~235,900 ops/s** |
+| **Address** | `eth` (EIP-55) | **~207,100 ops/s** |
+| **Address** | `tron` (Base58Check `T...`) | **~190,000 ops/s** |
+| **Address** | `p2wpkh` (Native SegWit `bc1q...`) | **~22,300 ops/s** |
+| **Address** | `p2tr` (Taproot `bc1p...`) | **~9,950 ops/s** |
+| **End-to-End** | `priv → tron` | **~44,000 dir/s** |
+| **End-to-End** | `priv → p2wpkh` | **~16,100 dir/s** |
+| **End-to-End** | `priv → p2pkh` | **~15,400 dir/s** |
+| **End-to-End** | `priv → eth` | **~15,300 dir/s** |
+| **Schnorr** | `getPublicKey` (x-only 32B) | **~86,200 ops/s** |
+| **Schnorr** | `sign` (BIP-340) | **~14,400 ops/s** |
+| **Schnorr** | `verify` (BIP-340) | **~3,720 ops/s** |
+| **MuSig2 (BIP-327)** | `partialSign` (psig 32B) | **~78,400 ops/s** |
+| **MuSig2 (BIP-327)** | `partialVerify` ✅ | **~1,293 ops/s** |
+| **MuSig2 (BIP-327)** | `partialSigAgg` (agregación de firmas) | **~2,925,000 ops/s** |
+| **MuSig2 (BIP-327)** | `nonceGen` (97B sec / 66B pub) | **~10,100 ops/s** |
+| **MuSig2 (BIP-327)** | `nonceAgg` (3 pubnonces → agg) | **~3,500 ops/s** |
+| **MuSig2 (BIP-327)** | `sessionInit` | **~1,880 ops/s** |
+| **MuSig2 (BIP-327)** | `keyAgg` (3 signers → Q) | **~1,316 ops/s** |
+| **ECDSA** | `sign` (deterministic RFC 6979) | **~13,630 ops/s** |
+| **ECDSA** | `verify` | **~3,610 ops/s** |
+| **ECDSA** | `signMessage` (Bitcoin format) | **~14,560 ops/s** |
+| **ECDSA** | `verifyTextMessage` (Ethereum) | **~4,321 ops/s** |
+| **ECDH** | `sharedSecret` | **~3,286 ops/s** |
+| **WIF** | `decode` | **~263,200 ops/s** |
+| **WIF** | `encode` | **~192,200 ops/s** |
+| **BIP-39** | `entropyToMnemonic` | **~851,400 ops/s** |
+| **BIP-39** | `generate` (128 bits) | **~772,200 ops/s** |
+| **BIP-39** | `validate` | **~454,400 ops/s** |
+| **BIP-32** | `fromSeed` | **~407,900 ops/s** |
+| **BIP-32** | `toXprv` | **~52,000 ops/s** |
+| **BIP-32** | `derive` (1 nivel hardened) | **~16,600 ops/s** |
+| **BIP-32** | `derivePath` (m/44'/0'/0') | **~4,886 ops/s** |
+| **BIP-44** | `fromMnemonicDerive` (full pipeline) | **~421 ops/s** |
 
 ### 📊 Garantía de Memoria Zero-Alloc
 
@@ -197,8 +204,8 @@ Medido con `bun test/bench.ts` sobre procesador x86_64, claves distintas por ite
 | --- | --- |
 | **WASM Memory Inicial** | 11 páginas (704 KB) |
 | **WASM Memory Final** | 11 páginas (704 KB) |
-| **WASM `memory.grow`** | **0 páginas (0 bytes)** — ✅ Cero crecimiento bajo carga |
-| **Bun JS Heap Δ** | Estable / recolectable por GC |
+| **WASM `memory.grow`** | **0 páginas (0 bytes)** — ✅ ZERO-GROW (Static Scratchpad) |
+| **Bun JS Heap Δ** | **2.31 MB** (recolectable por GC) |
 
 ## 🛠️ Comandos de Desarrollo
 

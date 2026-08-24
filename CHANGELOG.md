@@ -1,6 +1,99 @@
 # 📦 CHANGELOG — blockchain-wasm
 
-## [3.1.0] — release actual
+## [3.2.0] — release actual
+
+> **Versión previa:** 3.1.0
+> **Tipo de release:** _patch_ — corrección crítica de aritmética de campo + refactor de legibilidad.
+> **Sin cambios rompedores de API pública.**
+
+---
+
+## 🐛 Bug crítico corregido
+
+### FIX-13 — Carry loss en reducción pseudo-Mersenne de campo (`mulmod.ts`)
+
+| Parámetro | Detalle |
+| --- | --- |
+| **Archivo** | `assembly/secp256k1/field/mulmod.ts` |
+| **Funciones afectadas** | `mulMod`, `sqrMod` (reducción de 512 → 256 bits) |
+| **Síntoma** | `Musig2.partialVerify` retornaba `false` (✗) en ~1 de cada 1.500 firmantes; la firma agregada y `Schnorr.verify` eran siempre correctos |
+| **Causa** | Pérdida de acarreo (*carry loss*) en la reducción pseudo-Mersenne de $P = 2^{256} - 2^{32} - 977$: al propagar el overflow $ov$ tras procesar $r_7$, si $r_3 + ov \cdot k$ desbordaba 64 bits, el acarreo hacia $2^{256}$ se descartaba silenciosamente. `sqrtModP` acumula ~256 multiplicaciones sucesivas, por lo que un error 1-en-100.000 se materializaba frecuentemente durante `liftX`. |
+| **Por qué no afectaba a `partialSign` / `Schnorr.verify`** | Operan directamente sobre escalares mod $n$ y coordenadas Jacobianas ($Z \ne 1$); nunca llaman a `sqrtModP` / `liftX`. |
+| **Fix** | Nueva función `reduce512` con propagación exacta de carries en 3 etapas: (1) $977 \times H$ con acarreo completo vía `mul977_lo`/`mul977_hi`, (2) $H \ll 32$ con acarreo completo, (3) overflow residual $ov$ tratado recursivamente; bucle de normalización final garantiza $0 \le r < P$. |
+| **Verificación** | 50.000 rondas `nonceAgg` + 1.000 rondas de firma completa con 6 signatarios → **0 fallos**. |
+
+## ✨ Mejoras
+
+### REFACTOR-1 — Legibilidad de `mulmod.ts`
+
+- `mulMod` y `sqrMod`: cada columna de multiplicación descompuesta en sentencias únicas.
+- `reduce512`: extraída como función `@inline` compartida — elimina ~80 líneas de código duplicado.
+- `mul977_lo` / `mul977_hi`: helpers para el producto $h \times 977$ con carry correcto.
+
+---
+
+## ⚡ Rendimiento (medido con `bun test/bench.ts` en x86_64, v3.2.0)
+
+| Operación | Rendimiento |
+| --- | --- |
+| `Secp256k1.getPublicKey` (compressed 33B) | **~56,500 ops/s** |
+| `Secp256k1.getPublicKey` (uncompressed 65B) | **~57,500 ops/s** |
+| `Secp256k1.compress` (65→33) | **~2,108,000 ops/s** |
+| `Secp256k1.uncompress` (33→65) | **~22,800 ops/s** |
+| `Address.p2pkhUncompressed` (Legacy 65B) | **~235,900 ops/s** |
+| `Address.eth` (EIP-55) | **~207,100 ops/s** |
+| `Address.tron` (Base58Check `T...`) | **~190,000 ops/s** |
+| `Address.p2wpkh` (Native SegWit `bc1q...`) | **~22,300 ops/s** |
+| `Address.p2tr` (Taproot `bc1p...`) | **~9,950 ops/s** |
+| `End-to-End priv → tron` | **~44,000 dir/s** |
+| `End-to-End priv → p2wpkh` | **~16,100 dir/s** |
+| `End-to-End priv → p2pkh` | **~15,400 dir/s** |
+| `End-to-End priv → eth` | **~15,300 dir/s** |
+| `Schnorr.getPublicKey` (x-only 32B) | **~86,200 ops/s** |
+| `Schnorr.sign` (BIP-340) | **~14,400 ops/s** |
+| `Schnorr.verify` (BIP-340) | **~3,720 ops/s** |
+| `Musig2.partialSign` (32B psig) | **~78,400 ops/s** |
+| `Musig2.partialVerify` ✅ ahora correcto | **~1,293 ops/s** |
+| `Musig2.partialSigAgg` (3 firmantes) | **~2,925,000 ops/s** |
+| `Musig2.nonceGen` | **~10,100 ops/s** |
+| `Musig2.nonceAgg` (3 pubnonces → agg) | **~3,500 ops/s** |
+| `Musig2.sessionInit` | **~1,880 ops/s** |
+| `Musig2.keyAgg` (3 signers → Q) | **~1,316 ops/s** |
+| `ECDSA.sign` (RFC 6979) | **~13,630 ops/s** |
+| `ECDSA.verify` | **~3,610 ops/s** |
+| `ECDH.sharedSecret` | **~3,286 ops/s** |
+| `WIF.encode` | **~192,200 ops/s** |
+| `WIF.decode` | **~263,200 ops/s** |
+| `BIP-39.generate` (128 bits) | **~772,200 ops/s** |
+| `BIP-39.entropyToMnemonic` | **~851,400 ops/s** |
+| `BIP-32.fromSeed` | **~407,900 ops/s** |
+| `BIP-32.derive` (1 nivel hardened) | **~16,600 ops/s** |
+| `BIP-32.derivePath` (m/44'/0'/0') | **~4,886 ops/s** |
+| `BIP-44.fromMnemonicDerive` (full pipeline) | **~421 ops/s** |
+
+**Garantía Zero-Alloc (verificada en benchmark completo):**
+
+- WASM `memory.grow` = **0 páginas (0 bytes)**. 11 páginas estáticas (704 KB) — sin crecimiento.
+- Bun Heap Δ ≈ **2.31 MB** (recolectable por GC).
+
+---
+
+## 🧪 Validación
+
+| Área | Cobertura | Resultado |
+| --- | --- | --- |
+| BIP-327 MuSig2 | 15 vectores oficiales | ✅ 15/15 pass |
+| `partialVerify` stress test | 1.000 rondas × 6 signers, 6.000 verificaciones | ✅ 0 fallos |
+| BIP-340 Schnorr | Vectores oficiales + end-to-end | ✅ pass |
+| TypeScript typecheck | `tsc --noEmit` | ✅ 0 errores |
+
+---
+
+_Fin de la entrada 3.2.0._
+
+---
+
+## [3.1.0] — release anterior
 
 > **Versión previa:** 2.1.0
 > **Tipo de release:** _major_ — BIP-327 MuSig2 completo, nuevas cadenas (Tron), laboratorios interactivos y rendimiento verificado con medición de memoria.
