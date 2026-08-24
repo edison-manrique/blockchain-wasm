@@ -179,7 +179,7 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Paridad $gacc$ ($Q.y$ impar)</label>
+                                <label class="form-label">Paridad de $Q.y$ ($gacc$)</label>
                                 <div class="output-box"><span id="musig-gacc">-</span></div>
                             </div>
                         </div>
@@ -349,7 +349,7 @@
                     musigState.privBytes = privBytes;
 
                     $("musig-q").textContent = bytesToHex(q);
-                    $("musig-gacc").textContent = gacc === 0 ? "0 (Q.y par)" : "1 (Q.y impar)";
+                    $("musig-gacc").textContent = gacc === 0 ? "0 (par — sin negación)" : "1 (impar — escalar d se niega)";
 
                     pub33List.forEach((pb, i) => {
                         const elPub = $("musig-pub-" + i);

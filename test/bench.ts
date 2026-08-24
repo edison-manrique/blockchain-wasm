@@ -30,7 +30,7 @@ import {
   SignatureFormat,
   hexToBytes,
   toUint8Array,
-  getRandomBytes,
+  getRandomBytes
 } from "../src/index"
 
 // ── Resolución del binario (relativo a este archivo) ──────────────────────
@@ -90,7 +90,7 @@ function makeKeyStream(): { next: () => Uint8Array } {
       buf[30] = (counter >>> 8) & 0xff
       buf[31] = counter & 0xff
       return buf.slice()
-    },
+    }
   }
 }
 
@@ -112,7 +112,7 @@ async function main(): Promise<void> {
   // Memoria inicial
   if (globalThis.gc) globalThis.gc()
   const initialHeap = process.memoryUsage().heapUsed
-  const wasmMem = wasm.exp.memory as WebAssembly.Memory
+  const wasmMem = (wasm as any).exp.memory as WebAssembly.Memory
   const initialWasmPages = wasmMem.buffer.byteLength / 65536
   const initialWasmBytes = wasmMem.buffer.byteLength
 
@@ -145,10 +145,12 @@ async function main(): Promise<void> {
   const { aggregatedPubkey: musigQ, gacc: musigGacc } = Musig2.keyAgg(musigPubs)
   const musigCoeffs = Musig2.keyAggCoeffs(musigPubs)
   const musigNonces = musigPrivs.map((sk, i) => Musig2.nonceGen(musigSecrands[i], musigPubs[i], sk, MSG32))
-  const musigAggNonce = Musig2.nonceAgg(musigNonces.map(n => n.pubNonce))
+  const musigAggNonce = Musig2.nonceAgg(musigNonces.map((n) => n.pubNonce))
   const musigSession = Musig2.sessionInit(musigAggNonce, musigQ, MSG32)
   const musigPsig1 = Musig2.partialSign(musigSession, musigGacc, musigNonces[0].secNonce, PRIV, musigCoeffs[0])
-  const musigPsigs = musigPrivs.map((sk, i) => Musig2.partialSign(musigSession, musigGacc, musigNonces[i].secNonce, sk, musigCoeffs[i]))
+  const musigPsigs = musigPrivs.map((sk, i) =>
+    Musig2.partialSign(musigSession, musigGacc, musigNonces[i].secNonce, sk, musigCoeffs[i])
+  )
 
   // ── Secp256k1 (claves) ──
   printSection("Secp256k1 (claves · clave distinta/iter)")
@@ -207,10 +209,14 @@ async function main(): Promise<void> {
   printSection("MuSig2 (BIP-327 Multi-Signature)")
   bench("keyAgg (3 signers → Q)", () => Musig2.keyAgg(musigPubs))
   bench("nonceGen (97B sec / 66B pub)", () => Musig2.nonceGen(musigSecrands[0], PUB, PRIV, MSG32))
-  bench("nonceAgg (3 pubnonces → agg)", () => Musig2.nonceAgg(musigNonces.map(n => n.pubNonce)))
+  bench("nonceAgg (3 pubnonces → agg)", () => Musig2.nonceAgg(musigNonces.map((n) => n.pubNonce)))
   bench("sessionInit (97B context)", () => Musig2.sessionInit(musigAggNonce, musigQ, MSG32))
-  bench("partialSign (32B psig)", () => Musig2.partialSign(musigSession, musigGacc, musigNonces[0].secNonce, PRIV, musigCoeffs[0]))
-  bench("partialVerify", () => Musig2.partialVerify(musigPsig1, musigSession, musigGacc, musigNonces[0].pubNonce, PUB, musigCoeffs[0]))
+  bench("partialSign (32B psig)", () =>
+    Musig2.partialSign(musigSession, musigGacc, musigNonces[0].secNonce, PRIV, musigCoeffs[0])
+  )
+  bench("partialVerify", () =>
+    Musig2.partialVerify(musigPsig1, musigSession, musigGacc, musigNonces[0].pubNonce, PUB, musigCoeffs[0])
+  )
   bench("partialSigAgg (3 psigs → final)", () => Musig2.partialSigAgg(musigPsigs))
   bench("signAll (end-to-end 3 signers)", () => Musig2.signAll(musigPrivs, MSG32, musigSecrands))
   printRows()
@@ -221,11 +227,11 @@ async function main(): Promise<void> {
   bench("verify (DER / Raw)", () => Ecdsa.verify(HASH, ECDSA_SIG, PUB))
   bench("signMessage (Bitcoin format)", () => Ecdsa.signMessage(MSG_TEXT_BYTES, PRIV, SignatureFormat.Bitcoin))
   bench("verifyMessage (Bitcoin format)", () =>
-    Ecdsa.verifyMessage(MSG_TEXT_BYTES, ECDSA_MSG_SIG, PUB, SignatureFormat.Bitcoin),
+    Ecdsa.verifyMessage(MSG_TEXT_BYTES, ECDSA_MSG_SIG, PUB, SignatureFormat.Bitcoin)
   )
   bench("signTextMessage (Ethereum)", () => Ecdsa.signTextMessage(MSG_TEXT, PRIV, SignatureFormat.Ethereum))
   bench("verifyTextMessage (Ethereum)", () =>
-    Ecdsa.verifyTextMessage(MSG_TEXT, ECDSA_TEXT_SIG, PUB_UNCOMP, SignatureFormat.Ethereum),
+    Ecdsa.verifyTextMessage(MSG_TEXT, ECDSA_TEXT_SIG, PUB_UNCOMP, SignatureFormat.Ethereum)
   )
   printRows()
 
@@ -277,7 +283,9 @@ async function main(): Promise<void> {
   printSection("Estadísticas de Memoria & Zero-Alloc")
   console.log(`  WASM Memory Inicial     : ${initialWasmPages} páginas (${(initialWasmBytes / 1024).toFixed(0)} KB)`)
   console.log(`  WASM Memory Final       : ${finalWasmPages} páginas (${(finalWasmBytes / 1024).toFixed(0)} KB)`)
-  console.log(`  WASM memory.grow        : ${wasmPagesGrow} páginas (${wasmBytesGrow} bytes) — ${wasmPagesGrow === 0 ? "✅ ZERO-GROW (Static Scratchpad)" : "⚠️ Creció"}`)
+  console.log(
+    `  WASM memory.grow        : ${wasmPagesGrow} páginas (${wasmBytesGrow} bytes) — ${wasmPagesGrow === 0 ? "✅ ZERO-GROW (Static Scratchpad)" : "⚠️ Creció"}`
+  )
   console.log(`  Bun JS Heap Δ           : ${heapDeltaMB} MB (recolectable por GC)`)
 
   console.log(`\n✅ Benchmark completado con éxito.\n`)

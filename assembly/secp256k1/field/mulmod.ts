@@ -147,79 +147,7 @@ export function mulMod(res: usize, a: usize, b: usize): void {
   acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry
   r6 = acc0; r7 = acc1
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // ETAPA 2: reducción in-place de r0..r7 (r0..r3 = L, r4..r7 = H)
-  // ═══════════════════════════════════════════════════════════════════════
-  let ov: u64 = 0
-
-  // h0 = r4
-  {
-    const h0 = r4
-    const lo = h0 & 0xffffffff, hi = h0 >> 32
-    const p_lo = lo * 977 + ((hi * 977) << 32), p_hi = (hi * 977) >> 32
-    const s_lo = h0 << 32, s_hi = h0 >> 32
-    let sum = r0 + p_lo; let c = u64(sum < r0); sum += s_lo; c += u64(sum < s_lo); r0 = sum
-    r1 += p_hi + s_hi + c; ov = u64(r1 < p_hi + s_hi + c)
-  }
-  // h1 = r5
-  {
-    const h1 = r5
-    const lo = h1 & 0xffffffff, hi = h1 >> 32
-    const p_lo = lo * 977 + ((hi * 977) << 32), p_hi = (hi * 977) >> 32
-    const s_lo = h1 << 32, s_hi = h1 >> 32
-    let sum = r1 + p_lo; let c = u64(sum < r1); sum += s_lo; c += u64(sum < s_lo); r1 = sum
-    r2 += p_hi + s_hi + c + ov; ov = u64(r2 < p_hi + s_hi + c + ov)
-  }
-  // h2 = r6
-  {
-    const h2 = r6
-    const lo = h2 & 0xffffffff, hi = h2 >> 32
-    const p_lo = lo * 977 + ((hi * 977) << 32), p_hi = (hi * 977) >> 32
-    const s_lo = h2 << 32, s_hi = h2 >> 32
-    let sum = r2 + p_lo; let c = u64(sum < r2); sum += s_lo; c += u64(sum < s_lo); r2 = sum
-    r3 += p_hi + s_hi + c + ov; ov = u64(r3 < p_hi + s_hi + c + ov)
-  }
-  // h3 = r7
-  {
-    const h3 = r7
-    const lo = h3 & 0xffffffff, hi = h3 >> 32
-    const p_lo = lo * 977 + ((hi * 977) << 32), p_hi = (hi * 977) >> 32
-    const s_lo = h3 << 32, s_hi = h3 >> 32
-    let sum = r3 + p_lo; let c = u64(sum < r3); sum += s_lo; c += u64(sum < s_lo); r3 = sum
-    ov = p_hi + s_hi + c + ov
-  }
-  // overflow final
-  {
-    const p_lo = ov * 977, s_lo = ov << 32, s_hi = ov >> 32
-    let sum = r0 + p_lo; let c = u64(sum < r0); sum += s_lo; c += u64(sum < s_lo); r0 = sum
-    r1 += s_hi + c; const c2 = u64(r1 < s_hi + c); r2 += c2; const c3 = u64(r2 < c2); r3 += c3
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // ETAPA 3: normalización final (si ≥ P, restar P una vez)
-  // ═══════════════════════════════════════════════════════════════════════
-  let gt = false
-  if (r3 > P3) gt = true
-  else if (r3 == P3) {
-    if (r2 > P2) gt = true
-    else if (r2 == P2) {
-      if (r1 > P1) gt = true
-      else if (r1 == P1) {
-        if (r0 >= P0) gt = true
-      }
-    }
-  }
-  if (gt) {
-    let d0 = r0 - P0; let b = u64(d0 > r0); r0 = d0
-    let d1 = r1 - P1 - b; b = u64(d1 > r1) | (u64(d1 == r1) & b); r1 = d1
-    let d2 = r2 - P2 - b; b = u64(d2 > r2) | (u64(d2 == r2) & b); r2 = d2
-    r3 = r3 - P3 - b
-  }
-
-  store<u64>(res, r0)
-  store<u64>(res, r1, 8)
-  store<u64>(res, r2, 16)
-  store<u64>(res, r3, 24)
+  reduce512(res, r0, r1, r2, r3, r4, r5, r6, r7)
 }
 
 /**
@@ -334,69 +262,150 @@ export function sqrMod(res: usize, a: usize): void {
   }
   r6 = acc0; r7 = acc1
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // ETAPA 2: reducción in-place (idéntica a mulMod)
-  // ═══════════════════════════════════════════════════════════════════════
-  let ov: u64 = 0
-  {
-    const h0 = r4
-    const lo = h0 & 0xffffffff, hi = h0 >> 32
-    const p_lo = lo * 977 + ((hi * 977) << 32), p_hi = (hi * 977) >> 32
-    const s_lo = h0 << 32, s_hi = h0 >> 32
-    let sum = r0 + p_lo; let c = u64(sum < r0); sum += s_lo; c += u64(sum < s_lo); r0 = sum
-    r1 += p_hi + s_hi + c; ov = u64(r1 < p_hi + s_hi + c)
-  }
-  {
-    const h1 = r5
-    const lo = h1 & 0xffffffff, hi = h1 >> 32
-    const p_lo = lo * 977 + ((hi * 977) << 32), p_hi = (hi * 977) >> 32
-    const s_lo = h1 << 32, s_hi = h1 >> 32
-    let sum = r1 + p_lo; let c = u64(sum < r1); sum += s_lo; c += u64(sum < s_lo); r1 = sum
-    r2 += p_hi + s_hi + c + ov; ov = u64(r2 < p_hi + s_hi + c + ov)
-  }
-  {
-    const h2 = r6
-    const lo = h2 & 0xffffffff, hi = h2 >> 32
-    const p_lo = lo * 977 + ((hi * 977) << 32), p_hi = (hi * 977) >> 32
-    const s_lo = h2 << 32, s_hi = h2 >> 32
-    let sum = r2 + p_lo; let c = u64(sum < r2); sum += s_lo; c += u64(sum < s_lo); r2 = sum
-    r3 += p_hi + s_hi + c + ov; ov = u64(r3 < p_hi + s_hi + c + ov)
-  }
-  {
-    const h3 = r7
-    const lo = h3 & 0xffffffff, hi = h3 >> 32
-    const p_lo = lo * 977 + ((hi * 977) << 32), p_hi = (hi * 977) >> 32
-    const s_lo = h3 << 32, s_hi = h3 >> 32
-    let sum = r3 + p_lo; let c = u64(sum < r3); sum += s_lo; c += u64(sum < s_lo); r3 = sum
-    ov = p_hi + s_hi + c + ov
-  }
-  {
-    const p_lo = ov * 977, s_lo = ov << 32, s_hi = ov >> 32
-    let sum = r0 + p_lo; let c = u64(sum < r0); sum += s_lo; c += u64(sum < s_lo); r0 = sum
-    r1 += s_hi + c; const c2 = u64(r1 < s_hi + c); r2 += c2; const c3 = u64(r2 < c2); r3 += c3
+  reduce512(res, r0, r1, r2, r3, r4, r5, r6, r7)
+}
+
+// @ts-ignore
+@inline
+function mul977_lo(h: u64): u64 {
+  const lo: u64 = (h & 0xffffffff) * 977
+  const hi: u64 = (h >> 32) * 977
+  return lo + ((hi & 0xffffffff) << 32)
+}
+
+// @ts-ignore
+@inline
+function mul977_hi(h: u64): u64 {
+  const lo: u64 = (h & 0xffffffff) * 977
+  const hi: u64 = (h >> 32) * 977
+  const mid: u64 = lo + ((hi & 0xffffffff) << 32)
+  return (hi >> 32) + u64(mid < lo)
+}
+
+/**
+ * Reducción pseudo-Mersenne de 512 bits a 256 bits mod P (secp256k1).
+ * P = 2^256 - 2^32 - 977  ⇒  2^256 ≡ 2^32 + 977 (mod P).
+ */
+// @ts-ignore
+@inline
+function reduce512(
+  res: usize,
+  r0: u64, r1: u64, r2: u64, r3: u64,
+  r4: u64, r5: u64, r6: u64, r7: u64
+): void {
+  const p0: u64 = mul977_lo(r4)
+  const c0: u64 = mul977_hi(r4)
+  const p1_raw: u64 = mul977_lo(r5)
+  const c1: u64 = mul977_hi(r5)
+  const p2_raw: u64 = mul977_lo(r6)
+  const c2: u64 = mul977_hi(r6)
+  const p3_raw: u64 = mul977_lo(r7)
+  const c3: u64 = mul977_hi(r7)
+
+  const p1: u64 = p1_raw + c0
+  const carry1: u64 = u64(p1 < c0)
+  const p2: u64 = p2_raw + c1 + carry1
+  const carry2: u64 = u64(p2 < (c1 + carry1))
+  const p3: u64 = p3_raw + c2 + carry2
+  const carry3: u64 = u64(p3 < (c2 + carry2))
+  const t4: u64 = c3 + carry3
+
+  const s0: u64 = r4 << 32
+  const s1: u64 = (r5 << 32) | (r4 >> 32)
+  const s2: u64 = (r6 << 32) | (r5 >> 32)
+  const s3: u64 = (r7 << 32) | (r6 >> 32)
+  const s4: u64 = r7 >> 32
+
+  let sum0: u64 = r0 + p0
+  let c: u64 = u64(sum0 < r0)
+  sum0 += s0
+  c += u64(sum0 < s0)
+
+  let sum1: u64 = r1 + p1
+  let c_next: u64 = u64(sum1 < r1)
+  sum1 += s1
+  c_next += u64(sum1 < s1)
+  sum1 += c
+  c_next += u64(sum1 < c)
+  c = c_next
+
+  let sum2: u64 = r2 + p2
+  c_next = u64(sum2 < r2)
+  sum2 += s2
+  c_next += u64(sum2 < s2)
+  sum2 += c
+  c_next += u64(sum2 < c)
+  c = c_next
+
+  let sum3: u64 = r3 + p3
+  c_next = u64(sum3 < r3)
+  sum3 += s3
+  c_next += u64(sum3 < s3)
+  sum3 += c
+  c_next += u64(sum3 < c)
+  c = c_next
+
+  const ov: u64 = t4 + s4 + c
+
+  const ov_p0: u64 = ov * 977
+  const ov_s0: u64 = ov << 32
+  const ov_s1: u64 = ov >> 32
+
+  sum0 += ov_p0
+  c = u64(sum0 < ov_p0)
+  sum0 += ov_s0
+  c += u64(sum0 < ov_s0)
+
+  sum1 += ov_s1
+  c_next = u64(sum1 < ov_s1)
+  sum1 += c
+  c_next += u64(sum1 < c)
+  c = c_next
+
+  sum2 += c
+  c = u64(sum2 < c)
+  sum3 += c
+  c = u64(sum3 < c)
+
+  if (c != 0) {
+    sum0 += 977
+    let c2: u64 = u64(sum0 < 977)
+    sum0 += (1 as u64) << 32
+    c2 += u64(sum0 < ((1 as u64) << 32))
+    sum1 += c2
+    c2 = u64(sum1 < c2)
+    sum2 += c2
+    c2 = u64(sum2 < c2)
+    sum3 += c2
   }
 
-  // ETAPA 3: normalización final
-  let gt = false
-  if (r3 > P3) gt = true
-  else if (r3 == P3) {
-    if (r2 > P2) gt = true
-    else if (r2 == P2) {
-      if (r1 > P1) gt = true
-      else if (r1 == P1) {
-        if (r0 >= P0) gt = true
+  while (true) {
+    let gt = false
+    if (sum3 > P3) gt = true
+    else if (sum3 == P3) {
+      if (sum2 > P2) gt = true
+      else if (sum2 == P2) {
+        if (sum1 > P1) gt = true
+        else if (sum1 == P1) {
+          if (sum0 >= P0) gt = true
+        }
       }
     }
-  }
-  if (gt) {
-    let d0 = r0 - P0; let b = u64(d0 > r0); r0 = d0
-    let d1 = r1 - P1 - b; b = u64(d1 > r1) | (u64(d1 == r1) & b); r1 = d1
-    let d2 = r2 - P2 - b; b = u64(d2 > r2) | (u64(d2 == r2) & b); r2 = d2
-    r3 = r3 - P3 - b
+    if (!gt) break
+    const d0: u64 = sum0 - P0
+    let b: u64 = u64(d0 > sum0)
+    sum0 = d0
+    const d1: u64 = sum1 - P1 - b
+    b = u64(d1 > sum1) | (u64(d1 == sum1) & b)
+    sum1 = d1
+    const d2: u64 = sum2 - P2 - b
+    b = u64(d2 > sum2) | (u64(d2 == sum2) & b)
+    sum2 = d2
+    sum3 = sum3 - P3 - b
   }
 
-  store<u64>(res, r0)
-  store<u64>(res, r1, 8)
-  store<u64>(res, r2, 16)
-  store<u64>(res, r3, 24)
+  store<u64>(res, sum0)
+  store<u64>(res, sum1, 8)
+  store<u64>(res, sum2, 16)
+  store<u64>(res, sum3, 24)
 }
