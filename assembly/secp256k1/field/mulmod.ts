@@ -46,106 +46,342 @@ export function mulMod(res: usize, a: usize, b: usize): void {
   let prod_lo: u64, prod_hi: u64
 
   // ── Col 0 ──
-  x = a0; y = b0
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1)
-  acc0 = p0 + (mid << 32); c2 = u64(acc0 < p0)
+  x = a0
+  y = b0
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  acc0 = p0 + (mid << 32)
+  c2 = u64(acc0 < p0)
   acc1 = p3 + (mid >> 32) + (c1 << 32) + c2
-  r0 = acc0; acc0 = acc1; acc1 = 0
+  r0 = acc0
+  acc0 = acc1
+  acc1 = 0
 
   // ── Col 1 ──
-  x = a0; y = b1
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-  acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-  x = a1; y = b0
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-  acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-  r1 = acc0; acc0 = acc1; acc1 = acc2; acc2 = 0
+  x = a0
+  y = b1
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  prod_lo = p0 + (mid << 32)
+  c2 = u64(prod_lo < p0)
+  prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+  acc0 += prod_lo
+  carry = u64(acc0 < prod_lo)
+  acc1 += prod_hi + carry
+  acc2 += u64(acc1 < prod_hi + carry)
+  x = a1
+  y = b0
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  prod_lo = p0 + (mid << 32)
+  c2 = u64(prod_lo < p0)
+  prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+  acc0 += prod_lo
+  carry = u64(acc0 < prod_lo)
+  acc1 += prod_hi + carry
+  acc2 += u64(acc1 < prod_hi + carry)
+  r1 = acc0
+  acc0 = acc1
+  acc1 = acc2
+  acc2 = 0
 
   // ── Col 2 ──
-  x = a0; y = b2
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-  acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-  x = a1; y = b1
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-  acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-  x = a2; y = b0
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-  acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-  r2 = acc0; acc0 = acc1; acc1 = acc2; acc2 = 0
+  x = a0
+  y = b2
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  prod_lo = p0 + (mid << 32)
+  c2 = u64(prod_lo < p0)
+  prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+  acc0 += prod_lo
+  carry = u64(acc0 < prod_lo)
+  acc1 += prod_hi + carry
+  acc2 += u64(acc1 < prod_hi + carry)
+  x = a1
+  y = b1
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  prod_lo = p0 + (mid << 32)
+  c2 = u64(prod_lo < p0)
+  prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+  acc0 += prod_lo
+  carry = u64(acc0 < prod_lo)
+  acc1 += prod_hi + carry
+  acc2 += u64(acc1 < prod_hi + carry)
+  x = a2
+  y = b0
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  prod_lo = p0 + (mid << 32)
+  c2 = u64(prod_lo < p0)
+  prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+  acc0 += prod_lo
+  carry = u64(acc0 < prod_lo)
+  acc1 += prod_hi + carry
+  acc2 += u64(acc1 < prod_hi + carry)
+  r2 = acc0
+  acc0 = acc1
+  acc1 = acc2
+  acc2 = 0
 
   // ── Col 3 ──
-  x = a0; y = b3
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-  acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-  x = a1; y = b2
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-  acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-  x = a2; y = b1
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-  acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-  x = a3; y = b0
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-  acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-  r3 = acc0; acc0 = acc1; acc1 = acc2; acc2 = 0
+  x = a0
+  y = b3
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  prod_lo = p0 + (mid << 32)
+  c2 = u64(prod_lo < p0)
+  prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+  acc0 += prod_lo
+  carry = u64(acc0 < prod_lo)
+  acc1 += prod_hi + carry
+  acc2 += u64(acc1 < prod_hi + carry)
+  x = a1
+  y = b2
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  prod_lo = p0 + (mid << 32)
+  c2 = u64(prod_lo < p0)
+  prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+  acc0 += prod_lo
+  carry = u64(acc0 < prod_lo)
+  acc1 += prod_hi + carry
+  acc2 += u64(acc1 < prod_hi + carry)
+  x = a2
+  y = b1
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  prod_lo = p0 + (mid << 32)
+  c2 = u64(prod_lo < p0)
+  prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+  acc0 += prod_lo
+  carry = u64(acc0 < prod_lo)
+  acc1 += prod_hi + carry
+  acc2 += u64(acc1 < prod_hi + carry)
+  x = a3
+  y = b0
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  prod_lo = p0 + (mid << 32)
+  c2 = u64(prod_lo < p0)
+  prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+  acc0 += prod_lo
+  carry = u64(acc0 < prod_lo)
+  acc1 += prod_hi + carry
+  acc2 += u64(acc1 < prod_hi + carry)
+  r3 = acc0
+  acc0 = acc1
+  acc1 = acc2
+  acc2 = 0
 
   // ── Col 4 ──
-  x = a1; y = b3
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-  acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-  x = a2; y = b2
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-  acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-  x = a3; y = b1
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-  acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-  r4 = acc0; acc0 = acc1; acc1 = acc2; acc2 = 0
+  x = a1
+  y = b3
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  prod_lo = p0 + (mid << 32)
+  c2 = u64(prod_lo < p0)
+  prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+  acc0 += prod_lo
+  carry = u64(acc0 < prod_lo)
+  acc1 += prod_hi + carry
+  acc2 += u64(acc1 < prod_hi + carry)
+  x = a2
+  y = b2
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  prod_lo = p0 + (mid << 32)
+  c2 = u64(prod_lo < p0)
+  prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+  acc0 += prod_lo
+  carry = u64(acc0 < prod_lo)
+  acc1 += prod_hi + carry
+  acc2 += u64(acc1 < prod_hi + carry)
+  x = a3
+  y = b1
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  prod_lo = p0 + (mid << 32)
+  c2 = u64(prod_lo < p0)
+  prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+  acc0 += prod_lo
+  carry = u64(acc0 < prod_lo)
+  acc1 += prod_hi + carry
+  acc2 += u64(acc1 < prod_hi + carry)
+  r4 = acc0
+  acc0 = acc1
+  acc1 = acc2
+  acc2 = 0
 
   // ── Col 5 ──
-  x = a2; y = b3
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-  acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-  x = a3; y = b2
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-  acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-  r5 = acc0; acc0 = acc1; acc1 = acc2; acc2 = 0
+  x = a2
+  y = b3
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  prod_lo = p0 + (mid << 32)
+  c2 = u64(prod_lo < p0)
+  prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+  acc0 += prod_lo
+  carry = u64(acc0 < prod_lo)
+  acc1 += prod_hi + carry
+  acc2 += u64(acc1 < prod_hi + carry)
+  x = a3
+  y = b2
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  prod_lo = p0 + (mid << 32)
+  c2 = u64(prod_lo < p0)
+  prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+  acc0 += prod_lo
+  carry = u64(acc0 < prod_lo)
+  acc1 += prod_hi + carry
+  acc2 += u64(acc1 < prod_hi + carry)
+  r5 = acc0
+  acc0 = acc1
+  acc1 = acc2
+  acc2 = 0
 
   // ── Col 6 ──
-  x = a3; y = b3
-  x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-  p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-  mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-  acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry
-  r6 = acc0; r7 = acc1
+  x = a3
+  y = b3
+  x_lo = x & 0xffffffff
+  x_hi = x >> 32
+  y_lo = y & 0xffffffff
+  y_hi = y >> 32
+  p0 = x_lo * y_lo
+  p1 = x_lo * y_hi
+  p2 = x_hi * y_lo
+  p3 = x_hi * y_hi
+  mid = p1 + p2
+  c1 = u64(mid < p1)
+  prod_lo = p0 + (mid << 32)
+  c2 = u64(prod_lo < p0)
+  prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+  acc0 += prod_lo
+  carry = u64(acc0 < prod_lo)
+  acc1 += prod_hi + carry
+  r6 = acc0
+  r7 = acc1
 
   reduce512(res, r0, r1, r2, r3, r4, r5, r6, r7)
 }
@@ -173,94 +409,249 @@ export function sqrMod(res: usize, a: usize): void {
 
   // ── Col 0: a0² ──
   {
-    const lo = a0 & 0xffffffff, hi = a0 >> 32
-    const p0 = lo * lo, p1 = lo * hi, p3 = hi * hi
-    const mid = p1 + p1, cmid = u64(mid < p1)
-    const rlo = p0 + (mid << 32), clo = u64(rlo < p0)
-    acc0 = rlo; acc1 = p3 + (mid >> 32) + (cmid << 32) + clo
+    const lo = a0 & 0xffffffff,
+      hi = a0 >> 32
+    const p0 = lo * lo,
+      p1 = lo * hi,
+      p3 = hi * hi
+    const mid = p1 + p1,
+      cmid = u64(mid < p1)
+    const rlo = p0 + (mid << 32),
+      clo = u64(rlo < p0)
+    acc0 = rlo
+    acc1 = p3 + (mid >> 32) + (cmid << 32) + clo
   }
-  r0 = acc0; acc0 = acc1; acc1 = 0
+  r0 = acc0
+  acc0 = acc1
+  acc1 = 0
 
   // ── Col 1: 2·a0·a1 ──
   {
-    const x = a0, y = a1
-    const x_lo = x & 0xffffffff, x_hi = x >> 32, y_lo = y & 0xffffffff, y_hi = y >> 32
-    const p0 = x_lo * y_lo, p1 = x_lo * y_hi, p2 = x_hi * y_lo, p3 = x_hi * y_hi
-    const mid = p1 + p2, c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); const c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-    acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-    acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
+    const x = a0,
+      y = a1
+    const x_lo = x & 0xffffffff,
+      x_hi = x >> 32,
+      y_lo = y & 0xffffffff,
+      y_hi = y >> 32
+    const p0 = x_lo * y_lo,
+      p1 = x_lo * y_hi,
+      p2 = x_hi * y_lo,
+      p3 = x_hi * y_hi
+    const mid = p1 + p2,
+      c1 = u64(mid < p1)
+    prod_lo = p0 + (mid << 32)
+    const c2 = u64(prod_lo < p0)
+    prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+    acc0 += prod_lo
+    carry = u64(acc0 < prod_lo)
+    acc1 += prod_hi + carry
+    acc2 += u64(acc1 < prod_hi + carry)
+    acc0 += prod_lo
+    carry = u64(acc0 < prod_lo)
+    acc1 += prod_hi + carry
+    acc2 += u64(acc1 < prod_hi + carry)
   }
-  r1 = acc0; acc0 = acc1; acc1 = acc2; acc2 = 0
+  r1 = acc0
+  acc0 = acc1
+  acc1 = acc2
+  acc2 = 0
 
   // ── Col 2: 2·a0·a2 + a1² ──
   {
-    let x = a0, y = a2
-    let x_lo = x & 0xffffffff, x_hi = x >> 32, y_lo = y & 0xffffffff, y_hi = y >> 32
-    let p0 = x_lo * y_lo, p1 = x_lo * y_hi, p2 = x_hi * y_lo, p3 = x_hi * y_hi
-    let mid = p1 + p2, c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); let c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-    acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-    acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
+    let x = a0,
+      y = a2
+    let x_lo = x & 0xffffffff,
+      x_hi = x >> 32,
+      y_lo = y & 0xffffffff,
+      y_hi = y >> 32
+    let p0 = x_lo * y_lo,
+      p1 = x_lo * y_hi,
+      p2 = x_hi * y_lo,
+      p3 = x_hi * y_hi
+    let mid = p1 + p2,
+      c1 = u64(mid < p1)
+    prod_lo = p0 + (mid << 32)
+    let c2 = u64(prod_lo < p0)
+    prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+    acc0 += prod_lo
+    carry = u64(acc0 < prod_lo)
+    acc1 += prod_hi + carry
+    acc2 += u64(acc1 < prod_hi + carry)
+    acc0 += prod_lo
+    carry = u64(acc0 < prod_lo)
+    acc1 += prod_hi + carry
+    acc2 += u64(acc1 < prod_hi + carry)
     // a1²
-    const lo = a1 & 0xffffffff, hi = a1 >> 32
-    const sq0 = lo * lo, sq1 = lo * hi, sq3 = hi * hi
-    const msq = sq1 + sq1, cmsq = u64(msq < sq1); prod_lo = sq0 + (msq << 32); const clo = u64(prod_lo < sq0); prod_hi = sq3 + (msq >> 32) + (cmsq << 32) + clo
-    acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
+    const lo = a1 & 0xffffffff,
+      hi = a1 >> 32
+    const sq0 = lo * lo,
+      sq1 = lo * hi,
+      sq3 = hi * hi
+    const msq = sq1 + sq1,
+      cmsq = u64(msq < sq1)
+    prod_lo = sq0 + (msq << 32)
+    const clo = u64(prod_lo < sq0)
+    prod_hi = sq3 + (msq >> 32) + (cmsq << 32) + clo
+    acc0 += prod_lo
+    carry = u64(acc0 < prod_lo)
+    acc1 += prod_hi + carry
+    acc2 += u64(acc1 < prod_hi + carry)
   }
-  r2 = acc0; acc0 = acc1; acc1 = acc2; acc2 = 0
+  r2 = acc0
+  acc0 = acc1
+  acc1 = acc2
+  acc2 = 0
 
   // ── Col 3: 2·(a0·a3 + a1·a2) ──
   {
-    let x = a0, y = a3
-    let x_lo = x & 0xffffffff, x_hi = x >> 32, y_lo = y & 0xffffffff, y_hi = y >> 32
-    let p0 = x_lo * y_lo, p1 = x_lo * y_hi, p2 = x_hi * y_lo, p3 = x_hi * y_hi
-    let mid = p1 + p2, c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); let c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-    acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-    acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
+    let x = a0,
+      y = a3
+    let x_lo = x & 0xffffffff,
+      x_hi = x >> 32,
+      y_lo = y & 0xffffffff,
+      y_hi = y >> 32
+    let p0 = x_lo * y_lo,
+      p1 = x_lo * y_hi,
+      p2 = x_hi * y_lo,
+      p3 = x_hi * y_hi
+    let mid = p1 + p2,
+      c1 = u64(mid < p1)
+    prod_lo = p0 + (mid << 32)
+    let c2 = u64(prod_lo < p0)
+    prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+    acc0 += prod_lo
+    carry = u64(acc0 < prod_lo)
+    acc1 += prod_hi + carry
+    acc2 += u64(acc1 < prod_hi + carry)
+    acc0 += prod_lo
+    carry = u64(acc0 < prod_lo)
+    acc1 += prod_hi + carry
+    acc2 += u64(acc1 < prod_hi + carry)
     // 2·a1·a2
-    x = a1; y = a2
-    x_lo = x & 0xffffffff; x_hi = x >> 32; y_lo = y & 0xffffffff; y_hi = y >> 32
-    p0 = x_lo * y_lo; p1 = x_lo * y_hi; p2 = x_hi * y_lo; p3 = x_hi * y_hi
-    mid = p1 + p2; c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-    acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-    acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
+    x = a1
+    y = a2
+    x_lo = x & 0xffffffff
+    x_hi = x >> 32
+    y_lo = y & 0xffffffff
+    y_hi = y >> 32
+    p0 = x_lo * y_lo
+    p1 = x_lo * y_hi
+    p2 = x_hi * y_lo
+    p3 = x_hi * y_hi
+    mid = p1 + p2
+    c1 = u64(mid < p1)
+    prod_lo = p0 + (mid << 32)
+    c2 = u64(prod_lo < p0)
+    prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+    acc0 += prod_lo
+    carry = u64(acc0 < prod_lo)
+    acc1 += prod_hi + carry
+    acc2 += u64(acc1 < prod_hi + carry)
+    acc0 += prod_lo
+    carry = u64(acc0 < prod_lo)
+    acc1 += prod_hi + carry
+    acc2 += u64(acc1 < prod_hi + carry)
   }
-  r3 = acc0; acc0 = acc1; acc1 = acc2; acc2 = 0
+  r3 = acc0
+  acc0 = acc1
+  acc1 = acc2
+  acc2 = 0
 
   // ── Col 4: 2·a1·a3 + a2² ──
   {
-    let x = a1, y = a3
-    let x_lo = x & 0xffffffff, x_hi = x >> 32, y_lo = y & 0xffffffff, y_hi = y >> 32
-    let p0 = x_lo * y_lo, p1 = x_lo * y_hi, p2 = x_hi * y_lo, p3 = x_hi * y_hi
-    let mid = p1 + p2, c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); let c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-    acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-    acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
+    let x = a1,
+      y = a3
+    let x_lo = x & 0xffffffff,
+      x_hi = x >> 32,
+      y_lo = y & 0xffffffff,
+      y_hi = y >> 32
+    let p0 = x_lo * y_lo,
+      p1 = x_lo * y_hi,
+      p2 = x_hi * y_lo,
+      p3 = x_hi * y_hi
+    let mid = p1 + p2,
+      c1 = u64(mid < p1)
+    prod_lo = p0 + (mid << 32)
+    let c2 = u64(prod_lo < p0)
+    prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+    acc0 += prod_lo
+    carry = u64(acc0 < prod_lo)
+    acc1 += prod_hi + carry
+    acc2 += u64(acc1 < prod_hi + carry)
+    acc0 += prod_lo
+    carry = u64(acc0 < prod_lo)
+    acc1 += prod_hi + carry
+    acc2 += u64(acc1 < prod_hi + carry)
     // a2²
-    const lo = a2 & 0xffffffff, hi = a2 >> 32
-    const sq0 = lo * lo, sq1 = lo * hi, sq3 = hi * hi
-    const msq = sq1 + sq1, cmsq = u64(msq < sq1); prod_lo = sq0 + (msq << 32); const clo = u64(prod_lo < sq0); prod_hi = sq3 + (msq >> 32) + (cmsq << 32) + clo
-    acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
+    const lo = a2 & 0xffffffff,
+      hi = a2 >> 32
+    const sq0 = lo * lo,
+      sq1 = lo * hi,
+      sq3 = hi * hi
+    const msq = sq1 + sq1,
+      cmsq = u64(msq < sq1)
+    prod_lo = sq0 + (msq << 32)
+    const clo = u64(prod_lo < sq0)
+    prod_hi = sq3 + (msq >> 32) + (cmsq << 32) + clo
+    acc0 += prod_lo
+    carry = u64(acc0 < prod_lo)
+    acc1 += prod_hi + carry
+    acc2 += u64(acc1 < prod_hi + carry)
   }
-  r4 = acc0; acc0 = acc1; acc1 = acc2; acc2 = 0
+  r4 = acc0
+  acc0 = acc1
+  acc1 = acc2
+  acc2 = 0
 
   // ── Col 5: 2·a2·a3 ──
   {
-    const x = a2, y = a3
-    const x_lo = x & 0xffffffff, x_hi = x >> 32, y_lo = y & 0xffffffff, y_hi = y >> 32
-    const p0 = x_lo * y_lo, p1 = x_lo * y_hi, p2 = x_hi * y_lo, p3 = x_hi * y_hi
-    const mid = p1 + p2, c1 = u64(mid < p1); prod_lo = p0 + (mid << 32); const c2 = u64(prod_lo < p0); prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
-    acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
-    acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry; acc2 += u64(acc1 < prod_hi + carry)
+    const x = a2,
+      y = a3
+    const x_lo = x & 0xffffffff,
+      x_hi = x >> 32,
+      y_lo = y & 0xffffffff,
+      y_hi = y >> 32
+    const p0 = x_lo * y_lo,
+      p1 = x_lo * y_hi,
+      p2 = x_hi * y_lo,
+      p3 = x_hi * y_hi
+    const mid = p1 + p2,
+      c1 = u64(mid < p1)
+    prod_lo = p0 + (mid << 32)
+    const c2 = u64(prod_lo < p0)
+    prod_hi = p3 + (mid >> 32) + (c1 << 32) + c2
+    acc0 += prod_lo
+    carry = u64(acc0 < prod_lo)
+    acc1 += prod_hi + carry
+    acc2 += u64(acc1 < prod_hi + carry)
+    acc0 += prod_lo
+    carry = u64(acc0 < prod_lo)
+    acc1 += prod_hi + carry
+    acc2 += u64(acc1 < prod_hi + carry)
   }
-  r5 = acc0; acc0 = acc1; acc1 = acc2; acc2 = 0
+  r5 = acc0
+  acc0 = acc1
+  acc1 = acc2
+  acc2 = 0
 
   // ── Col 6: a3² ──
   {
-    const lo = a3 & 0xffffffff, hi = a3 >> 32
-    const sq0 = lo * lo, sq1 = lo * hi, sq3 = hi * hi
-    const msq = sq1 + sq1, cmsq = u64(msq < sq1); prod_lo = sq0 + (msq << 32); const clo = u64(prod_lo < sq0); prod_hi = sq3 + (msq >> 32) + (cmsq << 32) + clo
-    acc0 += prod_lo; carry = u64(acc0 < prod_lo); acc1 += prod_hi + carry
+    const lo = a3 & 0xffffffff,
+      hi = a3 >> 32
+    const sq0 = lo * lo,
+      sq1 = lo * hi,
+      sq3 = hi * hi
+    const msq = sq1 + sq1,
+      cmsq = u64(msq < sq1)
+    prod_lo = sq0 + (msq << 32)
+    const clo = u64(prod_lo < sq0)
+    prod_hi = sq3 + (msq >> 32) + (cmsq << 32) + clo
+    acc0 += prod_lo
+    carry = u64(acc0 < prod_lo)
+    acc1 += prod_hi + carry
   }
-  r6 = acc0; r7 = acc1
+  r6 = acc0
+  r7 = acc1
 
   reduce512(res, r0, r1, r2, r3, r4, r5, r6, r7)
 }
@@ -288,11 +679,7 @@ function mul977_hi(h: u64): u64 {
  */
 // @ts-ignore
 @inline
-function reduce512(
-  res: usize,
-  r0: u64, r1: u64, r2: u64, r3: u64,
-  r4: u64, r5: u64, r6: u64, r7: u64
-): void {
+function reduce512(res: usize, r0: u64, r1: u64, r2: u64, r3: u64, r4: u64, r5: u64, r6: u64, r7: u64): void {
   const p0: u64 = mul977_lo(r4)
   const c0: u64 = mul977_hi(r4)
   const p1_raw: u64 = mul977_lo(r5)
@@ -305,9 +692,9 @@ function reduce512(
   const p1: u64 = p1_raw + c0
   const carry1: u64 = u64(p1 < c0)
   const p2: u64 = p2_raw + c1 + carry1
-  const carry2: u64 = u64(p2 < (c1 + carry1))
+  const carry2: u64 = u64(p2 < c1 + carry1)
   const p3: u64 = p3_raw + c2 + carry2
-  const carry3: u64 = u64(p3 < (c2 + carry2))
+  const carry3: u64 = u64(p3 < c2 + carry2)
   const t4: u64 = c3 + carry3
 
   const s0: u64 = r4 << 32
@@ -371,7 +758,7 @@ function reduce512(
     sum0 += 977
     let c2: u64 = u64(sum0 < 977)
     sum0 += (1 as u64) << 32
-    c2 += u64(sum0 < ((1 as u64) << 32))
+    c2 += u64(sum0 < (1 as u64) << 32)
     sum1 += c2
     c2 = u64(sum1 < c2)
     sum2 += c2
