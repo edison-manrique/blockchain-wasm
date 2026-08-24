@@ -1,498 +1,560 @@
 <!doctype html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>BIP-32 Extended Keys (xpub & xprv) Lab — BlockchainWasm Playground</title>
-        <link rel="stylesheet" href="css/theme.css" />
-        <style>
-            .tab-nav {
-                display: flex;
-                gap: 8px;
-                border-bottom: 1px solid var(--border-color);
-                margin-bottom: 20px;
-            }
-            .tab-btn {
-                background: transparent;
-                border: none;
-                color: var(--text-muted);
-                padding: 10px 16px;
-                font-size: 13px;
-                font-weight: 600;
-                cursor: pointer;
-                border-bottom: 2px solid transparent;
-                transition: all 0.2s ease;
-            }
-            .tab-btn:hover {
-                color: var(--text-main);
-            }
-            .tab-btn.active {
-                color: var(--gold-primary);
-                border-bottom: 2px solid var(--gold-primary);
-            }
-            .field-badge {
-                display: inline-block;
-                padding: 2px 6px;
-                border-radius: 3px;
-                font-family: var(--font-mono);
-                font-size: 11px;
-                margin-right: 4px;
-            }
-            .b-ver { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #3b82f6; }
-            .b-dep { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; }
-            .b-fp  { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
-            .b-idx { background: rgba(236, 72, 153, 0.2); color: #f472b6; border: 1px solid #ec4899; }
-            .b-cc  { background: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid #8b5cf6; }
-            .b-key { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
-        </style>
-    </head>
-    <body>
-        <div class="app-viewport">
-            <header class="app-header">
-                <a href="index.html" class="brand-container">
-                    <div class="brand-logo">⚡</div>
-                    <div class="brand-title">BlockchainWasm <span class="tag">BIP-32 xpub & xprv Lab</span></div>
-                </a>
-                <div class="header-status">
-                    <div class="wasm-badge">
-                        <span class="status-dot" id="wasm-status-dot"></span>
-                        <span id="wasm-status-text">Cargando WASM...</span>
-                    </div>
-                </div>
-            </header>
-
-            <div class="app-body">
-                <nav class="app-sidebar">
-                    <div class="sidebar-title">Módulos Criptográficos</div>
-                    <a href="index.html" class="sidebar-item">
-                        <span>⚡ Dashboard Central</span>
-                        <span class="item-badge">HUB</span>
-                    </a>
-                    <a href="address.html" class="sidebar-item">
-                        <span>📫 Address (BTC/ETH)</span>
-                    </a>
-                    <a href="hash.html" class="sidebar-item">
-                        <span>🧪 Hash Lab</span>
-                    </a>
-                    <a href="encoding.html" class="sidebar-item">
-                        <span>🔤 Encoding</span>
-                    </a>
-                    <a href="multisig.html" class="sidebar-item">
-                        <span>🤝 MuSig2 / Multisig</span>
-                        <span class="item-badge">BIP327</span>
-                    </a>
-                    <a href="hd-visualizer.html" class="sidebar-item">
-                        <span>🌲 HD Visualizer</span>
-                    </a>
-                    <a href="message-signing.html" class="sidebar-item">
-                        <span>🖋️ Msg Signing</span>
-                    </a>
-                    <a href="vanity.html" class="sidebar-item">
-                        <span>✨ Vanity Search</span>
-                    </a>
-                    <a href="bip39.html" class="sidebar-item">
-                        <span>🌱 BIP-39 Mnemonic</span>
-                        <span class="item-badge">BIP39</span>
-                    </a>
-                    <a href="bip32.html" class="sidebar-item active">
-                        <span>🌳 BIP-32 HD Tree</span>
-                        <span class="item-badge">BIP32</span>
-                    </a>
-                    <a href="bip44.html" class="sidebar-item">
-                        <span>💼 BIP-44 Wallet</span>
-                        <span class="item-badge">BIP44</span>
-                    </a>
-                    <a href="ecdsa.html" class="sidebar-item">
-                        <span>✍️ ECDSA Secp256k1</span>
-                        <span class="item-badge">ECDSA</span>
-                    </a>
-                    <a href="schnorr.html" class="sidebar-item">
-                        <span>⚡ Schnorr Taproot</span>
-                        <span class="item-badge">BIP340</span>
-                    </a>
-                    <a href="ecdh.html" class="sidebar-item">
-                        <span>🔐 ECDH Secret</span>
-                        <span class="item-badge">ECDH</span>
-                    </a>
-                    <a href="secp256k1.html" class="sidebar-item">
-                        <span>📈 Curve Secp256k1</span>
-                        <span class="item-badge">SECP</span>
-                    </a>
-                    <a href="pbkdf2.html" class="sidebar-item">
-                        <span>🔑 PBKDF2 SHA-512</span>
-                        <span class="item-badge">KDF</span>
-                    </a>
-                    <a href="wif.html" class="sidebar-item">
-                        <span>🎫 WIF Format</span>
-                        <span class="item-badge">WIF</span>
-                    </a>
-                </nav>
-
-                <main class="app-content">
-                    <div class="page-header">
-                        <div>
-                            <h1 class="page-title">🌳 BIP-32 Extended Keys Laboratory (xpub & xprv)</h1>
-                            <p class="page-description">
-                                Aprende y experimenta con claves extendidas jerárquicas (BIP-32): estructura interna de 78 bytes, diferencias entre derivación Hardened vs Non-Hardened y cómo funcionan las carteras Watch-Only con <code>xpub</code>.
-                            </p>
-                        </div>
-                        <button class="btn btn-primary" id="btn-random-seed">🎲 Generar Nueva Seed</button>
-                    </div>
-
-                    <!-- Navigation Tabs -->
-                    <div class="tab-nav">
-                        <button class="tab-btn active" id="tab-btn-tree" onclick="switchBipTab('tree')">🌳 Explorador de Árbol & Rutas</button>
-                        <button class="tab-btn" id="tab-btn-watch" onclick="switchBipTab('watch')">👀 Cartera Watch-Only (Solo con xpub)</button>
-                        <button class="tab-btn" id="tab-btn-anatomy" onclick="switchBipTab('anatomy')">🔬 Anatomía de 78 Bytes de xpub/xprv</button>
-                    </div>
-
-                    <!-- TAB 1: EXPLORADOR DE ÁRBOL -->
-                    <div id="tab-tree">
-                        <div class="grid-2">
-                            <!-- Entrada Seed y Ruta -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <span class="card-title"><span class="icon">🔑</span> Parámetros de Derivación</span>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">BIP-39 Master Seed (16..64 Bytes Hex)</label>
-                                    <textarea
-                                        id="input-seed"
-                                        class="textarea-custom"
-                                        rows="2"
-                                        placeholder="000102030405060708090a0b0c0d0e0f..."
-                                    ></textarea>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Ruta de Derivación (HD Path)</label>
-                                    <input
-                                        type="text"
-                                        id="input-path"
-                                        class="input-text"
-                                        value="m/44'/0'/0'/0/0"
-                                        placeholder="e.g. m/44'/0'/0'/0/0"
-                                    />
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Master Extended Private Key (Root xprv — m)</label>
-                                    <div class="output-box">
-                                        <span id="txt-root-xprv">-</span>
-                                        <button class="copy-btn" onclick="window.copyTxt('txt-root-xprv', 'Root xprv')">
-                                            Copiar
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Master Extended Public Key (Root xpub — M)</label>
-                                    <div class="output-box">
-                                        <span id="txt-root-xpub">-</span>
-                                        <button class="copy-btn" onclick="window.copyTxt('txt-root-xpub', 'Root xpub')">
-                                            Copiar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Resultado Derivado -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <span class="card-title"
-                                        ><span class="icon">🌲</span> Resultado de la Ruta (<span id="lbl-path">m/44'/0'/0'/0/0</span>)</span
-                                    >
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Derived xprv (Clave Privada Extendida)</label>
-                                    <div class="output-box">
-                                        <span id="txt-derived-xprv">-</span>
-                                        <button class="copy-btn" onclick="window.copyTxt('txt-derived-xprv', 'Derived xprv')">Copiar</button>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Derived xpub (Clave Pública Extendida Neutered)</label>
-                                    <div class="output-box">
-                                        <span id="txt-derived-xpub">-</span>
-                                        <button class="copy-btn" onclick="window.copyTxt('txt-derived-xpub', 'Derived xpub')">Copiar</button>
-                                    </div>
-                                </div>
-
-                                <div class="grid-2">
-                                    <div class="form-group">
-                                        <label class="form-label">Private Key (32B Hex)</label>
-                                        <div class="output-box">
-                                            <span id="txt-derived-priv">-</span>
-                                            <button class="copy-btn" onclick="window.copyTxt('txt-derived-priv', 'PrivKey')">Copiar</button>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label class="form-label">Public Key (33B Hex)</label>
-                                        <div class="output-box">
-                                            <span id="txt-derived-pub">-</span>
-                                            <button class="copy-btn" onclick="window.copyTxt('txt-derived-pub', 'PubKey')">Copiar</button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="grid-3 mt-2">
-                                    <div class="form-group">
-                                        <label class="form-label">Profundidad (Depth)</label>
-                                        <div class="output-box"><span id="txt-derived-depth">-</span></div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Parent Fingerprint</label>
-                                        <div class="output-box"><span id="txt-derived-fp">-</span></div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Child Index</label>
-                                        <div class="output-box"><span id="txt-derived-idx">-</span></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- TAB 2: WATCH ONLY -->
-                    <div id="tab-watch" style="display: none;">
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title"><span class="icon">👀</span> Derivación Watch-Only: Generar Direcciones Públicas sin Claves Privadas</span>
-                            </div>
-                            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.6;">
-                                Con un <b>xpub</b> (por ejemplo, el de la cuenta <code>m/44'/0'/0'</code> exportado desde Trezor o Ledger), un servidor web o pasarela de pagos puede generar infinitas direcciones públicas sin riesgo de que los fondos sean robados si el servidor es hackeado.
-                            </p>
-                            <div class="form-group mt-3">
-                                <label class="form-label">Pega cualquier Extended Public Key (xpub...)</label>
-                                <input type="text" id="watch-xpub-in" class="input-text" placeholder="xpub6..." />
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Sub-Ruta relativa al xpub (Ej: 0/0 para primer dirección externa, 0/1 para la segunda, 0' para hardened)</label>
-                                <div style="display: flex; gap: 8px;">
-                                    <input type="text" id="watch-subpath" class="input-text" value="0/0" />
-                                    <button class="btn btn-primary" id="btn-watch-derive">Derivar con xpub</button>
-                                </div>
-                            </div>
-
-                            <div class="grid-2 mt-3">
-                                <div class="form-group">
-                                    <label class="form-label">Clave Pública Hija Derivada (33B Comprimida)</label>
-                                    <div class="output-box"><span id="watch-derived-pub">-</span></div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Dirección Bitcoin P2PKH Resultante</label>
-                                    <div class="output-box"><span id="watch-derived-addr">-</span></div>
-                                </div>
-                            </div>
-
-                            <div id="watch-status-alert" class="alert alert-success mt-3" style="display: none;">—</div>
-                        </div>
-                    </div>
-
-                    <!-- TAB 3: ANATOMIA -->
-                    <div id="tab-anatomy" style="display: none;">
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title"><span class="icon">🔬</span> Estructura de 78 Bytes de una Clave BIP-32 (Base58Check)</span>
-                            </div>
-                            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.6;">
-                                Tanto un <code>xprv</code> como un <code>xpub</code> son exactamente <b>78 bytes binarios</b> serializados con Base58Check (incluyendo un checksum final de 4 bytes).
-                            </p>
-                            <div class="table-container mt-3">
-                                <table class="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Campo</th>
-                                            <th>Tamaño</th>
-                                            <th>Significado en xprv</th>
-                                            <th>Significado en xpub</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td><span class="field-badge b-ver">Version</span></td>
-                                            <td>4 Bytes</td>
-                                            <td><code>0x0488ADE4</code> ("xprv")</td>
-                                            <td><code>0x0488B21E</code> ("xpub")</td>
-                                        </tr>
-                                        <tr>
-                                            <td><span class="field-badge b-dep">Depth</span></td>
-                                            <td>1 Byte</td>
-                                            <td>0 = Master root, 1 = Hijo, etc.</td>
-                                            <td>Igual que en xprv</td>
-                                        </tr>
-                                        <tr>
-                                            <td><span class="field-badge b-fp">Parent FP</span></td>
-                                            <td>4 Bytes</td>
-                                            <td>Primeros 4 bytes de Hash160(pubkey del padre)</td>
-                                            <td>Igual que en xprv</td>
-                                        </tr>
-                                        <tr>
-                                            <td><span class="field-badge b-idx">Child Index</span></td>
-                                            <td>4 Bytes</td>
-                                            <td>Índice derivado (con bit $2^{31}$ si es Hardened)</td>
-                                            <td>Igual que en xprv</td>
-                                        </tr>
-                                        <tr>
-                                            <td><span class="field-badge b-cc">Chain Code</span></td>
-                                            <td>32 Bytes</td>
-                                            <td>Entropía adicional del HMAC-SHA512</td>
-                                            <td>Igual que en xprv</td>
-                                        </tr>
-                                        <tr>
-                                            <td><span class="field-badge b-key">Key Data</span></td>
-                                            <td>33 Bytes</td>
-                                            <td><code>0x00 || privkey32</code></td>
-                                            <td><code>pubkey33</code> comprimida</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div style="margin-top: 16px; padding: 14px; background: var(--bg-dark-0); border: 1px solid var(--border-color); border-radius: 6px;">
-                                <h4 style="font-size: 13px; color: var(--gold-primary); margin-bottom: 6px;">🛡️ Regla de Oro de Seguridad BIP-32</h4>
-                                <p style="font-size: 12px; color: var(--text-dim); line-height: 1.6;">
-                                    <b>Derivación Hardened (con apóstrofe <code>'</code>):</b> Utiliza <code>HMAC-SHA512(ChainCode, 0x00 || priv || index)</code>. Si alguien obtiene el <code>xpub</code> de un padre y la clave privada de un hijo hardened, <b>NO</b> puede calcular la clave privada del padre. Por ello, las cuentas BIP-44 (<code>m/44'/0'/0'</code>) siempre usan niveles hardened.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </main>
-            </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BIP-32 Extended Keys (xpub & xprv) Lab — BlockchainWasm Playground</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <style>
+      .tab-nav {
+        display: flex;
+        gap: 8px;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 20px;
+      }
+      .tab-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s ease;
+      }
+      .tab-btn:hover {
+        color: var(--text-main);
+      }
+      .tab-btn.active {
+        color: var(--gold-primary);
+        border-bottom: 2px solid var(--gold-primary);
+      }
+      .field-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        margin-right: 4px;
+      }
+      .b-ver {
+        background: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+        border: 1px solid #3b82f6;
+      }
+      .b-dep {
+        background: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+        border: 1px solid #10b981;
+      }
+      .b-fp {
+        background: rgba(245, 158, 11, 0.2);
+        color: #fbbf24;
+        border: 1px solid #f59e0b;
+      }
+      .b-idx {
+        background: rgba(236, 72, 153, 0.2);
+        color: #f472b6;
+        border: 1px solid #ec4899;
+      }
+      .b-cc {
+        background: rgba(139, 92, 246, 0.2);
+        color: #a78bfa;
+        border: 1px solid #8b5cf6;
+      }
+      .b-key {
+        background: rgba(239, 68, 68, 0.2);
+        color: #f87171;
+        border: 1px solid #ef4444;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-viewport">
+      <header class="app-header">
+        <a href="index.html" class="brand-container">
+          <div class="brand-logo">⚡</div>
+          <div class="brand-title">BlockchainWasm <span class="tag">BIP-32 xpub & xprv Lab</span></div>
+        </a>
+        <div class="header-status">
+          <div class="wasm-badge">
+            <span class="status-dot" id="wasm-status-dot"></span>
+            <span id="wasm-status-text">Cargando WASM...</span>
+          </div>
         </div>
+      </header>
 
-        <script type="module">
-            import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard, showToast } from "./js/common.js";
-            import { Bip32, Address } from "../../dist/index.js";
+      <div class="app-body">
+        <nav class="app-sidebar">
+          <div class="sidebar-title">Módulos Criptográficos</div>
+          <a href="index.html" class="sidebar-item">
+            <span>⚡ Dashboard Central</span>
+            <span class="item-badge">HUB</span>
+          </a>
+          <a href="address.html" class="sidebar-item">
+            <span>📫 Address (BTC/ETH)</span>
+          </a>
+          <a href="hash.html" class="sidebar-item">
+            <span>🧪 Hash Lab</span>
+          </a>
+          <a href="encoding.html" class="sidebar-item">
+            <span>🔤 Encoding</span>
+          </a>
+          <a href="multisig.html" class="sidebar-item">
+            <span>🤝 MuSig2 / Multisig</span>
+            <span class="item-badge">BIP327</span>
+          </a>
+          <a href="hd-visualizer.html" class="sidebar-item">
+            <span>🌲 HD Visualizer</span>
+          </a>
+          <a href="message-signing.html" class="sidebar-item">
+            <span>🖋️ Msg Signing</span>
+          </a>
+          <a href="vanity.html" class="sidebar-item">
+            <span>✨ Vanity Search</span>
+          </a>
+          <a href="bip39.html" class="sidebar-item">
+            <span>🌱 BIP-39 Mnemonic</span>
+            <span class="item-badge">BIP39</span>
+          </a>
+          <a href="bip32.html" class="sidebar-item active">
+            <span>🌳 BIP-32 HD Tree</span>
+            <span class="item-badge">BIP32</span>
+          </a>
+          <a href="bip44.html" class="sidebar-item">
+            <span>💼 BIP-44 Wallet</span>
+            <span class="item-badge">BIP44</span>
+          </a>
+          <a href="ecdsa.html" class="sidebar-item">
+            <span>✍️ ECDSA Secp256k1</span>
+            <span class="item-badge">ECDSA</span>
+          </a>
+          <a href="schnorr.html" class="sidebar-item">
+            <span>⚡ Schnorr Taproot</span>
+            <span class="item-badge">BIP340</span>
+          </a>
+          <a href="ecdh.html" class="sidebar-item">
+            <span>🔐 ECDH Secret</span>
+            <span class="item-badge">ECDH</span>
+          </a>
+          <a href="secp256k1.html" class="sidebar-item">
+            <span>📈 Curve Secp256k1</span>
+            <span class="item-badge">SECP</span>
+          </a>
+          <a href="pbkdf2.html" class="sidebar-item">
+            <span>🔑 PBKDF2 SHA-512</span>
+            <span class="item-badge">KDF</span>
+          </a>
+          <a href="wif.html" class="sidebar-item">
+            <span>🎫 WIF Format</span>
+            <span class="item-badge">WIF</span>
+          </a>
+        </nav>
 
-            window.copyTxt = (id, name) => {
-                const text = document.getElementById(id).innerText;
-                if (text && text !== "-") copyToClipboard(text, name);
-            };
+        <main class="app-content">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">🌳 BIP-32 Extended Keys Laboratory (xpub & xprv)</h1>
+              <p class="page-description">
+                Aprende y experimenta con claves extendidas jerárquicas (BIP-32): estructura interna de 78 bytes,
+                diferencias entre derivación Hardened vs Non-Hardened y cómo funcionan las carteras Watch-Only con
+                <code>xpub</code>.
+              </p>
+            </div>
+            <button class="btn btn-primary" id="btn-random-seed">🎲 Generar Nueva Seed</button>
+          </div>
 
-            await initWasm();
+          <!-- Navigation Tabs -->
+          <div class="tab-nav">
+            <button class="tab-btn active" id="tab-btn-tree" onclick="switchBipTab('tree')">
+              🌳 Explorador de Árbol & Rutas
+            </button>
+            <button class="tab-btn" id="tab-btn-watch" onclick="switchBipTab('watch')">
+              👀 Cartera Watch-Only (Solo con xpub)
+            </button>
+            <button class="tab-btn" id="tab-btn-anatomy" onclick="switchBipTab('anatomy')">
+              🔬 Anatomía de 78 Bytes de xpub/xprv
+            </button>
+          </div>
 
-            const $ = (id) => document.getElementById(id);
+          <!-- TAB 1: EXPLORADOR DE ÁRBOL -->
+          <div id="tab-tree">
+            <div class="grid-2">
+              <!-- Entrada Seed y Ruta -->
+              <div class="card">
+                <div class="card-header">
+                  <span class="card-title"><span class="icon">🔑</span> Parámetros de Derivación</span>
+                </div>
 
-            window.switchBipTab = (tab) => {
-                $("tab-tree").style.display = tab === "tree" ? "block" : "none";
-                $("tab-watch").style.display = tab === "watch" ? "block" : "none";
-                $("tab-anatomy").style.display = tab === "anatomy" ? "block" : "none";
+                <div class="form-group">
+                  <label class="form-label">BIP-39 Master Seed (16..64 Bytes Hex)</label>
+                  <textarea
+                    id="input-seed"
+                    class="textarea-custom"
+                    rows="2"
+                    placeholder="000102030405060708090a0b0c0d0e0f..."
+                  ></textarea>
+                </div>
 
-                $("tab-btn-tree").className = "tab-btn" + (tab === "tree" ? " active" : "");
-                $("tab-btn-watch").className = "tab-btn" + (tab === "watch" ? " active" : "");
-                $("tab-btn-anatomy").className = "tab-btn" + (tab === "anatomy" ? " active" : "");
-            };
+                <div class="form-group">
+                  <label class="form-label">Ruta de Derivación (HD Path)</label>
+                  <input
+                    type="text"
+                    id="input-path"
+                    class="input-text"
+                    value="m/44'/0'/0'/0/0"
+                    placeholder="e.g. m/44'/0'/0'/0/0"
+                  />
+                </div>
 
-            const inputSeed = $("input-seed");
-            const inputPath = $("input-path");
-            const btnRandomSeed = $("btn-random-seed");
+                <div class="form-group">
+                  <label class="form-label">Master Extended Private Key (Root xprv — m)</label>
+                  <div class="output-box">
+                    <span id="txt-root-xprv">-</span>
+                    <button class="copy-btn" onclick="window.copyTxt('txt-root-xprv', 'Root xprv')">Copiar</button>
+                  </div>
+                </div>
 
-            function updateTree() {
-                try {
-                    const seedBytes = parseHexInput(inputSeed.value.trim());
-                    if (seedBytes.length < 16 || seedBytes.length > 64) {
-                        return;
-                    }
+                <div class="form-group">
+                  <label class="form-label">Master Extended Public Key (Root xpub — M)</label>
+                  <div class="output-box">
+                    <span id="txt-root-xpub">-</span>
+                    <button class="copy-btn" onclick="window.copyTxt('txt-root-xpub', 'Root xpub')">Copiar</button>
+                  </div>
+                </div>
+              </div>
 
-                    const masterKey = Bip32.fromSeed(seedBytes);
-                    const rootXprv = masterKey.toXprv();
-                    const rootXpub = masterKey.toXpub();
+              <!-- Resultado Derivado -->
+              <div class="card">
+                <div class="card-header">
+                  <span class="card-title"
+                    ><span class="icon">🌲</span> Resultado de la Ruta (<span id="lbl-path">m/44'/0'/0'/0/0</span
+                    >)</span
+                  >
+                </div>
 
-                    $("txt-root-xprv").innerText = rootXprv;
-                    $("txt-root-xpub").innerText = rootXpub;
+                <div class="form-group">
+                  <label class="form-label">Derived xprv (Clave Privada Extendida)</label>
+                  <div class="output-box">
+                    <span id="txt-derived-xprv">-</span>
+                    <button class="copy-btn" onclick="window.copyTxt('txt-derived-xprv', 'Derived xprv')">
+                      Copiar
+                    </button>
+                  </div>
+                </div>
 
-                    // Si el watch-in está vacío, precargar con rootXpub
-                    if (!$("watch-xpub-in").value) {
-                        $("watch-xpub-in").value = rootXpub;
-                    }
+                <div class="form-group">
+                  <label class="form-label">Derived xpub (Clave Pública Extendida Neutered)</label>
+                  <div class="output-box">
+                    <span id="txt-derived-xpub">-</span>
+                    <button class="copy-btn" onclick="window.copyTxt('txt-derived-xpub', 'Derived xpub')">
+                      Copiar
+                    </button>
+                  </div>
+                </div>
 
-                    const pathStr = inputPath.value.trim() || "m";
-                    $("lbl-path").innerText = pathStr;
+                <div class="grid-2">
+                  <div class="form-group">
+                    <label class="form-label">Private Key (32B Hex)</label>
+                    <div class="output-box">
+                      <span id="txt-derived-priv">-</span>
+                      <button class="copy-btn" onclick="window.copyTxt('txt-derived-priv', 'PrivKey')">Copiar</button>
+                    </div>
+                  </div>
 
-                    const derived = masterKey.derivePath(pathStr);
-                    $("txt-derived-xprv").innerText = derived.toXprv();
-                    $("txt-derived-xpub").innerText = derived.toXpub();
-                    $("txt-derived-priv").innerText = bytesToHex(derived.privateKey);
-                    $("txt-derived-pub").innerText = bytesToHex(derived.publicKey);
-                    $("txt-derived-depth").innerText = derived.depth.toString();
-                    $("txt-derived-fp").innerText = "0x" + derived.parentFingerprint.toString(16).padStart(8, "0");
-                    $("txt-derived-idx").innerText = derived.childIndex.toString();
-                } catch (err) {
-                    console.error(err);
-                }
-            }
+                  <div class="form-group">
+                    <label class="form-label">Public Key (33B Hex)</label>
+                    <div class="output-box">
+                      <span id="txt-derived-pub">-</span>
+                      <button class="copy-btn" onclick="window.copyTxt('txt-derived-pub', 'PubKey')">Copiar</button>
+                    </div>
+                  </div>
+                </div>
 
-            function handleWatchDerive() {
-                const xpubStr = $("watch-xpub-in").value.trim();
-                const subpath = $("watch-subpath").value.trim();
-                const alertEl = $("watch-status-alert");
+                <div class="grid-3 mt-2">
+                  <div class="form-group">
+                    <label class="form-label">Profundidad (Depth)</label>
+                    <div class="output-box"><span id="txt-derived-depth">-</span></div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Parent Fingerprint</label>
+                    <div class="output-box"><span id="txt-derived-fp">-</span></div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Child Index</label>
+                    <div class="output-box"><span id="txt-derived-idx">-</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-                if (!xpubStr) {
-                    alertEl.style.display = "block";
-                    alertEl.className = "alert alert-error";
-                    alertEl.innerText = "❌ Debes ingresar un xpub válido";
-                    return;
-                }
+          <!-- TAB 2: WATCH ONLY -->
+          <div id="tab-watch" style="display: none">
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title"
+                  ><span class="icon">👀</span> Derivación Watch-Only: Generar Direcciones Públicas sin Claves
+                  Privadas</span
+                >
+              </div>
+              <p style="font-size: 12px; color: var(--text-muted); line-height: 1.6">
+                Con un <b>xpub</b> (por ejemplo, el de la cuenta <code>m/44'/0'/0'</code> exportado desde Trezor o
+                Ledger), un servidor web o pasarela de pagos puede generar infinitas direcciones públicas sin riesgo de
+                que los fondos sean robados si el servidor es hackeado.
+              </p>
+              <div class="form-group mt-3">
+                <label class="form-label">Pega cualquier Extended Public Key (xpub...)</label>
+                <input type="text" id="watch-xpub-in" class="input-text" placeholder="xpub6..." />
+              </div>
+              <div class="form-group">
+                <label class="form-label"
+                  >Sub-Ruta relativa al xpub (Ej: 0/0 para primer dirección externa, 0/1 para la segunda, 0' para
+                  hardened)</label
+                >
+                <div style="display: flex; gap: 8px">
+                  <input type="text" id="watch-subpath" class="input-text" value="0/0" />
+                  <button class="btn btn-primary" id="btn-watch-derive">Derivar con xpub</button>
+                </div>
+              </div>
 
-                try {
-                    const pubKeyObj = Bip32.fromXpub(xpubStr);
+              <div class="grid-2 mt-3">
+                <div class="form-group">
+                  <label class="form-label">Clave Pública Hija Derivada (33B Comprimida)</label>
+                  <div class="output-box"><span id="watch-derived-pub">-</span></div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Dirección Bitcoin P2PKH Resultante</label>
+                  <div class="output-box"><span id="watch-derived-addr">-</span></div>
+                </div>
+              </div>
 
-                    // Si el subpath tiene ', avisar que no es posible
-                    if (subpath.includes("'") || subpath.includes("h") || subpath.includes("H")) {
-                        alertEl.style.display = "block";
-                        alertEl.className = "alert alert-error";
-                        alertEl.innerText = "❌ Imposible derivar rutas Hardened (') desde un xpub. Las rutas hardened requieren la clave privada.";
-                        $("watch-derived-pub").innerText = "-";
-                        $("watch-derived-addr").innerText = "-";
-                        return;
-                    }
+              <div id="watch-status-alert" class="alert alert-success mt-3" style="display: none">—</div>
+            </div>
+          </div>
 
-                    // Derivar subruta relativa (ej: "0/0")
-                    const cleanPath = subpath.startsWith("m/") ? subpath.slice(2) : (subpath.startsWith("/") ? subpath.slice(1) : subpath);
-                    const parts = cleanPath.split("/").filter(p => p.length > 0);
+          <!-- TAB 3: ANATOMIA -->
+          <div id="tab-anatomy" style="display: none">
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title"
+                  ><span class="icon">🔬</span> Estructura de 78 Bytes de una Clave BIP-32 (Base58Check)</span
+                >
+              </div>
+              <p style="font-size: 12px; color: var(--text-muted); line-height: 1.6">
+                Tanto un <code>xprv</code> como un <code>xpub</code> son exactamente
+                <b>78 bytes binarios</b> serializados con Base58Check (incluyendo un checksum final de 4 bytes).
+              </p>
+              <div class="table-container mt-3">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Campo</th>
+                      <th>Tamaño</th>
+                      <th>Significado en xprv</th>
+                      <th>Significado en xpub</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><span class="field-badge b-ver">Version</span></td>
+                      <td>4 Bytes</td>
+                      <td><code>0x0488ADE4</code> ("xprv")</td>
+                      <td><code>0x0488B21E</code> ("xpub")</td>
+                    </tr>
+                    <tr>
+                      <td><span class="field-badge b-dep">Depth</span></td>
+                      <td>1 Byte</td>
+                      <td>0 = Master root, 1 = Hijo, etc.</td>
+                      <td>Igual que en xprv</td>
+                    </tr>
+                    <tr>
+                      <td><span class="field-badge b-fp">Parent FP</span></td>
+                      <td>4 Bytes</td>
+                      <td>Primeros 4 bytes de Hash160(pubkey del padre)</td>
+                      <td>Igual que en xprv</td>
+                    </tr>
+                    <tr>
+                      <td><span class="field-badge b-idx">Child Index</span></td>
+                      <td>4 Bytes</td>
+                      <td>Índice derivado (con bit $2^{31}$ si es Hardened)</td>
+                      <td>Igual que en xprv</td>
+                    </tr>
+                    <tr>
+                      <td><span class="field-badge b-cc">Chain Code</span></td>
+                      <td>32 Bytes</td>
+                      <td>Entropía adicional del HMAC-SHA512</td>
+                      <td>Igual que en xprv</td>
+                    </tr>
+                    <tr>
+                      <td><span class="field-badge b-key">Key Data</span></td>
+                      <td>33 Bytes</td>
+                      <td><code>0x00 || privkey32</code></td>
+                      <td><code>pubkey33</code> comprimida</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-                    let curr = pubKeyObj;
-                    for (const p of parts) {
-                        const idx = parseInt(p, 10);
-                        if (isNaN(idx)) throw new Error("Índice de ruta inválido: " + p);
-                        curr = curr.derive(idx);
-                    }
+              <div
+                style="
+                  margin-top: 16px;
+                  padding: 14px;
+                  background: var(--bg-dark-0);
+                  border: 1px solid var(--border-color);
+                  border-radius: 6px;
+                "
+              >
+                <h4 style="font-size: 13px; color: var(--gold-primary); margin-bottom: 6px">
+                  🛡️ Regla de Oro de Seguridad BIP-32
+                </h4>
+                <p style="font-size: 12px; color: var(--text-dim); line-height: 1.6">
+                  <b>Derivación Hardened (con apóstrofe <code>'</code>):</b> Utiliza
+                  <code>HMAC-SHA512(ChainCode, 0x00 || priv || index)</code>. Si alguien obtiene el <code>xpub</code> de
+                  un padre y la clave privada de un hijo hardened, <b>NO</b> puede calcular la clave privada del padre.
+                  Por ello, las cuentas BIP-44 (<code>m/44'/0'/0'</code>) siempre usan niveles hardened.
+                </p>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
 
-                    const pubBytes = curr.publicKey;
-                    const addr = Address.p2pkh(pubBytes);
+    <script type="module">
+      import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard, showToast } from "./js/common.js"
+      import { Bip32, Address } from "../../dist/index.js"
 
-                    $("watch-derived-pub").innerText = bytesToHex(pubBytes);
-                    $("watch-derived-addr").innerText = addr;
+      window.copyTxt = (id, name) => {
+        const text = document.getElementById(id).innerText
+        if (text && text !== "-") copyToClipboard(text, name)
+      }
 
-                    alertEl.style.display = "block";
-                    alertEl.className = "alert alert-success";
-                    alertEl.innerText = `✓ Derivación pública exitosa sin clave privada: Ruta ${subpath} → ${addr}`;
-                } catch (err) {
-                    alertEl.style.display = "block";
-                    alertEl.className = "alert alert-error";
-                    alertEl.innerText = `❌ Error en derivación con xpub: ${err.message}`;
-                    $("watch-derived-pub").innerText = "-";
-                    $("watch-derived-addr").innerText = "-";
-                }
-            }
+      await initWasm()
 
-            btnRandomSeed.addEventListener("click", () => {
-                inputSeed.value = getRandomHexKey() + getRandomHexKey();
-                updateTree();
-            });
+      const $ = (id) => document.getElementById(id)
 
-            inputSeed.addEventListener("input", updateTree);
-            inputPath.addEventListener("input", updateTree);
-            $("btn-watch-derive").addEventListener("click", handleWatchDerive);
+      window.switchBipTab = (tab) => {
+        $("tab-tree").style.display = tab === "tree" ? "block" : "none"
+        $("tab-watch").style.display = tab === "watch" ? "block" : "none"
+        $("tab-anatomy").style.display = tab === "anatomy" ? "block" : "none"
 
-            // Startup
-            inputSeed.value = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
-            updateTree();
-        </script>
-    </body>
+        $("tab-btn-tree").className = "tab-btn" + (tab === "tree" ? " active" : "")
+        $("tab-btn-watch").className = "tab-btn" + (tab === "watch" ? " active" : "")
+        $("tab-btn-anatomy").className = "tab-btn" + (tab === "anatomy" ? " active" : "")
+      }
+
+      const inputSeed = $("input-seed")
+      const inputPath = $("input-path")
+      const btnRandomSeed = $("btn-random-seed")
+
+      function updateTree() {
+        try {
+          const seedBytes = parseHexInput(inputSeed.value.trim())
+          if (seedBytes.length < 16 || seedBytes.length > 64) {
+            return
+          }
+
+          const masterKey = Bip32.fromSeed(seedBytes)
+          const rootXprv = masterKey.toXprv()
+          const rootXpub = masterKey.toXpub()
+
+          $("txt-root-xprv").innerText = rootXprv
+          $("txt-root-xpub").innerText = rootXpub
+
+          // Si el watch-in está vacío, precargar con rootXpub
+          if (!$("watch-xpub-in").value) {
+            $("watch-xpub-in").value = rootXpub
+          }
+
+          const pathStr = inputPath.value.trim() || "m"
+          $("lbl-path").innerText = pathStr
+
+          const derived = masterKey.derivePath(pathStr)
+          $("txt-derived-xprv").innerText = derived.toXprv()
+          $("txt-derived-xpub").innerText = derived.toXpub()
+          $("txt-derived-priv").innerText = bytesToHex(derived.privateKey)
+          $("txt-derived-pub").innerText = bytesToHex(derived.publicKey)
+          $("txt-derived-depth").innerText = derived.depth.toString()
+          $("txt-derived-fp").innerText = "0x" + derived.parentFingerprint.toString(16).padStart(8, "0")
+          $("txt-derived-idx").innerText = derived.childIndex.toString()
+        } catch (err) {
+          console.error(err)
+        }
+      }
+
+      function handleWatchDerive() {
+        const xpubStr = $("watch-xpub-in").value.trim()
+        const subpath = $("watch-subpath").value.trim()
+        const alertEl = $("watch-status-alert")
+
+        if (!xpubStr) {
+          alertEl.style.display = "block"
+          alertEl.className = "alert alert-error"
+          alertEl.innerText = "❌ Debes ingresar un xpub válido"
+          return
+        }
+
+        try {
+          const pubKeyObj = Bip32.fromXpub(xpubStr)
+
+          // Si el subpath tiene ', avisar que no es posible
+          if (subpath.includes("'") || subpath.includes("h") || subpath.includes("H")) {
+            alertEl.style.display = "block"
+            alertEl.className = "alert alert-error"
+            alertEl.innerText =
+              "❌ Imposible derivar rutas Hardened (') desde un xpub. Las rutas hardened requieren la clave privada."
+            $("watch-derived-pub").innerText = "-"
+            $("watch-derived-addr").innerText = "-"
+            return
+          }
+
+          // Derivar subruta relativa (ej: "0/0")
+          const cleanPath = subpath.startsWith("m/")
+            ? subpath.slice(2)
+            : subpath.startsWith("/")
+              ? subpath.slice(1)
+              : subpath
+          const parts = cleanPath.split("/").filter((p) => p.length > 0)
+
+          let curr = pubKeyObj
+          for (const p of parts) {
+            const idx = parseInt(p, 10)
+            if (isNaN(idx)) throw new Error("Índice de ruta inválido: " + p)
+            curr = curr.derive(idx)
+          }
+
+          const pubBytes = curr.publicKey
+          const addr = Address.p2pkh(pubBytes)
+
+          $("watch-derived-pub").innerText = bytesToHex(pubBytes)
+          $("watch-derived-addr").innerText = addr
+
+          alertEl.style.display = "block"
+          alertEl.className = "alert alert-success"
+          alertEl.innerText = `✓ Derivación pública exitosa sin clave privada: Ruta ${subpath} → ${addr}`
+        } catch (err) {
+          alertEl.style.display = "block"
+          alertEl.className = "alert alert-error"
+          alertEl.innerText = `❌ Error en derivación con xpub: ${err.message}`
+          $("watch-derived-pub").innerText = "-"
+          $("watch-derived-addr").innerText = "-"
+        }
+      }
+
+      btnRandomSeed.addEventListener("click", () => {
+        inputSeed.value = getRandomHexKey() + getRandomHexKey()
+        updateTree()
+      })
+
+      inputSeed.addEventListener("input", updateTree)
+      inputPath.addEventListener("input", updateTree)
+      $("btn-watch-derive").addEventListener("click", handleWatchDerive)
+
+      // Startup
+      inputSeed.value = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+      updateTree()
+    </script>
+  </body>
 </html>

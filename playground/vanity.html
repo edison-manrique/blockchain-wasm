@@ -1,387 +1,351 @@
 <!doctype html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Vanity Address Generator — BlockchainWasm Playground</title>
-        <link rel="stylesheet" href="css/theme.css" />
-    </head>
-    <body>
-        <div class="app-viewport">
-            <header class="app-header">
-                <a href="index.html" class="brand-container">
-                    <div class="brand-logo">⚡</div>
-                    <div class="brand-title">BlockchainWasm <span class="tag">Vanity Multi-Rule App</span></div>
-                </a>
-                <div class="header-status">
-                    <div class="wasm-badge">
-                        <span class="status-dot" id="wasm-status-dot"></span>
-                        <span id="wasm-status-text">Cargando WASM...</span>
-                    </div>
-                </div>
-            </header>
-
-            <div class="app-body">
-                <nav class="app-sidebar">
-                    <div class="sidebar-title">Módulos Criptográficos</div>
-                    <a href="index.html" class="sidebar-item">
-                        <span>⚡ Dashboard Central</span>
-                        <span class="item-badge">HUB</span>
-                    </a>
-                    <a href="address.html" class="sidebar-item">
-                        <span>📫 Address (BTC/ETH)</span>
-                    </a>
-                    <a href="hash.html" class="sidebar-item">
-                        <span>🧪 Hash Lab</span>
-                    </a>
-                    <a href="encoding.html" class="sidebar-item">
-                        <span>🔤 Encoding</span>
-                    </a>
-                    <a href="multisig.html" class="sidebar-item">
-                        <span>🤝 MuSig2 / Multisig</span>
-                        <span class="item-badge">BIP327</span>
-                    </a>
-                    <a href="hd-visualizer.html" class="sidebar-item">
-                        <span>🌲 HD Visualizer</span>
-                    </a>
-                    <a href="message-signing.html" class="sidebar-item">
-                        <span>🖋️ Msg Signing</span>
-                    </a>
-                    <a href="vanity.html" class="sidebar-item active">
-                        <span>✨ Vanity Search</span>
-                    </a>
-                    <a href="bip39.html" class="sidebar-item">
-                        <span>🌱 BIP-39 Mnemonic</span>
-                        <span class="item-badge">BIP39</span>
-                    </a>
-                    <a href="bip32.html" class="sidebar-item">
-                        <span>🌳 BIP-32 HD Tree</span>
-                        <span class="item-badge">BIP32</span>
-                    </a>
-                    <a href="bip44.html" class="sidebar-item">
-                        <span>💼 BIP-44 Wallet</span>
-                        <span class="item-badge">BIP44</span>
-                    </a>
-                    <a href="ecdsa.html" class="sidebar-item">
-                        <span>✍️ ECDSA Secp256k1</span>
-                        <span class="item-badge">ECDSA</span>
-                    </a>
-                    <a href="schnorr.html" class="sidebar-item">
-                        <span>⚡ Schnorr Taproot</span>
-                        <span class="item-badge">BIP340</span>
-                    </a>
-                    <a href="ecdh.html" class="sidebar-item">
-                        <span>🔐 ECDH Secret</span>
-                        <span class="item-badge">ECDH</span>
-                    </a>
-                    <a href="secp256k1.html" class="sidebar-item">
-                        <span>📈 Curve Secp256k1</span>
-                        <span class="item-badge">SECP</span>
-                    </a>
-                    <a href="pbkdf2.html" class="sidebar-item">
-                        <span>🔑 PBKDF2 SHA-512</span>
-                        <span class="item-badge">KDF</span>
-                    </a>
-                    <a href="wif.html" class="sidebar-item">
-                        <span>🎫 WIF Format</span>
-                        <span class="item-badge">WIF</span>
-                    </a>
-                </nav>
-
-                <main class="app-content">
-                    <div class="page-header">
-                        <div>
-                            <h1 class="page-title">✨ Multi-Rule & Multi-Core Vanity Search Engine</h1>
-                            <p class="page-description">
-                                Buscador multihilo de direcciones personalizadas para Bitcoin y Ethereum evaluando
-                                múltiples reglas en paralelo sobre cada clave.
-                            </p>
-                        </div>
-                        <div style="display: flex; gap: 10px">
-                            <button class="btn btn-primary" id="btn-start">▶️ Iniciar Búsqueda</button>
-                            <button class="btn btn-secondary" id="btn-stop" disabled style="opacity: 0.5">
-                                ⏸️ Detener Búsqueda
-                            </button>
-                            <button class="btn btn-secondary" id="btn-export">📥 Exportar JSON</button>
-                            <button
-                                class="btn btn-secondary"
-                                onclick="document.getElementById('input-import-json').click()"
-                            >
-                                📤 Importar JSON
-                            </button>
-                            <input type="file" id="input-import-json" accept=".json" style="display: none" />
-                            <button class="btn btn-secondary" id="btn-clear">🗑️ Limpiar Tabla</button>
-                        </div>
-                    </div>
-
-                    <!-- Métricas de Búsqueda -->
-                    <div class="grid-3">
-                        <div class="card" style="padding: 14px 20px">
-                            <div
-                                style="
-                                    font-size: 11px;
-                                    color: var(--text-muted);
-                                    font-weight: 600;
-                                    text-transform: uppercase;
-                                "
-                            >
-                                Velocidad Multi-Core
-                            </div>
-                            <div
-                                style="font-size: 24px; font-weight: 800; color: var(--gold-primary); margin-top: 4px"
-                                id="metric-speed"
-                            >
-                                0 keys/s
-                            </div>
-                        </div>
-                        <div class="card" style="padding: 14px 20px">
-                            <div
-                                style="
-                                    font-size: 11px;
-                                    color: var(--text-muted);
-                                    font-weight: 600;
-                                    text-transform: uppercase;
-                                "
-                            >
-                                Total de Intentos (Todas las CPUs)
-                            </div>
-                            <div
-                                style="font-size: 24px; font-weight: 800; color: var(--text-main); margin-top: 4px"
-                                id="metric-total"
-                            >
-                                0
-                            </div>
-                        </div>
-                        <div class="card" style="padding: 14px 20px">
-                            <div
-                                style="
-                                    font-size: 11px;
-                                    color: var(--text-muted);
-                                    font-weight: 600;
-                                    text-transform: uppercase;
-                                "
-                            >
-                                Direcciones Vanity Encontradas
-                            </div>
-                            <div
-                                style="font-size: 24px; font-weight: 800; color: var(--green-success); margin-top: 4px"
-                                id="metric-found"
-                            >
-                                0
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid-2">
-                        <!-- Configuración del Vanity y Reglas Multi-Search -->
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title"
-                                    ><span class="icon">⚙️</span> Configuración General & CPU Cores</span
-                                >
-                            </div>
-
-                            <div class="grid-2">
-                                <div class="form-group">
-                                    <label class="form-label">Tipo de Dirección Target</label>
-                                    <select id="sel-addr-type" class="select-custom">
-                                        <option value="p2pkh" selected>Bitcoin P2PKH (Legacy 1...)</option>
-                                        <option value="p2sh-p2wpkh">Bitcoin P2SH (Nested SegWit 3...)</option>
-                                        <option value="p2wpkh">Bitcoin P2WPKH (Native SegWit bc1q...)</option>
-                                        <option value="p2tr">Bitcoin P2TR (Taproot bc1p...)</option>
-                                        <option value="eth">Ethereum (EIP-55 0x...)</option>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Subprocesos / CPU Cores</label>
-                                    <select id="sel-cores" class="select-custom">
-                                        <option value="1">1 Core (Mono-hilo)</option>
-                                        <option value="2">2 Cores (Dual Thread)</option>
-                                        <option value="4">4 Cores (Quad Thread)</option>
-                                        <option value="8">8 Cores (Octa Thread)</option>
-                                        <option value="16">16 Cores (Max Speed)</option>
-                                        <option value="32">32 Cores (Ultra Thread)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Sensibilidad a Mayúsculas</label>
-                                <select id="sel-case" class="select-custom">
-                                    <option value="false" selected>Insensible (Igual a/A)</option>
-                                    <option value="true">Sensible a Mayúsculas / Minúsculas</option>
-                                </select>
-                            </div>
-
-                            <div id="validation-alert" class="alert alert-success" style="display: flex">
-                                ✓ Reglas listas para evaluación
-                            </div>
-                        </div>
-
-                        <!-- Constructor de Múltiples Reglas (Multi-Rule Search) -->
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title"
-                                    ><span class="icon">🔍</span> Múltiples Búsquedas Simultáneas (Multi-Rules)</span
-                                >
-                                <button class="btn btn-sm btn-primary" id="btn-add-rule">+ Agregar Regla</button>
-                            </div>
-
-                            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px">
-                                Cada clave generada se evalúa contra <strong>TODAS</strong> las reglas activas a la vez
-                                (Si no es una, puede ser la otra).
-                            </div>
-
-                            <!-- Lista Dinámica de Reglas -->
-                            <div
-                                id="rules-container"
-                                style="
-                                    display: flex;
-                                    flex-direction: column;
-                                    gap: 10px;
-                                    max-height: 240px;
-                                    overflow-y: auto;
-                                    padding-right: 4px;
-                                "
-                            >
-                                <!-- Inserted dynamically -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Reglas de Alfabetos -->
-                    <div class="card" style="padding: 14px 20px">
-                        <div
-                            style="
-                                font-size: 12px;
-                                color: var(--text-muted);
-                                display: flex;
-                                justify-content: space-between;
-                                align-items: center;
-                            "
-                        >
-                            <div>
-                                <strong>Prefijo Fijo:</strong>
-                                <span
-                                    id="lbl-prefix-info"
-                                    style="color: var(--gold-primary); font-family: var(--font-mono)"
-                                    >1...</span
-                                >
-                            </div>
-                            <div>
-                                <strong>Alfabeto Válido:</strong>
-                                <span
-                                    id="lbl-alphabet-info"
-                                    style="
-                                        color: var(--text-main);
-                                        font-family: var(--font-mono);
-                                        word-break: break-all;
-                                    "
-                                    >123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz</span
-                                >
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tabla de Coincidencias Encontradas -->
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title"><span class="icon">🏆</span> Direcciones Vanity Encontradas</span>
-                        </div>
-
-                        <div class="table-container">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Tipo / Coincidencia</th>
-                                        <th>Dirección Vanity</th>
-                                        <th>Clave Privada (WIF / Raw Hex)</th>
-                                        <th>Intentos / Tiempo</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="table-vanity">
-                                    <tr>
-                                        <td colspan="6" style="text-align: center; color: var(--text-muted)">
-                                            Sin coincidencia aún. Configura tus parámetros e inicia la búsqueda.
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </main>
-            </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vanity Address Generator — BlockchainWasm Playground</title>
+    <link rel="stylesheet" href="css/theme.css" />
+  </head>
+  <body>
+    <div class="app-viewport">
+      <header class="app-header">
+        <a href="index.html" class="brand-container">
+          <div class="brand-logo">⚡</div>
+          <div class="brand-title">BlockchainWasm <span class="tag">Vanity Multi-Rule App</span></div>
+        </a>
+        <div class="header-status">
+          <div class="wasm-badge">
+            <span class="status-dot" id="wasm-status-dot"></span>
+            <span id="wasm-status-text">Cargando WASM...</span>
+          </div>
         </div>
+      </header>
 
-        <script type="module">
-            import { initWasm, copyToClipboard, showToast } from "./js/common.js"
+      <div class="app-body">
+        <nav class="app-sidebar">
+          <div class="sidebar-title">Módulos Criptográficos</div>
+          <a href="index.html" class="sidebar-item">
+            <span>⚡ Dashboard Central</span>
+            <span class="item-badge">HUB</span>
+          </a>
+          <a href="address.html" class="sidebar-item">
+            <span>📫 Address (BTC/ETH)</span>
+          </a>
+          <a href="hash.html" class="sidebar-item">
+            <span>🧪 Hash Lab</span>
+          </a>
+          <a href="encoding.html" class="sidebar-item">
+            <span>🔤 Encoding</span>
+          </a>
+          <a href="multisig.html" class="sidebar-item">
+            <span>🤝 MuSig2 / Multisig</span>
+            <span class="item-badge">BIP327</span>
+          </a>
+          <a href="hd-visualizer.html" class="sidebar-item">
+            <span>🌲 HD Visualizer</span>
+          </a>
+          <a href="message-signing.html" class="sidebar-item">
+            <span>🖋️ Msg Signing</span>
+          </a>
+          <a href="vanity.html" class="sidebar-item active">
+            <span>✨ Vanity Search</span>
+          </a>
+          <a href="bip39.html" class="sidebar-item">
+            <span>🌱 BIP-39 Mnemonic</span>
+            <span class="item-badge">BIP39</span>
+          </a>
+          <a href="bip32.html" class="sidebar-item">
+            <span>🌳 BIP-32 HD Tree</span>
+            <span class="item-badge">BIP32</span>
+          </a>
+          <a href="bip44.html" class="sidebar-item">
+            <span>💼 BIP-44 Wallet</span>
+            <span class="item-badge">BIP44</span>
+          </a>
+          <a href="ecdsa.html" class="sidebar-item">
+            <span>✍️ ECDSA Secp256k1</span>
+            <span class="item-badge">ECDSA</span>
+          </a>
+          <a href="schnorr.html" class="sidebar-item">
+            <span>⚡ Schnorr Taproot</span>
+            <span class="item-badge">BIP340</span>
+          </a>
+          <a href="ecdh.html" class="sidebar-item">
+            <span>🔐 ECDH Secret</span>
+            <span class="item-badge">ECDH</span>
+          </a>
+          <a href="secp256k1.html" class="sidebar-item">
+            <span>📈 Curve Secp256k1</span>
+            <span class="item-badge">SECP</span>
+          </a>
+          <a href="pbkdf2.html" class="sidebar-item">
+            <span>🔑 PBKDF2 SHA-512</span>
+            <span class="item-badge">KDF</span>
+          </a>
+          <a href="wif.html" class="sidebar-item">
+            <span>🎫 WIF Format</span>
+            <span class="item-badge">WIF</span>
+          </a>
+        </nav>
 
-            window.copyVal = (val, name) => {
-                if (val) copyToClipboard(val, name)
-            }
+        <main class="app-content">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">✨ Multi-Rule & Multi-Core Vanity Search Engine</h1>
+              <p class="page-description">
+                Buscador multihilo de direcciones personalizadas para Bitcoin y Ethereum evaluando múltiples reglas en
+                paralelo sobre cada clave.
+              </p>
+            </div>
+            <div style="display: flex; gap: 10px">
+              <button class="btn btn-primary" id="btn-start">▶️ Iniciar Búsqueda</button>
+              <button class="btn btn-secondary" id="btn-stop" disabled style="opacity: 0.5">⏸️ Detener Búsqueda</button>
+              <button class="btn btn-secondary" id="btn-export">📥 Exportar JSON</button>
+              <button class="btn btn-secondary" onclick="document.getElementById('input-import-json').click()">
+                📤 Importar JSON
+              </button>
+              <input type="file" id="input-import-json" accept=".json" style="display: none" />
+              <button class="btn btn-secondary" id="btn-clear">🗑️ Limpiar Tabla</button>
+            </div>
+          </div>
 
-            await initWasm()
+          <!-- Métricas de Búsqueda -->
+          <div class="grid-3">
+            <div class="card" style="padding: 14px 20px">
+              <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase">
+                Velocidad Multi-Core
+              </div>
+              <div
+                style="font-size: 24px; font-weight: 800; color: var(--gold-primary); margin-top: 4px"
+                id="metric-speed"
+              >
+                0 keys/s
+              </div>
+            </div>
+            <div class="card" style="padding: 14px 20px">
+              <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase">
+                Total de Intentos (Todas las CPUs)
+              </div>
+              <div
+                style="font-size: 24px; font-weight: 800; color: var(--text-main); margin-top: 4px"
+                id="metric-total"
+              >
+                0
+              </div>
+            </div>
+            <div class="card" style="padding: 14px 20px">
+              <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase">
+                Direcciones Vanity Encontradas
+              </div>
+              <div
+                style="font-size: 24px; font-weight: 800; color: var(--green-success); margin-top: 4px"
+                id="metric-found"
+              >
+                0
+              </div>
+            </div>
+          </div>
 
-            // DOM Elements
-            const selAddrType = document.getElementById("sel-addr-type")
-            const selCores = document.getElementById("sel-cores")
-            const selCase = document.getElementById("sel-case")
+          <div class="grid-2">
+            <!-- Configuración del Vanity y Reglas Multi-Search -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title"><span class="icon">⚙️</span> Configuración General & CPU Cores</span>
+              </div>
 
-            const btnStart = document.getElementById("btn-start")
-            const btnStop = document.getElementById("btn-stop")
-            const btnExport = document.getElementById("btn-export")
-            const inputImportJson = document.getElementById("input-import-json")
-            const btnClear = document.getElementById("btn-clear")
-            const btnAddRule = document.getElementById("btn-add-rule")
+              <div class="grid-2">
+                <div class="form-group">
+                  <label class="form-label">Tipo de Dirección Target</label>
+                  <select id="sel-addr-type" class="select-custom">
+                    <option value="p2pkh" selected>Bitcoin P2PKH (Legacy 1...)</option>
+                    <option value="p2sh-p2wpkh">Bitcoin P2SH (Nested SegWit 3...)</option>
+                    <option value="p2wpkh">Bitcoin P2WPKH (Native SegWit bc1q...)</option>
+                    <option value="p2tr">Bitcoin P2TR (Taproot bc1p...)</option>
+                    <option value="eth">Ethereum (EIP-55 0x...)</option>
+                  </select>
+                </div>
 
-            const rulesContainer = document.getElementById("rules-container")
-            const validationAlert = document.getElementById("validation-alert")
-            const lblPrefixInfo = document.getElementById("lbl-prefix-info")
-            const lblAlphabetInfo = document.getElementById("lbl-alphabet-info")
+                <div class="form-group">
+                  <label class="form-label">Subprocesos / CPU Cores</label>
+                  <select id="sel-cores" class="select-custom">
+                    <option value="1">1 Core (Mono-hilo)</option>
+                    <option value="2">2 Cores (Dual Thread)</option>
+                    <option value="4">4 Cores (Quad Thread)</option>
+                    <option value="8">8 Cores (Octa Thread)</option>
+                    <option value="16">16 Cores (Max Speed)</option>
+                    <option value="32">32 Cores (Ultra Thread)</option>
+                  </select>
+                </div>
+              </div>
 
-            const metricSpeed = document.getElementById("metric-speed")
-            const metricTotal = document.getElementById("metric-total")
-            const metricFound = document.getElementById("metric-found")
-            const tableVanity = document.getElementById("table-vanity")
+              <div class="form-group">
+                <label class="form-label">Sensibilidad a Mayúsculas</label>
+                <select id="sel-case" class="select-custom">
+                  <option value="false" selected>Insensible (Igual a/A)</option>
+                  <option value="true">Sensible a Mayúsculas / Minúsculas</option>
+                </select>
+              </div>
 
-            // Auto-detect Hardware Cores
-            const maxCores = navigator.hardwareConcurrency || 4
-            selCores.value = Math.min(maxCores, 16).toString()
+              <div id="validation-alert" class="alert alert-success" style="display: flex">
+                ✓ Reglas listas para evaluación
+              </div>
+            </div>
 
-            // Alphabets
-            const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-            const BECH32_ALPHABET = "023456789acdefghjklmnpqrstuvwxyz"
-            const HEX_ALPHABET = "0123456789abcdefABCDEF"
+            <!-- Constructor de Múltiples Reglas (Multi-Rule Search) -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title"
+                  ><span class="icon">🔍</span> Múltiples Búsquedas Simultáneas (Multi-Rules)</span
+                >
+                <button class="btn btn-sm btn-primary" id="btn-add-rule">+ Agregar Regla</button>
+              </div>
 
-            // Worker state
-            let activeWorkers = []
-            let isSearching = false
-            let totalAttempts = 0
-            let foundCount = 0
-            let startTime = 0
-            let lastTime = 0
-            let lastAttempts = 0
-            let updateTimer = null
-            let foundItems = []
+              <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px">
+                Cada clave generada se evalúa contra <strong>TODAS</strong> las reglas activas a la vez (Si no es una,
+                puede ser la otra).
+              </div>
 
-            // Rules state
-            let ruleIdCounter = 0
-            let rules = []
+              <!-- Lista Dinámica de Reglas -->
+              <div
+                id="rules-container"
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  gap: 10px;
+                  max-height: 240px;
+                  overflow-y: auto;
+                  padding-right: 4px;
+                "
+              >
+                <!-- Inserted dynamically -->
+              </div>
+            </div>
+          </div>
 
-            function addRule(mode = "prefix", term = "777", prefixTerm = "777", suffixTerm = "999") {
-                ruleIdCounter++
-                const id = ruleIdCounter
+          <!-- Reglas de Alfabetos -->
+          <div class="card" style="padding: 14px 20px">
+            <div
+              style="
+                font-size: 12px;
+                color: var(--text-muted);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <div>
+                <strong>Prefijo Fijo:</strong>
+                <span id="lbl-prefix-info" style="color: var(--gold-primary); font-family: var(--font-mono)">1...</span>
+              </div>
+              <div>
+                <strong>Alfabeto Válido:</strong>
+                <span
+                  id="lbl-alphabet-info"
+                  style="color: var(--text-main); font-family: var(--font-mono); word-break: break-all"
+                  >123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz</span
+                >
+              </div>
+            </div>
+          </div>
 
-                const ruleCard = document.createElement("div")
-                ruleCard.className = "rule-card"
-                ruleCard.id = `rule-row-${id}`
-                ruleCard.style.cssText =
-                    "background: var(--bg-dark-0); border: 1px solid var(--border-color); padding: 10px; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 8px;"
+          <!-- Tabla de Coincidencias Encontradas -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">🏆</span> Direcciones Vanity Encontradas</span>
+            </div>
 
-                ruleCard.innerHTML = `
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Tipo / Coincidencia</th>
+                    <th>Dirección Vanity</th>
+                    <th>Clave Privada (WIF / Raw Hex)</th>
+                    <th>Intentos / Tiempo</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="table-vanity">
+                  <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted)">
+                      Sin coincidencia aún. Configura tus parámetros e inicia la búsqueda.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script type="module">
+      import { initWasm, copyToClipboard, showToast } from "./js/common.js"
+
+      window.copyVal = (val, name) => {
+        if (val) copyToClipboard(val, name)
+      }
+
+      await initWasm()
+
+      // DOM Elements
+      const selAddrType = document.getElementById("sel-addr-type")
+      const selCores = document.getElementById("sel-cores")
+      const selCase = document.getElementById("sel-case")
+
+      const btnStart = document.getElementById("btn-start")
+      const btnStop = document.getElementById("btn-stop")
+      const btnExport = document.getElementById("btn-export")
+      const inputImportJson = document.getElementById("input-import-json")
+      const btnClear = document.getElementById("btn-clear")
+      const btnAddRule = document.getElementById("btn-add-rule")
+
+      const rulesContainer = document.getElementById("rules-container")
+      const validationAlert = document.getElementById("validation-alert")
+      const lblPrefixInfo = document.getElementById("lbl-prefix-info")
+      const lblAlphabetInfo = document.getElementById("lbl-alphabet-info")
+
+      const metricSpeed = document.getElementById("metric-speed")
+      const metricTotal = document.getElementById("metric-total")
+      const metricFound = document.getElementById("metric-found")
+      const tableVanity = document.getElementById("table-vanity")
+
+      // Auto-detect Hardware Cores
+      const maxCores = navigator.hardwareConcurrency || 4
+      selCores.value = Math.min(maxCores, 16).toString()
+
+      // Alphabets
+      const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+      const BECH32_ALPHABET = "023456789acdefghjklmnpqrstuvwxyz"
+      const HEX_ALPHABET = "0123456789abcdefABCDEF"
+
+      // Worker state
+      let activeWorkers = []
+      let isSearching = false
+      let totalAttempts = 0
+      let foundCount = 0
+      let startTime = 0
+      let lastTime = 0
+      let lastAttempts = 0
+      let updateTimer = null
+      let foundItems = []
+
+      // Rules state
+      let ruleIdCounter = 0
+      let rules = []
+
+      function addRule(mode = "prefix", term = "777", prefixTerm = "777", suffixTerm = "999") {
+        ruleIdCounter++
+        const id = ruleIdCounter
+
+        const ruleCard = document.createElement("div")
+        ruleCard.className = "rule-card"
+        ruleCard.id = `rule-row-${id}`
+        ruleCard.style.cssText =
+          "background: var(--bg-dark-0); border: 1px solid var(--border-color); padding: 10px; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 8px;"
+
+        ruleCard.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="font-size: 11px; font-weight: 700; color: var(--gold-primary);">Regla #${id}</span>
           <button class="btn btn-sm btn-secondary" onclick="window.removeRule(${id})" style="padding: 2px 6px; font-size: 10px; color: var(--red-error);">❌ Eliminar</button>
@@ -405,304 +369,304 @@
         </div>
       `
 
-                rulesContainer.appendChild(ruleCard)
-                validateRules()
+        rulesContainer.appendChild(ruleCard)
+        validateRules()
+      }
+
+      window.removeRule = (id) => {
+        const el = document.getElementById(`rule-row-${id}`)
+        if (el) el.remove()
+        validateRules()
+      }
+
+      window.updateRuleMode = (id) => {
+        const mode = document.getElementById(`rule-mode-${id}`).value
+        const singleBox = document.getElementById(`rule-single-input-${id}`)
+        const bothBox = document.getElementById(`rule-both-inputs-${id}`)
+
+        if (mode === "both") {
+          singleBox.style.display = "none"
+          bothBox.style.display = "grid"
+        } else {
+          singleBox.style.display = "block"
+          bothBox.style.display = "none"
+        }
+        validateRules()
+      }
+
+      window.validateRules = validateRules
+
+      function getCompiledRules() {
+        const rows = rulesContainer.querySelectorAll(".rule-card")
+        const compiled = []
+
+        rows.forEach((row) => {
+          const id = row.id.replace("rule-row-", "")
+          const mode = document.getElementById(`rule-mode-${id}`).value
+          const term = document.getElementById(`rule-term-${id}`).value.trim()
+          const prefixTerm = document.getElementById(`rule-pterm-${id}`).value.trim()
+          const suffixTerm = document.getElementById(`rule-sterm-${id}`).value.trim()
+
+          let label = ""
+          if (mode === "prefix") label = `[Empieza con '${term}']`
+          else if (mode === "suffix") label = `[Termina con '${term}']`
+          else if (mode === "contains") label = `[Contiene '${term}']`
+          else if (mode === "both") label = `[${prefixTerm}...${suffixTerm}]`
+
+          compiled.push({ id, mode, term, prefixTerm, suffixTerm, label })
+        })
+
+        return compiled
+      }
+
+      function validateRules() {
+        const addrType = selAddrType.value
+        let allowedRegex = null
+        let alphabetDesc = ""
+        let prefixInfo = ""
+        let alphabetChars = ""
+
+        if (addrType === "p2pkh") {
+          allowedRegex = /^[1-9A-HJ-NP-Za-km-z]*$/
+          alphabetDesc = "Base58 (sin 0, O, I, l)"
+          prefixInfo = "1... (Ej: 1777...)"
+          alphabetChars = BASE58_ALPHABET
+        } else if (addrType === "p2sh-p2wpkh") {
+          allowedRegex = /^[1-9A-HJ-NP-Za-km-z]*$/
+          alphabetDesc = "Base58 (sin 0, O, I, l)"
+          prefixInfo = "3... (Ej: 3777...)"
+          alphabetChars = BASE58_ALPHABET
+        } else if (addrType === "p2wpkh") {
+          allowedRegex = /^[02-9ac-hj-np-zAC-HJ-NP-Z]*$/
+          alphabetDesc = "Bech32 (sin 1, b, i, o)"
+          prefixInfo = "bc1q... (Ej: bc1q777...)"
+          alphabetChars = BECH32_ALPHABET
+        } else if (addrType === "p2tr") {
+          allowedRegex = /^[02-9ac-hj-np-zAC-HJ-NP-Z]*$/
+          alphabetDesc = "Bech32m (sin 1, b, i, o)"
+          prefixInfo = "bc1p... (Ej: bc1p777...)"
+          alphabetChars = BECH32_ALPHABET
+        } else if (addrType === "eth") {
+          allowedRegex = /^[0-9a-fA-F]*$/
+          alphabetDesc = "Hexadecimal (0-9, a-f)"
+          prefixInfo = "0x... (Ej: 0x777...)"
+          alphabetChars = HEX_ALPHABET
+        }
+
+        lblPrefixInfo.innerText = prefixInfo
+        lblAlphabetInfo.innerText = alphabetChars
+
+        const compiled = getCompiledRules()
+
+        if (compiled.length === 0) {
+          validationAlert.className = "alert alert-error"
+          validationAlert.innerText = "❌ Agrega al menos una regla de búsqueda"
+          btnStart.disabled = true
+          btnStart.style.opacity = "0.5"
+          return false
+        }
+
+        for (let r of compiled) {
+          if (r.mode === "both") {
+            if (
+              !r.prefixTerm ||
+              !r.suffixTerm ||
+              !allowedRegex.test(r.prefixTerm) ||
+              !allowedRegex.test(r.suffixTerm)
+            ) {
+              validationAlert.className = "alert alert-error"
+              validationAlert.innerText = `❌ Caracteres inválidos en regla [${r.prefixTerm}...${r.suffixTerm}]. Permitidos: ${alphabetDesc}`
+              btnStart.disabled = true
+              btnStart.style.opacity = "0.5"
+              return false
             }
-
-            window.removeRule = (id) => {
-                const el = document.getElementById(`rule-row-${id}`)
-                if (el) el.remove()
-                validateRules()
+          } else {
+            if (!r.term || !allowedRegex.test(r.term)) {
+              validationAlert.className = "alert alert-error"
+              validationAlert.innerText = `❌ Caracteres inválidos en regla '${r.term}'. Permitidos: ${alphabetDesc}`
+              btnStart.disabled = true
+              btnStart.style.opacity = "0.5"
+              return false
             }
+          }
+        }
 
-            window.updateRuleMode = (id) => {
-                const mode = document.getElementById(`rule-mode-${id}`).value
-                const singleBox = document.getElementById(`rule-single-input-${id}`)
-                const bothBox = document.getElementById(`rule-both-inputs-${id}`)
+        validationAlert.className = "alert alert-success"
+        validationAlert.innerText = `✓ ${compiled.length} regla(s) lista(s) para evaluación paralela`
+        if (!isSearching) {
+          btnStart.disabled = false
+          btnStart.style.opacity = "1"
+        }
+        return true
+      }
 
-                if (mode === "both") {
-                    singleBox.style.display = "none"
-                    bothBox.style.display = "grid"
-                } else {
-                    singleBox.style.display = "block"
-                    bothBox.style.display = "none"
-                }
-                validateRules()
+      // Iniciar Búsqueda Multi-Core
+      function startSearch() {
+        if (!validateRules()) return
+
+        isSearching = true
+        btnStart.disabled = true
+        btnStart.style.opacity = "0.5"
+        btnStop.disabled = false
+        btnStop.style.opacity = "1"
+
+        selAddrType.disabled = true
+        selCores.disabled = true
+        selCase.disabled = true
+        btnAddRule.disabled = true
+
+        totalAttempts = 0
+        startTime = performance.now()
+        lastTime = startTime
+        lastAttempts = 0
+
+        const numCores = parseInt(selCores.value) || 4
+        const addrType = selAddrType.value
+        const isCaseSensitive = selCase.value === "true"
+        const compiledRules = getCompiledRules()
+
+        activeWorkers = []
+
+        for (let i = 0; i < numCores; i++) {
+          const worker = new Worker("./js/vanity-worker.js", { type: "module" })
+
+          worker.onmessage = (e) => {
+            const msg = e.data
+            if (msg.type === "progress") {
+              totalAttempts += msg.attempts
+            } else if (msg.type === "match") {
+              totalAttempts += msg.match.attempts
+              foundCount++
+
+              const elapsedSec = ((performance.now() - startTime) / 1000).toFixed(2)
+              foundItems.unshift({
+                id: foundCount,
+                type: addrType.toUpperCase(),
+                address: msg.match.address,
+                wifStr: msg.match.wifStr,
+                privHex: msg.match.privHex,
+                matchedTarget: msg.match.matchedTarget,
+                attempts: totalAttempts,
+                elapsedSec,
+                timestamp: new Date().toISOString()
+              })
+              renderTable()
+            } else if (msg.type === "error") {
+              console.error("Worker error:", msg.error)
             }
+          }
 
-            window.validateRules = validateRules
-
-            function getCompiledRules() {
-                const rows = rulesContainer.querySelectorAll(".rule-card")
-                const compiled = []
-
-                rows.forEach((row) => {
-                    const id = row.id.replace("rule-row-", "")
-                    const mode = document.getElementById(`rule-mode-${id}`).value
-                    const term = document.getElementById(`rule-term-${id}`).value.trim()
-                    const prefixTerm = document.getElementById(`rule-pterm-${id}`).value.trim()
-                    const suffixTerm = document.getElementById(`rule-sterm-${id}`).value.trim()
-
-                    let label = ""
-                    if (mode === "prefix") label = `[Empieza con '${term}']`
-                    else if (mode === "suffix") label = `[Termina con '${term}']`
-                    else if (mode === "contains") label = `[Contiene '${term}']`
-                    else if (mode === "both") label = `[${prefixTerm}...${suffixTerm}]`
-
-                    compiled.push({ id, mode, term, prefixTerm, suffixTerm, label })
-                })
-
-                return compiled
+          worker.postMessage({
+            command: "start",
+            data: {
+              workerId: i + 1,
+              addrType,
+              rules: compiledRules,
+              isCaseSensitive
             }
+          })
 
-            function validateRules() {
-                const addrType = selAddrType.value
-                let allowedRegex = null
-                let alphabetDesc = ""
-                let prefixInfo = ""
-                let alphabetChars = ""
+          activeWorkers.push(worker)
+        }
 
-                if (addrType === "p2pkh") {
-                    allowedRegex = /^[1-9A-HJ-NP-Za-km-z]*$/
-                    alphabetDesc = "Base58 (sin 0, O, I, l)"
-                    prefixInfo = "1... (Ej: 1777...)"
-                    alphabetChars = BASE58_ALPHABET
-                } else if (addrType === "p2sh-p2wpkh") {
-                    allowedRegex = /^[1-9A-HJ-NP-Za-km-z]*$/
-                    alphabetDesc = "Base58 (sin 0, O, I, l)"
-                    prefixInfo = "3... (Ej: 3777...)"
-                    alphabetChars = BASE58_ALPHABET
-                } else if (addrType === "p2wpkh") {
-                    allowedRegex = /^[02-9ac-hj-np-zAC-HJ-NP-Z]*$/
-                    alphabetDesc = "Bech32 (sin 1, b, i, o)"
-                    prefixInfo = "bc1q... (Ej: bc1q777...)"
-                    alphabetChars = BECH32_ALPHABET
-                } else if (addrType === "p2tr") {
-                    allowedRegex = /^[02-9ac-hj-np-zAC-HJ-NP-Z]*$/
-                    alphabetDesc = "Bech32m (sin 1, b, i, o)"
-                    prefixInfo = "bc1p... (Ej: bc1p777...)"
-                    alphabetChars = BECH32_ALPHABET
-                } else if (addrType === "eth") {
-                    allowedRegex = /^[0-9a-fA-F]*$/
-                    alphabetDesc = "Hexadecimal (0-9, a-f)"
-                    prefixInfo = "0x... (Ej: 0x777...)"
-                    alphabetChars = HEX_ALPHABET
-                }
+        updateTimer = setInterval(() => {
+          const now = performance.now()
+          const deltaSec = (now - lastTime) / 1000
+          if (deltaSec > 0) {
+            const speed = Math.round((totalAttempts - lastAttempts) / deltaSec)
+            metricSpeed.innerText = `${speed.toLocaleString()} keys/s`
+            metricTotal.innerText = totalAttempts.toLocaleString()
+            metricFound.innerText = foundCount.toLocaleString()
 
-                lblPrefixInfo.innerText = prefixInfo
-                lblAlphabetInfo.innerText = alphabetChars
+            lastTime = now
+            lastAttempts = totalAttempts
+          }
+        }, 400)
+      }
 
-                const compiled = getCompiledRules()
+      // Detener Búsqueda
+      function stopSearch() {
+        isSearching = false
 
-                if (compiled.length === 0) {
-                    validationAlert.className = "alert alert-error"
-                    validationAlert.innerText = "❌ Agrega al menos una regla de búsqueda"
-                    btnStart.disabled = true
-                    btnStart.style.opacity = "0.5"
-                    return false
-                }
+        activeWorkers.forEach((w) => {
+          w.postMessage({ command: "stop" })
+          w.terminate()
+        })
+        activeWorkers = []
 
-                for (let r of compiled) {
-                    if (r.mode === "both") {
-                        if (
-                            !r.prefixTerm ||
-                            !r.suffixTerm ||
-                            !allowedRegex.test(r.prefixTerm) ||
-                            !allowedRegex.test(r.suffixTerm)
-                        ) {
-                            validationAlert.className = "alert alert-error"
-                            validationAlert.innerText = `❌ Caracteres inválidos en regla [${r.prefixTerm}...${r.suffixTerm}]. Permitidos: ${alphabetDesc}`
-                            btnStart.disabled = true
-                            btnStart.style.opacity = "0.5"
-                            return false
-                        }
-                    } else {
-                        if (!r.term || !allowedRegex.test(r.term)) {
-                            validationAlert.className = "alert alert-error"
-                            validationAlert.innerText = `❌ Caracteres inválidos en regla '${r.term}'. Permitidos: ${alphabetDesc}`
-                            btnStart.disabled = true
-                            btnStart.style.opacity = "0.5"
-                            return false
-                        }
-                    }
-                }
+        if (updateTimer) clearInterval(updateTimer)
 
-                validationAlert.className = "alert alert-success"
-                validationAlert.innerText = `✓ ${compiled.length} regla(s) lista(s) para evaluación paralela`
-                if (!isSearching) {
-                    btnStart.disabled = false
-                    btnStart.style.opacity = "1"
-                }
-                return true
+        btnStart.disabled = false
+        btnStart.style.opacity = "1"
+        btnStop.disabled = true
+        btnStop.style.opacity = "0.5"
+
+        selAddrType.disabled = false
+        selCores.disabled = false
+        selCase.disabled = false
+        btnAddRule.disabled = false
+      }
+
+      // Exportar a JSON
+      function exportJSON() {
+        if (foundItems.length === 0) {
+          showToast("❌ No hay direcciones para exportar")
+          return
+        }
+
+        const exportData = {
+          app: "BlockchainWasm Vanity Search",
+          version: "2.0",
+          timestamp: new Date().toISOString(),
+          totalFound: foundItems.length,
+          results: foundItems
+        }
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `vanity-addresses-${Date.now()}.json`
+        a.click()
+        URL.revokeObjectURL(url)
+        showToast("📥 Resultados exportados a JSON")
+      }
+
+      // Importar de JSON
+      function importJSON(event) {
+        const file = event.target.files[0]
+        if (!file) return
+
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          try {
+            const data = JSON.parse(e.target.result)
+            if (data && Array.isArray(data.results)) {
+              foundItems = data.results.concat(foundItems)
+              foundCount = foundItems.length
+              metricFound.innerText = foundCount.toString()
+              renderTable()
+              showToast(`📤 ${data.results.length} resultado(s) importado(s)`)
+            } else {
+              showToast("❌ Formato JSON inválido")
             }
+          } catch (err) {
+            showToast("❌ Error al leer archivo JSON")
+          }
+        }
+        reader.readAsText(file)
+        event.target.value = ""
+      }
 
-            // Iniciar Búsqueda Multi-Core
-            function startSearch() {
-                if (!validateRules()) return
+      function renderTable() {
+        if (foundItems.length === 0) {
+          tableVanity.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Sin coincidencia aún. Configura tus parámetros e inicia la búsqueda.</td></tr>`
+          return
+        }
 
-                isSearching = true
-                btnStart.disabled = true
-                btnStart.style.opacity = "0.5"
-                btnStop.disabled = false
-                btnStop.style.opacity = "1"
-
-                selAddrType.disabled = true
-                selCores.disabled = true
-                selCase.disabled = true
-                btnAddRule.disabled = true
-
-                totalAttempts = 0
-                startTime = performance.now()
-                lastTime = startTime
-                lastAttempts = 0
-
-                const numCores = parseInt(selCores.value) || 4
-                const addrType = selAddrType.value
-                const isCaseSensitive = selCase.value === "true"
-                const compiledRules = getCompiledRules()
-
-                activeWorkers = []
-
-                for (let i = 0; i < numCores; i++) {
-                    const worker = new Worker("./js/vanity-worker.js", { type: "module" })
-
-                    worker.onmessage = (e) => {
-                        const msg = e.data
-                        if (msg.type === "progress") {
-                            totalAttempts += msg.attempts
-                        } else if (msg.type === "match") {
-                            totalAttempts += msg.match.attempts
-                            foundCount++
-
-                            const elapsedSec = ((performance.now() - startTime) / 1000).toFixed(2)
-                            foundItems.unshift({
-                                id: foundCount,
-                                type: addrType.toUpperCase(),
-                                address: msg.match.address,
-                                wifStr: msg.match.wifStr,
-                                privHex: msg.match.privHex,
-                                matchedTarget: msg.match.matchedTarget,
-                                attempts: totalAttempts,
-                                elapsedSec,
-                                timestamp: new Date().toISOString()
-                            })
-                            renderTable()
-                        } else if (msg.type === "error") {
-                            console.error("Worker error:", msg.error)
-                        }
-                    }
-
-                    worker.postMessage({
-                        command: "start",
-                        data: {
-                            workerId: i + 1,
-                            addrType,
-                            rules: compiledRules,
-                            isCaseSensitive
-                        }
-                    })
-
-                    activeWorkers.push(worker)
-                }
-
-                updateTimer = setInterval(() => {
-                    const now = performance.now()
-                    const deltaSec = (now - lastTime) / 1000
-                    if (deltaSec > 0) {
-                        const speed = Math.round((totalAttempts - lastAttempts) / deltaSec)
-                        metricSpeed.innerText = `${speed.toLocaleString()} keys/s`
-                        metricTotal.innerText = totalAttempts.toLocaleString()
-                        metricFound.innerText = foundCount.toLocaleString()
-
-                        lastTime = now
-                        lastAttempts = totalAttempts
-                    }
-                }, 400)
-            }
-
-            // Detener Búsqueda
-            function stopSearch() {
-                isSearching = false
-
-                activeWorkers.forEach((w) => {
-                    w.postMessage({ command: "stop" })
-                    w.terminate()
-                })
-                activeWorkers = []
-
-                if (updateTimer) clearInterval(updateTimer)
-
-                btnStart.disabled = false
-                btnStart.style.opacity = "1"
-                btnStop.disabled = true
-                btnStop.style.opacity = "0.5"
-
-                selAddrType.disabled = false
-                selCores.disabled = false
-                selCase.disabled = false
-                btnAddRule.disabled = false
-            }
-
-            // Exportar a JSON
-            function exportJSON() {
-                if (foundItems.length === 0) {
-                    showToast("❌ No hay direcciones para exportar")
-                    return
-                }
-
-                const exportData = {
-                    app: "BlockchainWasm Vanity Search",
-                    version: "2.0",
-                    timestamp: new Date().toISOString(),
-                    totalFound: foundItems.length,
-                    results: foundItems
-                }
-
-                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" })
-                const url = URL.createObjectURL(blob)
-                const a = document.createElement("a")
-                a.href = url
-                a.download = `vanity-addresses-${Date.now()}.json`
-                a.click()
-                URL.revokeObjectURL(url)
-                showToast("📥 Resultados exportados a JSON")
-            }
-
-            // Importar de JSON
-            function importJSON(event) {
-                const file = event.target.files[0]
-                if (!file) return
-
-                const reader = new FileReader()
-                reader.onload = (e) => {
-                    try {
-                        const data = JSON.parse(e.target.result)
-                        if (data && Array.isArray(data.results)) {
-                            foundItems = data.results.concat(foundItems)
-                            foundCount = foundItems.length
-                            metricFound.innerText = foundCount.toString()
-                            renderTable()
-                            showToast(`📤 ${data.results.length} resultado(s) importado(s)`)
-                        } else {
-                            showToast("❌ Formato JSON inválido")
-                        }
-                    } catch (err) {
-                        showToast("❌ Error al leer archivo JSON")
-                    }
-                }
-                reader.readAsText(file)
-                event.target.value = ""
-            }
-
-            function renderTable() {
-                if (foundItems.length === 0) {
-                    tableVanity.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Sin coincidencia aún. Configura tus parámetros e inicia la búsqueda.</td></tr>`
-                    return
-                }
-
-                let html = ""
-                foundItems.forEach((item, index) => {
-                    html += `
+        let html = ""
+        foundItems.forEach((item, index) => {
+          html += `
           <tr>
             <td style="color: var(--gold-primary); font-weight: 700;">#${item.id}</td>
             <td style="font-size: 11px;"><span class="item-badge">${item.type}</span> <span style="color: var(--gold-hover); font-weight: 600; margin-left: 4px;">${item.matchedTarget}</span></td>
@@ -718,28 +682,28 @@
             </td>
           </tr>
         `
-                })
-                window.foundItems = foundItems
-                tableVanity.innerHTML = html
-            }
+        })
+        window.foundItems = foundItems
+        tableVanity.innerHTML = html
+      }
 
-            // Listeners
-            selAddrType.addEventListener("change", validateRules)
-            btnAddRule.addEventListener("click", () => addRule())
-            btnStart.addEventListener("click", startSearch)
-            btnStop.addEventListener("click", stopSearch)
-            btnExport.addEventListener("click", exportJSON)
-            inputImportJson.addEventListener("change", importJSON)
-            btnClear.addEventListener("click", () => {
-                foundItems = []
-                foundCount = 0
-                metricFound.innerText = "0"
-                renderTable()
-            })
+      // Listeners
+      selAddrType.addEventListener("change", validateRules)
+      btnAddRule.addEventListener("click", () => addRule())
+      btnStart.addEventListener("click", startSearch)
+      btnStop.addEventListener("click", stopSearch)
+      btnExport.addEventListener("click", exportJSON)
+      inputImportJson.addEventListener("change", importJSON)
+      btnClear.addEventListener("click", () => {
+        foundItems = []
+        foundCount = 0
+        metricFound.innerText = "0"
+        renderTable()
+      })
 
-            // Reglas iniciales por defecto
-            addRule("prefix", "777")
-            addRule("prefix", "btc")
-        </script>
-    </body>
+      // Reglas iniciales por defecto
+      addRule("prefix", "777")
+      addRule("prefix", "btc")
+    </script>
+  </body>
 </html>

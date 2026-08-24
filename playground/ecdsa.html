@@ -1,257 +1,253 @@
 <!doctype html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>ECDSA Secp256k1 — BlockchainWasm Playground</title>
-        <link rel="stylesheet" href="css/theme.css" />
-    </head>
-    <body>
-        <div class="app-viewport">
-            <header class="app-header">
-                <a href="index.html" class="brand-container">
-                    <div class="brand-logo">⚡</div>
-                    <div class="brand-title">BlockchainWasm <span class="tag">ECDSA App</span></div>
-                </a>
-                <div class="header-status">
-                    <div class="wasm-badge">
-                        <span class="status-dot" id="wasm-status-dot"></span>
-                        <span id="wasm-status-text">Cargando WASM...</span>
-                    </div>
-                </div>
-            </header>
-
-            <div class="app-body">
-                <nav class="app-sidebar">
-                    <div class="sidebar-title">Módulos Criptográficos</div>
-                    <a href="index.html" class="sidebar-item">
-                        <span>⚡ Dashboard Central</span>
-                        <span class="item-badge">HUB</span>
-                    </a>
-                    <a href="address.html" class="sidebar-item">
-                        <span>📫 Address (BTC/ETH)</span>
-                    </a>
-                    <a href="hash.html" class="sidebar-item">
-                        <span>🧪 Hash Lab</span>
-                    </a>
-                    <a href="encoding.html" class="sidebar-item">
-                        <span>🔤 Encoding</span>
-                    </a>
-                    <a href="multisig.html" class="sidebar-item">
-                        <span>🤝 MuSig2 / Multisig</span>
-                        <span class="item-badge">BIP327</span>
-                    </a>
-                    <a href="hd-visualizer.html" class="sidebar-item">
-                        <span>🌲 HD Visualizer</span>
-                    </a>
-                    <a href="message-signing.html" class="sidebar-item">
-                        <span>🖋️ Msg Signing</span>
-                    </a>
-                    <a href="vanity.html" class="sidebar-item">
-                        <span>✨ Vanity Search</span>
-                    </a>
-                    <a href="bip39.html" class="sidebar-item">
-                        <span>🌱 BIP-39 Mnemonic</span>
-                        <span class="item-badge">BIP39</span>
-                    </a>
-                    <a href="bip32.html" class="sidebar-item">
-                        <span>🌳 BIP-32 HD Tree</span>
-                        <span class="item-badge">BIP32</span>
-                    </a>
-                    <a href="bip44.html" class="sidebar-item">
-                        <span>💼 BIP-44 Wallet</span>
-                        <span class="item-badge">BIP44</span>
-                    </a>
-                    <a href="ecdsa.html" class="sidebar-item active">
-                        <span>✍️ ECDSA Secp256k1</span>
-                        <span class="item-badge">ECDSA</span>
-                    </a>
-                    <a href="schnorr.html" class="sidebar-item">
-                        <span>⚡ Schnorr Taproot</span>
-                        <span class="item-badge">BIP340</span>
-                    </a>
-                    <a href="ecdh.html" class="sidebar-item">
-                        <span>🔐 ECDH Secret</span>
-                        <span class="item-badge">ECDH</span>
-                    </a>
-                    <a href="secp256k1.html" class="sidebar-item">
-                        <span>📈 Curve Secp256k1</span>
-                        <span class="item-badge">SECP</span>
-                    </a>
-                    <a href="pbkdf2.html" class="sidebar-item">
-                        <span>🔑 PBKDF2 SHA-512</span>
-                        <span class="item-badge">KDF</span>
-                    </a>
-                    <a href="wif.html" class="sidebar-item">
-                        <span>🎫 WIF Format</span>
-                        <span class="item-badge">WIF</span>
-                    </a>
-                </nav>
-
-                <main class="app-content">
-                    <div class="page-header">
-                        <div>
-                            <h1 class="page-title">✍️ ECDSA Secp256k1 Laboratory</h1>
-                            <p class="page-description">
-                                Firma digital determinista RFC 6979, verificación de firmas de 65 bytes r|s|v y formatos
-                                Bitcoin / Ethereum.
-                            </p>
-                        </div>
-                        <button class="btn btn-primary" id="btn-rand-key">🎲 Clave Aleatoria</button>
-                    </div>
-
-                    <div class="grid-2">
-                        <!-- Entrada Mensaje y Claves -->
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title"><span class="icon">📝</span> Mensaje & Parámetros</span>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Mensaje de Texto a Firmar</label>
-                                <textarea id="txt-message" class="textarea-custom" rows="3">
-BlockchainWasm High-Performance ECDSA Signature</textarea
-                                >
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Formato de Prefijo / EIP</label>
-                                <select id="sel-format" class="select-custom">
-                                    <option value="0" selected>Universal / Raw (Sin Prefijo)</option>
-                                    <option value="1">Bitcoin Magic Message Prefix</option>
-                                    <option value="2">Ethereum personal_sign (EIP-191)</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Clave Privada (32-bytes Hex)</label>
-                                <input type="text" id="input-privkey" class="input-text" />
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Clave Pública Descomprimida (65-bytes Hex)</label>
-                                <div class="output-box">
-                                    <span id="txt-pubkey">-</span>
-                                    <button class="copy-btn" onclick="window.copyTxt('txt-pubkey', 'PubKey')">
-                                        Copiar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Resultado Firma & Verificación -->
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title"><span class="icon">📜</span> Firma ECDSA r | s | v</span>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Componente R (32 Bytes)</label>
-                                <div class="output-box">
-                                    <span id="txt-sig-r">-</span>
-                                    <button class="copy-btn" onclick="window.copyTxt('txt-sig-r', 'R')">Copiar</button>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Componente S (32 Bytes canonical low-S)</label>
-                                <div class="output-box">
-                                    <span id="txt-sig-s">-</span>
-                                    <button class="copy-btn" onclick="window.copyTxt('txt-sig-s', 'S')">Copiar</button>
-                                </div>
-                            </div>
-
-                            <div class="grid-2">
-                                <div class="form-group">
-                                    <label class="form-label">Recovery V</label>
-                                    <div class="output-box"><span id="txt-sig-v">-</span></div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Raw Sig 65B</label>
-                                    <div class="output-box">
-                                        <span id="txt-sig-raw">-</span>
-                                        <button class="copy-btn" onclick="window.copyTxt('txt-sig-raw', 'Firma Raw')">
-                                            Copiar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div id="verify-alert" class="alert alert-success" style="margin-top: 10px">
-                                ✓ Firma Válida (Verificada correctamente con la clave pública)
-                            </div>
-                        </div>
-                    </div>
-                </main>
-            </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ECDSA Secp256k1 — BlockchainWasm Playground</title>
+    <link rel="stylesheet" href="css/theme.css" />
+  </head>
+  <body>
+    <div class="app-viewport">
+      <header class="app-header">
+        <a href="index.html" class="brand-container">
+          <div class="brand-logo">⚡</div>
+          <div class="brand-title">BlockchainWasm <span class="tag">ECDSA App</span></div>
+        </a>
+        <div class="header-status">
+          <div class="wasm-badge">
+            <span class="status-dot" id="wasm-status-dot"></span>
+            <span id="wasm-status-text">Cargando WASM...</span>
+          </div>
         </div>
+      </header>
 
-        <script type="module">
-            import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard } from "./js/common.js"
-            import { Secp256k1, Ecdsa } from "../../dist/index.js"
+      <div class="app-body">
+        <nav class="app-sidebar">
+          <div class="sidebar-title">Módulos Criptográficos</div>
+          <a href="index.html" class="sidebar-item">
+            <span>⚡ Dashboard Central</span>
+            <span class="item-badge">HUB</span>
+          </a>
+          <a href="address.html" class="sidebar-item">
+            <span>📫 Address (BTC/ETH)</span>
+          </a>
+          <a href="hash.html" class="sidebar-item">
+            <span>🧪 Hash Lab</span>
+          </a>
+          <a href="encoding.html" class="sidebar-item">
+            <span>🔤 Encoding</span>
+          </a>
+          <a href="multisig.html" class="sidebar-item">
+            <span>🤝 MuSig2 / Multisig</span>
+            <span class="item-badge">BIP327</span>
+          </a>
+          <a href="hd-visualizer.html" class="sidebar-item">
+            <span>🌲 HD Visualizer</span>
+          </a>
+          <a href="message-signing.html" class="sidebar-item">
+            <span>🖋️ Msg Signing</span>
+          </a>
+          <a href="vanity.html" class="sidebar-item">
+            <span>✨ Vanity Search</span>
+          </a>
+          <a href="bip39.html" class="sidebar-item">
+            <span>🌱 BIP-39 Mnemonic</span>
+            <span class="item-badge">BIP39</span>
+          </a>
+          <a href="bip32.html" class="sidebar-item">
+            <span>🌳 BIP-32 HD Tree</span>
+            <span class="item-badge">BIP32</span>
+          </a>
+          <a href="bip44.html" class="sidebar-item">
+            <span>💼 BIP-44 Wallet</span>
+            <span class="item-badge">BIP44</span>
+          </a>
+          <a href="ecdsa.html" class="sidebar-item active">
+            <span>✍️ ECDSA Secp256k1</span>
+            <span class="item-badge">ECDSA</span>
+          </a>
+          <a href="schnorr.html" class="sidebar-item">
+            <span>⚡ Schnorr Taproot</span>
+            <span class="item-badge">BIP340</span>
+          </a>
+          <a href="ecdh.html" class="sidebar-item">
+            <span>🔐 ECDH Secret</span>
+            <span class="item-badge">ECDH</span>
+          </a>
+          <a href="secp256k1.html" class="sidebar-item">
+            <span>📈 Curve Secp256k1</span>
+            <span class="item-badge">SECP</span>
+          </a>
+          <a href="pbkdf2.html" class="sidebar-item">
+            <span>🔑 PBKDF2 SHA-512</span>
+            <span class="item-badge">KDF</span>
+          </a>
+          <a href="wif.html" class="sidebar-item">
+            <span>🎫 WIF Format</span>
+            <span class="item-badge">WIF</span>
+          </a>
+        </nav>
 
-            window.copyTxt = (id, name) => {
-                const text = document.getElementById(id).innerText
-                if (text !== "-") copyToClipboard(text, name)
-            }
+        <main class="app-content">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">✍️ ECDSA Secp256k1 Laboratory</h1>
+              <p class="page-description">
+                Firma digital determinista RFC 6979, verificación de firmas de 65 bytes r|s|v y formatos Bitcoin /
+                Ethereum.
+              </p>
+            </div>
+            <button class="btn btn-primary" id="btn-rand-key">🎲 Clave Aleatoria</button>
+          </div>
 
-            await initWasm()
+          <div class="grid-2">
+            <!-- Entrada Mensaje y Claves -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title"><span class="icon">📝</span> Mensaje & Parámetros</span>
+              </div>
 
-            const txtMessage = document.getElementById("txt-message")
-            const selFormat = document.getElementById("sel-format")
-            const inputPrivkey = document.getElementById("input-privkey")
-            const btnRandKey = document.getElementById("btn-rand-key")
-            const verifyAlert = document.getElementById("verify-alert")
+              <div class="form-group">
+                <label class="form-label">Mensaje de Texto a Firmar</label>
+                <textarea id="txt-message" class="textarea-custom" rows="3">
+BlockchainWasm High-Performance ECDSA Signature</textarea
+                >
+              </div>
 
-            function runEcdsa() {
-                try {
-                    const msgStr = txtMessage.value
-                    const privBytes = parseHexInput(inputPrivkey.value)
-                    if (privBytes.length !== 32) return
+              <div class="form-group">
+                <label class="form-label">Formato de Prefijo / EIP</label>
+                <select id="sel-format" class="select-custom">
+                  <option value="0" selected>Universal / Raw (Sin Prefijo)</option>
+                  <option value="1">Bitcoin Magic Message Prefix</option>
+                  <option value="2">Ethereum personal_sign (EIP-191)</option>
+                </select>
+              </div>
 
-                    const pubUncomp = Secp256k1.getPublicKey(privBytes, false)
-                    document.getElementById("txt-pubkey").innerText = bytesToHex(pubUncomp)
+              <div class="form-group">
+                <label class="form-label">Clave Privada (32-bytes Hex)</label>
+                <input type="text" id="input-privkey" class="input-text" />
+              </div>
 
-                    const format = parseInt(selFormat.value)
-                    const sig = Ecdsa.signTextMessage(msgStr, privBytes, format)
+              <div class="form-group">
+                <label class="form-label">Clave Pública Descomprimida (65-bytes Hex)</label>
+                <div class="output-box">
+                  <span id="txt-pubkey">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('txt-pubkey', 'PubKey')">Copiar</button>
+                </div>
+              </div>
+            </div>
 
-                    const rHex = bytesToHex(sig.r)
-                    const sHex = bytesToHex(sig.s)
-                    const rawHex = rHex + sHex + sig.v.toString(16).padStart(2, "0")
+            <!-- Resultado Firma & Verificación -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title"><span class="icon">📜</span> Firma ECDSA r | s | v</span>
+              </div>
 
-                    document.getElementById("txt-sig-r").innerText = rHex
-                    document.getElementById("txt-sig-s").innerText = sHex
-                    document.getElementById("txt-sig-v").innerText = "0x" + sig.v.toString(16)
-                    document.getElementById("txt-sig-raw").innerText = rawHex
+              <div class="form-group">
+                <label class="form-label">Componente R (32 Bytes)</label>
+                <div class="output-box">
+                  <span id="txt-sig-r">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('txt-sig-r', 'R')">Copiar</button>
+                </div>
+              </div>
 
-                    // Verificación
-                    const isValid = Ecdsa.verifyTextMessage(msgStr, sig, pubUncomp, format)
-                    if (isValid) {
-                        verifyAlert.className = "alert alert-success"
-                        verifyAlert.innerText = "✓ Firma Válida (Verificada correctamente en WebAssembly)"
-                    } else {
-                        verifyAlert.className = "alert alert-error"
-                        verifyAlert.innerText = "❌ Firma Inválida"
-                    }
-                } catch (err) {
-                    console.error(err)
-                    verifyAlert.className = "alert alert-error"
-                    verifyAlert.innerText = "❌ Error: " + err.message
-                }
-            }
+              <div class="form-group">
+                <label class="form-label">Componente S (32 Bytes canonical low-S)</label>
+                <div class="output-box">
+                  <span id="txt-sig-s">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('txt-sig-s', 'S')">Copiar</button>
+                </div>
+              </div>
 
-            btnRandKey.addEventListener("click", () => {
-                inputPrivkey.value = getRandomHexKey()
-                runEcdsa()
-            })
+              <div class="grid-2">
+                <div class="form-group">
+                  <label class="form-label">Recovery V</label>
+                  <div class="output-box"><span id="txt-sig-v">-</span></div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Raw Sig 65B</label>
+                  <div class="output-box">
+                    <span id="txt-sig-raw">-</span>
+                    <button class="copy-btn" onclick="window.copyTxt('txt-sig-raw', 'Firma Raw')">Copiar</button>
+                  </div>
+                </div>
+              </div>
 
-            txtMessage.addEventListener("input", runEcdsa)
-            selFormat.addEventListener("change", runEcdsa)
-            inputPrivkey.addEventListener("input", runEcdsa)
+              <div id="verify-alert" class="alert alert-success" style="margin-top: 10px">
+                ✓ Firma Válida (Verificada correctamente con la clave pública)
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
 
-            // Initial setup
-            inputPrivkey.value = getRandomHexKey()
-            runEcdsa()
-        </script>
-    </body>
+    <script type="module">
+      import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard } from "./js/common.js"
+      import { Secp256k1, Ecdsa } from "../../dist/index.js"
+
+      window.copyTxt = (id, name) => {
+        const text = document.getElementById(id).innerText
+        if (text !== "-") copyToClipboard(text, name)
+      }
+
+      await initWasm()
+
+      const txtMessage = document.getElementById("txt-message")
+      const selFormat = document.getElementById("sel-format")
+      const inputPrivkey = document.getElementById("input-privkey")
+      const btnRandKey = document.getElementById("btn-rand-key")
+      const verifyAlert = document.getElementById("verify-alert")
+
+      function runEcdsa() {
+        try {
+          const msgStr = txtMessage.value
+          const privBytes = parseHexInput(inputPrivkey.value)
+          if (privBytes.length !== 32) return
+
+          const pubUncomp = Secp256k1.getPublicKey(privBytes, false)
+          document.getElementById("txt-pubkey").innerText = bytesToHex(pubUncomp)
+
+          const format = parseInt(selFormat.value)
+          const sig = Ecdsa.signTextMessage(msgStr, privBytes, format)
+
+          const rHex = bytesToHex(sig.r)
+          const sHex = bytesToHex(sig.s)
+          const rawHex = rHex + sHex + sig.v.toString(16).padStart(2, "0")
+
+          document.getElementById("txt-sig-r").innerText = rHex
+          document.getElementById("txt-sig-s").innerText = sHex
+          document.getElementById("txt-sig-v").innerText = "0x" + sig.v.toString(16)
+          document.getElementById("txt-sig-raw").innerText = rawHex
+
+          // Verificación
+          const isValid = Ecdsa.verifyTextMessage(msgStr, sig, pubUncomp, format)
+          if (isValid) {
+            verifyAlert.className = "alert alert-success"
+            verifyAlert.innerText = "✓ Firma Válida (Verificada correctamente en WebAssembly)"
+          } else {
+            verifyAlert.className = "alert alert-error"
+            verifyAlert.innerText = "❌ Firma Inválida"
+          }
+        } catch (err) {
+          console.error(err)
+          verifyAlert.className = "alert alert-error"
+          verifyAlert.innerText = "❌ Error: " + err.message
+        }
+      }
+
+      btnRandKey.addEventListener("click", () => {
+        inputPrivkey.value = getRandomHexKey()
+        runEcdsa()
+      })
+
+      txtMessage.addEventListener("input", runEcdsa)
+      selFormat.addEventListener("change", runEcdsa)
+      inputPrivkey.addEventListener("input", runEcdsa)
+
+      // Initial setup
+      inputPrivkey.value = getRandomHexKey()
+      runEcdsa()
+    </script>
+  </body>
 </html>

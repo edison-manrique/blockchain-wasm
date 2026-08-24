@@ -1,222 +1,230 @@
 <!doctype html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Schnorr BIP-340 — BlockchainWasm Playground</title>
-        <link rel="stylesheet" href="css/theme.css" />
-    </head>
-    <body>
-        <div class="app-viewport">
-            <header class="app-header">
-                <a href="index.html" class="brand-container">
-                    <div class="brand-logo">⚡</div>
-                    <div class="brand-title">BlockchainWasm <span class="tag">Schnorr BIP-340 App</span></div>
-                </a>
-                <div class="header-status">
-                    <div class="wasm-badge">
-                        <span class="status-dot" id="wasm-status-dot"></span>
-                        <span id="wasm-status-text">Cargando WASM...</span>
-                    </div>
-                </div>
-            </header>
-
-            <div class="app-body">
-                <nav class="app-sidebar">
-                    <div class="sidebar-title">Módulos Criptográficos</div>
-                    <a href="index.html" class="sidebar-item">
-                        <span>⚡ Dashboard Central</span>
-                        <span class="item-badge">HUB</span>
-                    </a>
-                    <a href="address.html" class="sidebar-item">
-                        <span>📫 Address (BTC/ETH)</span>
-                    </a>
-                    <a href="hash.html" class="sidebar-item">
-                        <span>🧪 Hash Lab</span>
-                    </a>
-                    <a href="encoding.html" class="sidebar-item">
-                        <span>🔤 Encoding</span>
-                    </a>
-                    <a href="multisig.html" class="sidebar-item">
-                        <span>🤝 MuSig2 / Multisig</span>
-                        <span class="item-badge">BIP327</span>
-                    </a>
-                    <a href="hd-visualizer.html" class="sidebar-item">
-                        <span>🌲 HD Visualizer</span>
-                    </a>
-                    <a href="message-signing.html" class="sidebar-item">
-                        <span>🖋️ Msg Signing</span>
-                    </a>
-                    <a href="vanity.html" class="sidebar-item">
-                        <span>✨ Vanity Search</span>
-                    </a>
-                    <a href="bip39.html" class="sidebar-item">
-                        <span>🌱 BIP-39 Mnemonic</span>
-                        <span class="item-badge">BIP39</span>
-                    </a>
-                    <a href="bip32.html" class="sidebar-item">
-                        <span>🌳 BIP-32 HD Tree</span>
-                        <span class="item-badge">BIP32</span>
-                    </a>
-                    <a href="bip44.html" class="sidebar-item">
-                        <span>💼 BIP-44 Wallet</span>
-                        <span class="item-badge">BIP44</span>
-                    </a>
-                    <a href="ecdsa.html" class="sidebar-item">
-                        <span>✍️ ECDSA Secp256k1</span>
-                        <span class="item-badge">ECDSA</span>
-                    </a>
-                    <a href="schnorr.html" class="sidebar-item active">
-                        <span>⚡ Schnorr Taproot</span>
-                        <span class="item-badge">BIP340</span>
-                    </a>
-                    <a href="ecdh.html" class="sidebar-item">
-                        <span>🔐 ECDH Secret</span>
-                        <span class="item-badge">ECDH</span>
-                    </a>
-                    <a href="secp256k1.html" class="sidebar-item">
-                        <span>📈 Curve Secp256k1</span>
-                        <span class="item-badge">SECP</span>
-                    </a>
-                    <a href="pbkdf2.html" class="sidebar-item">
-                        <span>🔑 PBKDF2 SHA-512</span>
-                        <span class="item-badge">KDF</span>
-                    </a>
-                    <a href="wif.html" class="sidebar-item">
-                        <span>🎫 WIF Format</span>
-                        <span class="item-badge">WIF</span>
-                    </a>
-                </nav>
-
-                <main class="app-content">
-                    <div class="page-header">
-                        <div>
-                            <h1 class="page-title">⚡ Schnorr BIP-340 (Taproot) Laboratory</h1>
-                            <p class="page-description">
-                                Firmas Schnorr de 64 bytes, llaves públicas x-only de 32 bytes y agregación de claves
-                                (MuSig).
-                            </p>
-                        </div>
-                        <button class="btn btn-primary" id="btn-rand-key">🎲 Clave Aleatoria</button>
-                    </div>
-
-                    <div class="grid-2">
-                        <!-- Firma Schnorr Individual -->
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title"><span class="icon">✍️</span> Firma Schnorr BIP-340</span>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Mensaje a Firmar</label>
-                                <textarea id="txt-msg" class="textarea-custom" rows="2">
-Taproot Schnorr BIP-340 Signature Test</textarea
-                                >
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Clave Privada (32B Hex)</label>
-                                <input type="text" id="input-priv" class="input-text" />
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Schnorr x-only Public Key (32B Hex)</label>
-                                <div class="output-box">
-                                    <span id="txt-xonly-pub">-</span>
-                                    <button class="copy-btn" onclick="window.copyTxt('txt-xonly-pub', 'x-only PubKey')">
-                                        Copiar
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Firma Schnorr (64-bytes Hex)</label>
-                                <div class="output-box" style="min-height: 50px">
-                                    <span id="txt-sig64">-</span>
-                                    <button class="copy-btn" onclick="window.copyTxt('txt-sig64', 'Firma Schnorr')">
-                                        Copiar
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div id="verify-alert" class="alert alert-success">✓ Firma Schnorr BIP-340 Válida</div>
-                        </div>
-
-                        <!-- Taproot & Multi-signature Info Card -->
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title"><span class="icon">ℹ️</span> Schnorr & Bitcoin Taproot</span>
-                            </div>
-                            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.6;">
-                                Las firmas <b>Schnorr (BIP-340)</b> son el estándar criptográfico utilizado en <b>Bitcoin Taproot (BIP-341/342)</b>. Permiten claves públicas x-only de 32 bytes y firmas deterministas o con entropía segura de 64 bytes.
-                            </p>
-                            <div style="margin-top: 16px; padding: 12px; background: var(--bg-dark-0); border: 1px solid var(--border-color); border-radius: 6px;">
-                                <h4 style="font-size: 13px; color: var(--gold-primary); margin-bottom: 6px;">🤝 ¿Buscando Multifirma MuSig2 (BIP-327)?</h4>
-                                <p style="font-size: 11px; color: var(--text-dim); margin-bottom: 12px;">
-                                    El protocolo oficial de multifirma Schnorr de 2 rondas con protección criptográfica contra ataques rogue-key ahora tiene su laboratorio dedicado.
-                                </p>
-                                <a href="multisig.html" class="btn btn-primary btn-sm">Ir al Laboratorio MuSig2 (BIP-327) →</a>
-                            </div>
-                        </div>
-                    </div>
-                </main>
-            </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Schnorr BIP-340 — BlockchainWasm Playground</title>
+    <link rel="stylesheet" href="css/theme.css" />
+  </head>
+  <body>
+    <div class="app-viewport">
+      <header class="app-header">
+        <a href="index.html" class="brand-container">
+          <div class="brand-logo">⚡</div>
+          <div class="brand-title">BlockchainWasm <span class="tag">Schnorr BIP-340 App</span></div>
+        </a>
+        <div class="header-status">
+          <div class="wasm-badge">
+            <span class="status-dot" id="wasm-status-dot"></span>
+            <span id="wasm-status-text">Cargando WASM...</span>
+          </div>
         </div>
+      </header>
 
-        <script type="module">
-            import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard } from "./js/common.js"
-            import { Schnorr } from "../../dist/index.js"
+      <div class="app-body">
+        <nav class="app-sidebar">
+          <div class="sidebar-title">Módulos Criptográficos</div>
+          <a href="index.html" class="sidebar-item">
+            <span>⚡ Dashboard Central</span>
+            <span class="item-badge">HUB</span>
+          </a>
+          <a href="address.html" class="sidebar-item">
+            <span>📫 Address (BTC/ETH)</span>
+          </a>
+          <a href="hash.html" class="sidebar-item">
+            <span>🧪 Hash Lab</span>
+          </a>
+          <a href="encoding.html" class="sidebar-item">
+            <span>🔤 Encoding</span>
+          </a>
+          <a href="multisig.html" class="sidebar-item">
+            <span>🤝 MuSig2 / Multisig</span>
+            <span class="item-badge">BIP327</span>
+          </a>
+          <a href="hd-visualizer.html" class="sidebar-item">
+            <span>🌲 HD Visualizer</span>
+          </a>
+          <a href="message-signing.html" class="sidebar-item">
+            <span>🖋️ Msg Signing</span>
+          </a>
+          <a href="vanity.html" class="sidebar-item">
+            <span>✨ Vanity Search</span>
+          </a>
+          <a href="bip39.html" class="sidebar-item">
+            <span>🌱 BIP-39 Mnemonic</span>
+            <span class="item-badge">BIP39</span>
+          </a>
+          <a href="bip32.html" class="sidebar-item">
+            <span>🌳 BIP-32 HD Tree</span>
+            <span class="item-badge">BIP32</span>
+          </a>
+          <a href="bip44.html" class="sidebar-item">
+            <span>💼 BIP-44 Wallet</span>
+            <span class="item-badge">BIP44</span>
+          </a>
+          <a href="ecdsa.html" class="sidebar-item">
+            <span>✍️ ECDSA Secp256k1</span>
+            <span class="item-badge">ECDSA</span>
+          </a>
+          <a href="schnorr.html" class="sidebar-item active">
+            <span>⚡ Schnorr Taproot</span>
+            <span class="item-badge">BIP340</span>
+          </a>
+          <a href="ecdh.html" class="sidebar-item">
+            <span>🔐 ECDH Secret</span>
+            <span class="item-badge">ECDH</span>
+          </a>
+          <a href="secp256k1.html" class="sidebar-item">
+            <span>📈 Curve Secp256k1</span>
+            <span class="item-badge">SECP</span>
+          </a>
+          <a href="pbkdf2.html" class="sidebar-item">
+            <span>🔑 PBKDF2 SHA-512</span>
+            <span class="item-badge">KDF</span>
+          </a>
+          <a href="wif.html" class="sidebar-item">
+            <span>🎫 WIF Format</span>
+            <span class="item-badge">WIF</span>
+          </a>
+        </nav>
 
-            window.copyTxt = (id, name) => {
-                const text = document.getElementById(id).innerText
-                if (text !== "-") copyToClipboard(text, name)
-            }
+        <main class="app-content">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">⚡ Schnorr BIP-340 (Taproot) Laboratory</h1>
+              <p class="page-description">
+                Firmas Schnorr de 64 bytes, llaves públicas x-only de 32 bytes y agregación de claves (MuSig).
+              </p>
+            </div>
+            <button class="btn btn-primary" id="btn-rand-key">🎲 Clave Aleatoria</button>
+          </div>
 
-            await initWasm()
+          <div class="grid-2">
+            <!-- Firma Schnorr Individual -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title"><span class="icon">✍️</span> Firma Schnorr BIP-340</span>
+              </div>
 
-            const txtMsg = document.getElementById("txt-msg")
-            const inputPriv = document.getElementById("input-priv")
-            const btnRandKey = document.getElementById("btn-rand-key")
-            const verifyAlert = document.getElementById("verify-alert")
+              <div class="form-group">
+                <label class="form-label">Mensaje a Firmar</label>
+                <textarea id="txt-msg" class="textarea-custom" rows="2">
+Taproot Schnorr BIP-340 Signature Test</textarea
+                >
+              </div>
 
-            function runSchnorr() {
-                try {
-                    const msgStr = txtMsg.value
-                    const privBytes = parseHexInput(inputPriv.value)
-                    if (privBytes.length !== 32) return
+              <div class="form-group">
+                <label class="form-label">Clave Privada (32B Hex)</label>
+                <input type="text" id="input-priv" class="input-text" />
+              </div>
 
-                    const xonlyPub = Schnorr.getPublicKey(privBytes)
-                    document.getElementById("txt-xonly-pub").innerText = bytesToHex(xonlyPub)
+              <div class="form-group">
+                <label class="form-label">Schnorr x-only Public Key (32B Hex)</label>
+                <div class="output-box">
+                  <span id="txt-xonly-pub">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('txt-xonly-pub', 'x-only PubKey')">Copiar</button>
+                </div>
+              </div>
 
-                    const sig = Schnorr.signTextMessage(msgStr, privBytes)
-                    document.getElementById("txt-sig64").innerText = bytesToHex(sig)
+              <div class="form-group">
+                <label class="form-label">Firma Schnorr (64-bytes Hex)</label>
+                <div class="output-box" style="min-height: 50px">
+                  <span id="txt-sig64">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('txt-sig64', 'Firma Schnorr')">Copiar</button>
+                </div>
+              </div>
 
-                    const ok = Schnorr.verifyTextMessage(msgStr, sig, xonlyPub)
-                    if (ok) {
-                        verifyAlert.className = "alert alert-success"
-                        verifyAlert.innerText = "✓ Firma Schnorr BIP-340 Válida"
-                    } else {
-                        verifyAlert.className = "alert alert-error"
-                        verifyAlert.innerText = "❌ Firma Schnorr Inválida"
-                    }
-                } catch (err) {
-                    console.error(err)
-                    verifyAlert.className = "alert alert-error"
-                    verifyAlert.innerText = "❌ Error: " + err.message
-                }
-            }
+              <div id="verify-alert" class="alert alert-success">✓ Firma Schnorr BIP-340 Válida</div>
+            </div>
 
-            btnRandKey.addEventListener("click", () => {
-                inputPriv.value = getRandomHexKey()
-                runSchnorr()
-            })
+            <!-- Taproot & Multi-signature Info Card -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title"><span class="icon">ℹ️</span> Schnorr & Bitcoin Taproot</span>
+              </div>
+              <p style="font-size: 12px; color: var(--text-muted); line-height: 1.6">
+                Las firmas <b>Schnorr (BIP-340)</b> son el estándar criptográfico utilizado en
+                <b>Bitcoin Taproot (BIP-341/342)</b>. Permiten claves públicas x-only de 32 bytes y firmas deterministas
+                o con entropía segura de 64 bytes.
+              </p>
+              <div
+                style="
+                  margin-top: 16px;
+                  padding: 12px;
+                  background: var(--bg-dark-0);
+                  border: 1px solid var(--border-color);
+                  border-radius: 6px;
+                "
+              >
+                <h4 style="font-size: 13px; color: var(--gold-primary); margin-bottom: 6px">
+                  🤝 ¿Buscando Multifirma MuSig2 (BIP-327)?
+                </h4>
+                <p style="font-size: 11px; color: var(--text-dim); margin-bottom: 12px">
+                  El protocolo oficial de multifirma Schnorr de 2 rondas con protección criptográfica contra ataques
+                  rogue-key ahora tiene su laboratorio dedicado.
+                </p>
+                <a href="multisig.html" class="btn btn-primary btn-sm">Ir al Laboratorio MuSig2 (BIP-327) →</a>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
 
-            txtMsg.addEventListener("input", runSchnorr)
-            inputPriv.addEventListener("input", runSchnorr)
+    <script type="module">
+      import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard } from "./js/common.js"
+      import { Schnorr } from "../../dist/index.js"
 
-            // Initial setup
-            inputPriv.value = getRandomHexKey()
-            runSchnorr()
-        </script>
-    </body>
+      window.copyTxt = (id, name) => {
+        const text = document.getElementById(id).innerText
+        if (text !== "-") copyToClipboard(text, name)
+      }
+
+      await initWasm()
+
+      const txtMsg = document.getElementById("txt-msg")
+      const inputPriv = document.getElementById("input-priv")
+      const btnRandKey = document.getElementById("btn-rand-key")
+      const verifyAlert = document.getElementById("verify-alert")
+
+      function runSchnorr() {
+        try {
+          const msgStr = txtMsg.value
+          const privBytes = parseHexInput(inputPriv.value)
+          if (privBytes.length !== 32) return
+
+          const xonlyPub = Schnorr.getPublicKey(privBytes)
+          document.getElementById("txt-xonly-pub").innerText = bytesToHex(xonlyPub)
+
+          const sig = Schnorr.signTextMessage(msgStr, privBytes)
+          document.getElementById("txt-sig64").innerText = bytesToHex(sig)
+
+          const ok = Schnorr.verifyTextMessage(msgStr, sig, xonlyPub)
+          if (ok) {
+            verifyAlert.className = "alert alert-success"
+            verifyAlert.innerText = "✓ Firma Schnorr BIP-340 Válida"
+          } else {
+            verifyAlert.className = "alert alert-error"
+            verifyAlert.innerText = "❌ Firma Schnorr Inválida"
+          }
+        } catch (err) {
+          console.error(err)
+          verifyAlert.className = "alert alert-error"
+          verifyAlert.innerText = "❌ Error: " + err.message
+        }
+      }
+
+      btnRandKey.addEventListener("click", () => {
+        inputPriv.value = getRandomHexKey()
+        runSchnorr()
+      })
+
+      txtMsg.addEventListener("input", runSchnorr)
+      inputPriv.addEventListener("input", runSchnorr)
+
+      // Initial setup
+      inputPriv.value = getRandomHexKey()
+      runSchnorr()
+    </script>
+  </body>
 </html>

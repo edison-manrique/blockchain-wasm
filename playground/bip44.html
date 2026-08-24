@@ -1,348 +1,340 @@
 <!doctype html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>BIP-44 Multi-Coin Wallet — BlockchainWasm Playground</title>
-        <link rel="stylesheet" href="css/theme.css" />
-    </head>
-    <body>
-        <div class="app-viewport">
-            <header class="app-header">
-                <a href="index.html" class="brand-container">
-                    <div class="brand-logo">⚡</div>
-                    <div class="brand-title">BlockchainWasm <span class="tag">BIP-44 Multi-Coin App</span></div>
-                </a>
-                <div class="header-status">
-                    <div class="wasm-badge">
-                        <span class="status-dot" id="wasm-status-dot"></span>
-                        <span id="wasm-status-text">Cargando WASM...</span>
-                    </div>
-                </div>
-            </header>
-
-            <div class="app-body">
-                <nav class="app-sidebar">
-                    <div class="sidebar-title">Módulos Criptográficos</div>
-                    <a href="index.html" class="sidebar-item">
-                        <span>⚡ Dashboard Central</span>
-                        <span class="item-badge">HUB</span>
-                    </a>
-                    <a href="address.html" class="sidebar-item">
-                        <span>📫 Address (BTC/ETH)</span>
-                    </a>
-                    <a href="hash.html" class="sidebar-item">
-                        <span>🧪 Hash Lab</span>
-                    </a>
-                    <a href="encoding.html" class="sidebar-item">
-                        <span>🔤 Encoding</span>
-                    </a>
-                    <a href="multisig.html" class="sidebar-item">
-                        <span>🤝 MuSig2 / Multisig</span>
-                        <span class="item-badge">BIP327</span>
-                    </a>
-                    <a href="hd-visualizer.html" class="sidebar-item">
-                        <span>🌲 HD Visualizer</span>
-                    </a>
-                    <a href="message-signing.html" class="sidebar-item">
-                        <span>🖋️ Msg Signing</span>
-                    </a>
-                    <a href="vanity.html" class="sidebar-item">
-                        <span>✨ Vanity Search</span>
-                    </a>
-                    <a href="bip39.html" class="sidebar-item">
-                        <span>🌱 BIP-39 Mnemonic</span>
-                        <span class="item-badge">BIP39</span>
-                    </a>
-                    <a href="bip32.html" class="sidebar-item">
-                        <span>🌳 BIP-32 HD Tree</span>
-                        <span class="item-badge">BIP32</span>
-                    </a>
-                    <a href="bip44.html" class="sidebar-item active">
-                        <span>💼 BIP-44 Wallet</span>
-                        <span class="item-badge">BIP44</span>
-                    </a>
-                    <a href="ecdsa.html" class="sidebar-item">
-                        <span>✍️ ECDSA Secp256k1</span>
-                        <span class="item-badge">ECDSA</span>
-                    </a>
-                    <a href="schnorr.html" class="sidebar-item">
-                        <span>⚡ Schnorr Taproot</span>
-                        <span class="item-badge">BIP340</span>
-                    </a>
-                    <a href="ecdh.html" class="sidebar-item">
-                        <span>🔐 ECDH Secret</span>
-                        <span class="item-badge">ECDH</span>
-                    </a>
-                    <a href="secp256k1.html" class="sidebar-item">
-                        <span>📈 Curve Secp256k1</span>
-                        <span class="item-badge">SECP</span>
-                    </a>
-                    <a href="pbkdf2.html" class="sidebar-item">
-                        <span>🔑 PBKDF2 SHA-512</span>
-                        <span class="item-badge">KDF</span>
-                    </a>
-                    <a href="wif.html" class="sidebar-item">
-                        <span>🎫 WIF Format</span>
-                        <span class="item-badge">WIF</span>
-                    </a>
-                </nav>
-
-                <main class="app-content">
-                    <div class="page-header">
-                        <div>
-                            <h1 class="page-title">💼 BIP-44 Multi-Coin HD Wallet Matrix</h1>
-                            <p class="page-description">
-                                Matriz de derivación multi-moneda (Bitcoin Legacy/SegWit/Taproot, Ethereum, Tron) con soporte para passphrase y paginación de direcciones derivadas.
-                            </p>
-                        </div>
-                        <div style="display: flex; gap: 10px; align-items: center">
-                            <select id="sel-mn-words" class="select-custom" style="width: auto">
-                                <option value="128">12 Palabras (128 bits)</option>
-                                <option value="160">15 Palabras (160 bits)</option>
-                                <option value="192">18 Palabras (192 bits)</option>
-                                <option value="224">21 Palabras (224 bits)</option>
-                                <option value="256" selected>24 Palabras (256 bits)</option>
-                            </select>
-                            <button class="btn btn-primary" id="btn-gen-mn">🌱 Nuevo Mnemónico</button>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <span class="card-title"><span class="icon">⚙️</span> Parámetros de la Cartera</span>
-                        </div>
-
-                        <div class="grid-2">
-                            <div>
-                                <div class="form-group">
-                                    <label class="form-label">Frase Mnemónica</label>
-                                    <textarea
-                                        id="txt-mn"
-                                        class="textarea-custom"
-                                        rows="2"
-                                        placeholder="12 a 24 palabras mnemónicas..."
-                                    ></textarea>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Passphrase Opcional (Salt PBKDF2 / Password)</label>
-                                    <input
-                                        type="text"
-                                        id="input-passphrase"
-                                        class="input-text"
-                                        placeholder="Passphrase opcional (2FA / 13th o 25th word)"
-                                    />
-                                </div>
-                            </div>
-
-                            <div class="grid-2">
-                                <div class="form-group">
-                                    <label class="form-label">Propósito (Purpose)</label>
-                                    <select id="sel-purpose" class="select-custom">
-                                        <option value="44" selected>44 (BIP-44 Legacy / P2PKH)</option>
-                                        <option value="49">49 (BIP-49 Nested SegWit / P2SH-P2WPKH)</option>
-                                        <option value="84">84 (BIP-84 Native SegWit / P2WPKH)</option>
-                                        <option value="86">86 (BIP-86 Taproot / P2TR)</option>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Moneda (Coin Type)</label>
-                                    <select id="sel-cointype" class="select-custom">
-                                        <option value="0" selected>0 (Bitcoin Mainnet)</option>
-                                        <option value="60">60 (Ethereum)</option>
-                                        <option value="195">195 (Tron / TRX)</option>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Cuenta (Account)</label>
-                                    <input type="number" id="input-account" class="input-text" value="0" min="0" />
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="form-label">Cambio (Change)</label>
-                                    <select id="sel-change" class="select-custom">
-                                        <option value="0" selected>0 (Externa / Recibir)</option>
-                                        <option value="1">1 (Interna / Cambio)</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="grid-2">
-                            <div class="form-group">
-                                <label class="form-label"
-                                    >Account xpub (Nivel de Cuenta m/purpose'/coin'/account')</label
-                                >
-                                <div class="output-box">
-                                    <span id="txt-account-xpub">-</span>
-                                    <button
-                                        class="copy-btn"
-                                        onclick="window.copyTxt('txt-account-xpub', 'Account xpub')"
-                                    >
-                                        Copiar
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Account xprv</label>
-                                <div class="output-box">
-                                    <span id="txt-account-xprv">-</span>
-                                    <button
-                                        class="copy-btn"
-                                        onclick="window.copyTxt('txt-account-xprv', 'Account xprv')"
-                                    >
-                                        Copiar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Matriz de Direcciones -->
-                    <div class="card">
-                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                            <span class="card-title"
-                                ><span class="icon">📋</span> Matriz de Hojas Derivadas (<span id="lbl-page-range">Índices 0 al 4</span>)</span
-                            >
-                            <div style="display: flex; gap: 8px; align-items: center;">
-                                <button class="btn btn-sm btn-secondary" id="btn-prev-page" disabled>◀ Anteriores 5</button>
-                                <span id="lbl-page-num" style="font-size: 12px; color: var(--gold-primary); font-weight: bold; font-family: var(--font-mono);">Pág 1</span>
-                                <button class="btn btn-sm btn-secondary" id="btn-next-page">Siguientes 5 ▶</button>
-                            </div>
-                        </div>
-
-                        <div class="table-container">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Index</th>
-                                        <th>Ruta HD</th>
-                                        <th>Dirección Derivada</th>
-                                        <th>Clave Pública (Hex)</th>
-                                        <th>Clave Privada (WIF / Hex)</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="table-leaves">
-                                    <tr>
-                                        <td colspan="6" style="text-align: center; color: var(--text-muted)">
-                                            Cargando derivación...
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </main>
-            </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BIP-44 Multi-Coin Wallet — BlockchainWasm Playground</title>
+    <link rel="stylesheet" href="css/theme.css" />
+  </head>
+  <body>
+    <div class="app-viewport">
+      <header class="app-header">
+        <a href="index.html" class="brand-container">
+          <div class="brand-logo">⚡</div>
+          <div class="brand-title">BlockchainWasm <span class="tag">BIP-44 Multi-Coin App</span></div>
+        </a>
+        <div class="header-status">
+          <div class="wasm-badge">
+            <span class="status-dot" id="wasm-status-dot"></span>
+            <span id="wasm-status-text">Cargando WASM...</span>
+          </div>
         </div>
+      </header>
 
-        <script type="module">
-            import { initWasm, copyToClipboard, bytesToHex } from "./js/common.js";
-            import { Bip39, Bip44, Wif, Address, Secp256k1 } from "../../dist/index.js";
+      <div class="app-body">
+        <nav class="app-sidebar">
+          <div class="sidebar-title">Módulos Criptográficos</div>
+          <a href="index.html" class="sidebar-item">
+            <span>⚡ Dashboard Central</span>
+            <span class="item-badge">HUB</span>
+          </a>
+          <a href="address.html" class="sidebar-item">
+            <span>📫 Address (BTC/ETH)</span>
+          </a>
+          <a href="hash.html" class="sidebar-item">
+            <span>🧪 Hash Lab</span>
+          </a>
+          <a href="encoding.html" class="sidebar-item">
+            <span>🔤 Encoding</span>
+          </a>
+          <a href="multisig.html" class="sidebar-item">
+            <span>🤝 MuSig2 / Multisig</span>
+            <span class="item-badge">BIP327</span>
+          </a>
+          <a href="hd-visualizer.html" class="sidebar-item">
+            <span>🌲 HD Visualizer</span>
+          </a>
+          <a href="message-signing.html" class="sidebar-item">
+            <span>🖋️ Msg Signing</span>
+          </a>
+          <a href="vanity.html" class="sidebar-item">
+            <span>✨ Vanity Search</span>
+          </a>
+          <a href="bip39.html" class="sidebar-item">
+            <span>🌱 BIP-39 Mnemonic</span>
+            <span class="item-badge">BIP39</span>
+          </a>
+          <a href="bip32.html" class="sidebar-item">
+            <span>🌳 BIP-32 HD Tree</span>
+            <span class="item-badge">BIP32</span>
+          </a>
+          <a href="bip44.html" class="sidebar-item active">
+            <span>💼 BIP-44 Wallet</span>
+            <span class="item-badge">BIP44</span>
+          </a>
+          <a href="ecdsa.html" class="sidebar-item">
+            <span>✍️ ECDSA Secp256k1</span>
+            <span class="item-badge">ECDSA</span>
+          </a>
+          <a href="schnorr.html" class="sidebar-item">
+            <span>⚡ Schnorr Taproot</span>
+            <span class="item-badge">BIP340</span>
+          </a>
+          <a href="ecdh.html" class="sidebar-item">
+            <span>🔐 ECDH Secret</span>
+            <span class="item-badge">ECDH</span>
+          </a>
+          <a href="secp256k1.html" class="sidebar-item">
+            <span>📈 Curve Secp256k1</span>
+            <span class="item-badge">SECP</span>
+          </a>
+          <a href="pbkdf2.html" class="sidebar-item">
+            <span>🔑 PBKDF2 SHA-512</span>
+            <span class="item-badge">KDF</span>
+          </a>
+          <a href="wif.html" class="sidebar-item">
+            <span>🎫 WIF Format</span>
+            <span class="item-badge">WIF</span>
+          </a>
+        </nav>
 
-            window.copyTxt = (id, name) => {
-                const text = document.getElementById(id).innerText;
-                if (text !== "-") copyToClipboard(text, name);
-            };
+        <main class="app-content">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">💼 BIP-44 Multi-Coin HD Wallet Matrix</h1>
+              <p class="page-description">
+                Matriz de derivación multi-moneda (Bitcoin Legacy/SegWit/Taproot, Ethereum, Tron) con soporte para
+                passphrase y paginación de direcciones derivadas.
+              </p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center">
+              <select id="sel-mn-words" class="select-custom" style="width: auto">
+                <option value="128">12 Palabras (128 bits)</option>
+                <option value="160">15 Palabras (160 bits)</option>
+                <option value="192">18 Palabras (192 bits)</option>
+                <option value="224">21 Palabras (224 bits)</option>
+                <option value="256" selected>24 Palabras (256 bits)</option>
+              </select>
+              <button class="btn btn-primary" id="btn-gen-mn">🌱 Nuevo Mnemónico</button>
+            </div>
+          </div>
 
-            window.copyVal = (val, name) => {
-                if (val) copyToClipboard(val, name);
-            };
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">⚙️</span> Parámetros de la Cartera</span>
+            </div>
 
-            await initWasm();
+            <div class="grid-2">
+              <div>
+                <div class="form-group">
+                  <label class="form-label">Frase Mnemónica</label>
+                  <textarea
+                    id="txt-mn"
+                    class="textarea-custom"
+                    rows="2"
+                    placeholder="12 a 24 palabras mnemónicas..."
+                  ></textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Passphrase Opcional (Salt PBKDF2 / Password)</label>
+                  <input
+                    type="text"
+                    id="input-passphrase"
+                    class="input-text"
+                    placeholder="Passphrase opcional (2FA / 13th o 25th word)"
+                  />
+                </div>
+              </div>
 
-            const txtMn = document.getElementById("txt-mn");
-            const inputPassphrase = document.getElementById("input-passphrase");
-            const selMnWords = document.getElementById("sel-mn-words");
-            const selPurpose = document.getElementById("sel-purpose");
-            const selCoinType = document.getElementById("sel-cointype");
-            const inputAccount = document.getElementById("input-account");
-            const selChange = document.getElementById("sel-change");
-            const btnGenMn = document.getElementById("btn-gen-mn");
-            const tableLeaves = document.getElementById("table-leaves");
-            const btnPrevPage = document.getElementById("btn-prev-page");
-            const btnNextPage = document.getElementById("btn-next-page");
-            const lblPageNum = document.getElementById("lbl-page-num");
-            const lblPageRange = document.getElementById("lbl-page-range");
+              <div class="grid-2">
+                <div class="form-group">
+                  <label class="form-label">Propósito (Purpose)</label>
+                  <select id="sel-purpose" class="select-custom">
+                    <option value="44" selected>44 (BIP-44 Legacy / P2PKH)</option>
+                    <option value="49">49 (BIP-49 Nested SegWit / P2SH-P2WPKH)</option>
+                    <option value="84">84 (BIP-84 Native SegWit / P2WPKH)</option>
+                    <option value="86">86 (BIP-86 Taproot / P2TR)</option>
+                  </select>
+                </div>
 
-            let currentPage = 0;
-            const PAGE_SIZE = 5;
-            let currentLeaves = [];
+                <div class="form-group">
+                  <label class="form-label">Moneda (Coin Type)</label>
+                  <select id="sel-cointype" class="select-custom">
+                    <option value="0" selected>0 (Bitcoin Mainnet)</option>
+                    <option value="60">60 (Ethereum)</option>
+                    <option value="195">195 (Tron / TRX)</option>
+                  </select>
+                </div>
 
-            function renderWallet() {
-                const mnemonic = txtMn.value.trim();
-                if (!mnemonic || !Bip39.validate(mnemonic)) {
-                    tableLeaves.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--color-error);">Frase Mnemónica Inválida</td></tr>`;
-                    document.getElementById("txt-account-xpub").innerText = "-";
-                    document.getElementById("txt-account-xprv").innerText = "-";
-                    return;
-                }
+                <div class="form-group">
+                  <label class="form-label">Cuenta (Account)</label>
+                  <input type="number" id="input-account" class="input-text" value="0" min="0" />
+                </div>
 
-                try {
-                    const passphrase = inputPassphrase.value || "";
-                    let purpose = parseInt(selPurpose.value);
-                    const coinType = parseInt(selCoinType.value);
-                    const account = parseInt(inputAccount.value) || 0;
-                    const change = parseInt(selChange.value);
+                <div class="form-group">
+                  <label class="form-label">Cambio (Change)</label>
+                  <select id="sel-change" class="select-custom">
+                    <option value="0" selected>0 (Externa / Recibir)</option>
+                    <option value="1">1 (Interna / Cambio)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
 
-                    // Si es ETH o TRON, el propósito estándar es 44
-                    if (coinType === 60 || coinType === 195) {
-                        selPurpose.value = "44";
-                        purpose = 44;
-                    }
+            <div class="grid-2">
+              <div class="form-group">
+                <label class="form-label">Account xpub (Nivel de Cuenta m/purpose'/coin'/account')</label>
+                <div class="output-box">
+                  <span id="txt-account-xpub">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('txt-account-xpub', 'Account xpub')">Copiar</button>
+                </div>
+              </div>
 
-                    const xpub = Bip44.fromMnemonicXpub(mnemonic, passphrase, purpose, coinType, account);
-                    const xprv = Bip44.fromMnemonicXprv(mnemonic, passphrase, purpose, coinType, account);
+              <div class="form-group">
+                <label class="form-label">Account xprv</label>
+                <div class="output-box">
+                  <span id="txt-account-xprv">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('txt-account-xprv', 'Account xprv')">Copiar</button>
+                </div>
+              </div>
+            </div>
+          </div>
 
-                    document.getElementById("txt-account-xpub").innerText = xpub;
-                    document.getElementById("txt-account-xprv").innerText = xprv;
+          <!-- Matriz de Direcciones -->
+          <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+              <span class="card-title"
+                ><span class="icon">📋</span> Matriz de Hojas Derivadas (<span id="lbl-page-range">Índices 0 al 4</span
+                >)</span
+              >
+              <div style="display: flex; gap: 8px; align-items: center">
+                <button class="btn btn-sm btn-secondary" id="btn-prev-page" disabled>◀ Anteriores 5</button>
+                <span
+                  id="lbl-page-num"
+                  style="font-size: 12px; color: var(--gold-primary); font-weight: bold; font-family: var(--font-mono)"
+                  >Pág 1</span
+                >
+                <button class="btn btn-sm btn-secondary" id="btn-next-page">Siguientes 5 ▶</button>
+              </div>
+            </div>
 
-                    const startIndex = currentPage * PAGE_SIZE;
-                    const endIndex = startIndex + PAGE_SIZE - 1;
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Index</th>
+                    <th>Ruta HD</th>
+                    <th>Dirección Derivada</th>
+                    <th>Clave Pública (Hex)</th>
+                    <th>Clave Privada (WIF / Hex)</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="table-leaves">
+                  <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted)">Cargando derivación...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
 
-                    lblPageNum.innerText = `Pág ${currentPage + 1}`;
-                    lblPageRange.innerText = `Índices ${startIndex} al ${endIndex}`;
-                    btnPrevPage.disabled = currentPage === 0;
+    <script type="module">
+      import { initWasm, copyToClipboard, bytesToHex } from "./js/common.js"
+      import { Bip39, Bip44, Wif, Address, Secp256k1 } from "../../dist/index.js"
 
-                    currentLeaves = [];
-                    let rowsHtml = "";
+      window.copyTxt = (id, name) => {
+        const text = document.getElementById(id).innerText
+        if (text !== "-") copyToClipboard(text, name)
+      }
 
-                    for (let i = 0; i < PAGE_SIZE; i++) {
-                        const idx = startIndex + i;
-                        const leaf = Bip44.fromMnemonicDerive(mnemonic, passphrase, purpose, coinType, account, change, idx);
-                        const pathStr = `m/${purpose}'/${coinType}'/${account}'/${change}/${idx}`;
+      window.copyVal = (val, name) => {
+        if (val) copyToClipboard(val, name)
+      }
 
-                        let address = "";
-                        if (coinType === 60) {
-                            address = Address.eth(leaf.publicKey);
-                        } else if (coinType === 195) {
-                            const pubUncomp = Secp256k1.getPublicKey(leaf.privateKey, false);
-                            address = Address.tron(pubUncomp);
-                        } else {
-                            if (purpose === 44) address = Address.p2pkh(leaf.publicKey);
-                            else if (purpose === 49) address = Address.p2shP2wpkh(leaf.publicKey);
-                            else if (purpose === 84) address = Address.p2wpkh(leaf.publicKey);
-                            else if (purpose === 86) address = Address.p2tr(leaf.publicKey);
-                        }
+      await initWasm()
 
-                        const wifStr = Wif.encode(leaf.privateKey, true);
-                        const privHex = bytesToHex(leaf.privateKey);
-                        const pubHex = bytesToHex(leaf.publicKey);
+      const txtMn = document.getElementById("txt-mn")
+      const inputPassphrase = document.getElementById("input-passphrase")
+      const selMnWords = document.getElementById("sel-mn-words")
+      const selPurpose = document.getElementById("sel-purpose")
+      const selCoinType = document.getElementById("sel-cointype")
+      const inputAccount = document.getElementById("input-account")
+      const selChange = document.getElementById("sel-change")
+      const btnGenMn = document.getElementById("btn-gen-mn")
+      const tableLeaves = document.getElementById("table-leaves")
+      const btnPrevPage = document.getElementById("btn-prev-page")
+      const btnNextPage = document.getElementById("btn-next-page")
+      const lblPageNum = document.getElementById("lbl-page-num")
+      const lblPageRange = document.getElementById("lbl-page-range")
 
-                        currentLeaves.push({
-                            idx,
-                            pathStr,
-                            address,
-                            pubHex,
-                            wifStr,
-                            privHex
-                        });
+      let currentPage = 0
+      const PAGE_SIZE = 5
+      let currentLeaves = []
 
-                        rowsHtml += `
+      function renderWallet() {
+        const mnemonic = txtMn.value.trim()
+        if (!mnemonic || !Bip39.validate(mnemonic)) {
+          tableLeaves.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--color-error);">Frase Mnemónica Inválida</td></tr>`
+          document.getElementById("txt-account-xpub").innerText = "-"
+          document.getElementById("txt-account-xprv").innerText = "-"
+          return
+        }
+
+        try {
+          const passphrase = inputPassphrase.value || ""
+          let purpose = parseInt(selPurpose.value)
+          const coinType = parseInt(selCoinType.value)
+          const account = parseInt(inputAccount.value) || 0
+          const change = parseInt(selChange.value)
+
+          // Si es ETH o TRON, el propósito estándar es 44
+          if (coinType === 60 || coinType === 195) {
+            selPurpose.value = "44"
+            purpose = 44
+          }
+
+          const xpub = Bip44.fromMnemonicXpub(mnemonic, passphrase, purpose, coinType, account)
+          const xprv = Bip44.fromMnemonicXprv(mnemonic, passphrase, purpose, coinType, account)
+
+          document.getElementById("txt-account-xpub").innerText = xpub
+          document.getElementById("txt-account-xprv").innerText = xprv
+
+          const startIndex = currentPage * PAGE_SIZE
+          const endIndex = startIndex + PAGE_SIZE - 1
+
+          lblPageNum.innerText = `Pág ${currentPage + 1}`
+          lblPageRange.innerText = `Índices ${startIndex} al ${endIndex}`
+          btnPrevPage.disabled = currentPage === 0
+
+          currentLeaves = []
+          let rowsHtml = ""
+
+          for (let i = 0; i < PAGE_SIZE; i++) {
+            const idx = startIndex + i
+            const leaf = Bip44.fromMnemonicDerive(mnemonic, passphrase, purpose, coinType, account, change, idx)
+            const pathStr = `m/${purpose}'/${coinType}'/${account}'/${change}/${idx}`
+
+            let address = ""
+            if (coinType === 60) {
+              address = Address.eth(leaf.publicKey)
+            } else if (coinType === 195) {
+              const pubUncomp = Secp256k1.getPublicKey(leaf.privateKey, false)
+              address = Address.tron(pubUncomp)
+            } else {
+              if (purpose === 44) address = Address.p2pkh(leaf.publicKey)
+              else if (purpose === 49) address = Address.p2shP2wpkh(leaf.publicKey)
+              else if (purpose === 84) address = Address.p2wpkh(leaf.publicKey)
+              else if (purpose === 86) address = Address.p2tr(leaf.publicKey)
+            }
+
+            const wifStr = Wif.encode(leaf.privateKey, true)
+            const privHex = bytesToHex(leaf.privateKey)
+            const pubHex = bytesToHex(leaf.publicKey)
+
+            currentLeaves.push({
+              idx,
+              pathStr,
+              address,
+              pubHex,
+              wifStr,
+              privHex
+            })
+
+            rowsHtml += `
             <tr>
               <td style="color: var(--gold-primary); font-weight: 700;">#${idx}</td>
               <td style="color: var(--text-muted); font-size: 11px;">${pathStr}</td>
@@ -358,46 +350,64 @@
                 </div>
               </td>
             </tr>
-          `;
-                    }
+          `
+          }
 
-                    window.currentLeaves = currentLeaves;
-                    tableLeaves.innerHTML = rowsHtml;
-                } catch (err) {
-                    console.error(err);
-                    tableLeaves.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--color-error);">Error: ${err.message}</td></tr>`;
-                }
-            }
+          window.currentLeaves = currentLeaves
+          tableLeaves.innerHTML = rowsHtml
+        } catch (err) {
+          console.error(err)
+          tableLeaves.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--color-error);">Error: ${err.message}</td></tr>`
+        }
+      }
 
-            btnGenMn.addEventListener("click", () => {
-                const strength = parseInt(selMnWords.value) || 256;
-                txtMn.value = Bip39.generate(strength);
-                currentPage = 0;
-                renderWallet();
-            });
+      btnGenMn.addEventListener("click", () => {
+        const strength = parseInt(selMnWords.value) || 256
+        txtMn.value = Bip39.generate(strength)
+        currentPage = 0
+        renderWallet()
+      })
 
-            btnPrevPage.addEventListener("click", () => {
-                if (currentPage > 0) {
-                    currentPage--;
-                    renderWallet();
-                }
-            });
+      btnPrevPage.addEventListener("click", () => {
+        if (currentPage > 0) {
+          currentPage--
+          renderWallet()
+        }
+      })
 
-            btnNextPage.addEventListener("click", () => {
-                currentPage++;
-                renderWallet();
-            });
+      btnNextPage.addEventListener("click", () => {
+        currentPage++
+        renderWallet()
+      })
 
-            txtMn.addEventListener("input", () => { currentPage = 0; renderWallet(); });
-            inputPassphrase.addEventListener("input", () => { currentPage = 0; renderWallet(); });
-            selPurpose.addEventListener("change", () => { currentPage = 0; renderWallet(); });
-            selCoinType.addEventListener("change", () => { currentPage = 0; renderWallet(); });
-            inputAccount.addEventListener("input", () => { currentPage = 0; renderWallet(); });
-            selChange.addEventListener("change", () => { currentPage = 0; renderWallet(); });
+      txtMn.addEventListener("input", () => {
+        currentPage = 0
+        renderWallet()
+      })
+      inputPassphrase.addEventListener("input", () => {
+        currentPage = 0
+        renderWallet()
+      })
+      selPurpose.addEventListener("change", () => {
+        currentPage = 0
+        renderWallet()
+      })
+      selCoinType.addEventListener("change", () => {
+        currentPage = 0
+        renderWallet()
+      })
+      inputAccount.addEventListener("input", () => {
+        currentPage = 0
+        renderWallet()
+      })
+      selChange.addEventListener("change", () => {
+        currentPage = 0
+        renderWallet()
+      })
 
-            // Default startup con 24 palabras
-            txtMn.value = Bip39.generate(256);
-            renderWallet();
-        </script>
-    </body>
+      // Default startup con 24 palabras
+      txtMn.value = Bip39.generate(256)
+      renderWallet()
+    </script>
+  </body>
 </html>

@@ -1,253 +1,242 @@
 <!doctype html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>ECDH Key Exchange — BlockchainWasm Playground</title>
-        <link rel="stylesheet" href="css/theme.css" />
-    </head>
-    <body>
-        <div class="app-viewport">
-            <header class="app-header">
-                <a href="index.html" class="brand-container">
-                    <div class="brand-logo">⚡</div>
-                    <div class="brand-title">BlockchainWasm <span class="tag">ECDH Secret App</span></div>
-                </a>
-                <div class="header-status">
-                    <div class="wasm-badge">
-                        <span class="status-dot" id="wasm-status-dot"></span>
-                        <span id="wasm-status-text">Cargando WASM...</span>
-                    </div>
-                </div>
-            </header>
-
-            <div class="app-body">
-                <nav class="app-sidebar">
-                    <div class="sidebar-title">Módulos Criptográficos</div>
-                    <a href="index.html" class="sidebar-item">
-                        <span>⚡ Dashboard Central</span>
-                        <span class="item-badge">HUB</span>
-                    </a>
-                    <a href="address.html" class="sidebar-item">
-                        <span>📫 Address (BTC/ETH)</span>
-                    </a>
-                    <a href="hash.html" class="sidebar-item">
-                        <span>🧪 Hash Lab</span>
-                    </a>
-                    <a href="encoding.html" class="sidebar-item">
-                        <span>🔤 Encoding</span>
-                    </a>
-                    <a href="multisig.html" class="sidebar-item">
-                        <span>🤝 MuSig2 / Multisig</span>
-                        <span class="item-badge">BIP327</span>
-                    </a>
-                    <a href="hd-visualizer.html" class="sidebar-item">
-                        <span>🌲 HD Visualizer</span>
-                    </a>
-                    <a href="message-signing.html" class="sidebar-item">
-                        <span>🖋️ Msg Signing</span>
-                    </a>
-                    <a href="vanity.html" class="sidebar-item">
-                        <span>✨ Vanity Search</span>
-                    </a>
-                    <a href="bip39.html" class="sidebar-item">
-                        <span>🌱 BIP-39 Mnemonic</span>
-                        <span class="item-badge">BIP39</span>
-                    </a>
-                    <a href="bip32.html" class="sidebar-item">
-                        <span>🌳 BIP-32 HD Tree</span>
-                        <span class="item-badge">BIP32</span>
-                    </a>
-                    <a href="bip44.html" class="sidebar-item">
-                        <span>💼 BIP-44 Wallet</span>
-                        <span class="item-badge">BIP44</span>
-                    </a>
-                    <a href="ecdsa.html" class="sidebar-item">
-                        <span>✍️ ECDSA Secp256k1</span>
-                        <span class="item-badge">ECDSA</span>
-                    </a>
-                    <a href="schnorr.html" class="sidebar-item">
-                        <span>⚡ Schnorr Taproot</span>
-                        <span class="item-badge">BIP340</span>
-                    </a>
-                    <a href="ecdh.html" class="sidebar-item active">
-                        <span>🔐 ECDH Secret</span>
-                        <span class="item-badge">ECDH</span>
-                    </a>
-                    <a href="secp256k1.html" class="sidebar-item">
-                        <span>📈 Curve Secp256k1</span>
-                        <span class="item-badge">SECP</span>
-                    </a>
-                    <a href="pbkdf2.html" class="sidebar-item">
-                        <span>🔑 PBKDF2 SHA-512</span>
-                        <span class="item-badge">KDF</span>
-                    </a>
-                    <a href="wif.html" class="sidebar-item">
-                        <span>🎫 WIF Format</span>
-                        <span class="item-badge">WIF</span>
-                    </a>
-                </nav>
-
-                <main class="app-content">
-                    <div class="page-header">
-                        <div>
-                            <h1 class="page-title">🔐 ECDH Key Exchange Laboratory</h1>
-                            <p class="page-description">
-                                Intercambio de claves Diffie-Hellman en la curva Secp256k1 para establecer un secreto
-                                compartido entre Alice y Bob.
-                            </p>
-                        </div>
-                        <button class="btn btn-primary" id="btn-regen">🎲 Regenerar Ambas Claves</button>
-                    </div>
-
-                    <div class="grid-2">
-                        <!-- Alice Panel -->
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title"><span class="icon">👩</span> Participante Alice</span>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Alice Private Key (32B Hex)</label>
-                                <input type="text" id="alice-priv" class="input-text" />
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Alice Public Key (65B Uncompressed)</label>
-                                <div class="output-box">
-                                    <span id="alice-pub">-</span>
-                                    <button class="copy-btn" onclick="window.copyTxt('alice-pub', 'Alice Pub')">
-                                        Copiar
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label"
-                                    >Secreto Calculado por Alice
-                                    <span class="extra">sharedSecret(Alice.priv, Bob.pub)</span></label
-                                >
-                                <div class="output-box">
-                                    <span id="alice-secret">-</span>
-                                    <button class="copy-btn" onclick="window.copyTxt('alice-secret', 'Alice Secret')">
-                                        Copiar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Bob Panel -->
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title"><span class="icon">👨</span> Participante Bob</span>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Bob Private Key (32B Hex)</label>
-                                <input type="text" id="bob-priv" class="input-text" />
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Bob Public Key (65B Uncompressed)</label>
-                                <div class="output-box">
-                                    <span id="bob-pub">-</span>
-                                    <button class="copy-btn" onclick="window.copyTxt('bob-pub', 'Bob Pub')">
-                                        Copiar
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label"
-                                    >Secreto Calculado por Bob
-                                    <span class="extra">sharedSecret(Bob.priv, Alice.pub)</span></label
-                                >
-                                <div class="output-box">
-                                    <span id="bob-secret">-</span>
-                                    <button class="copy-btn" onclick="window.copyTxt('bob-secret', 'Bob Secret')">
-                                        Copiar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div
-                        id="match-alert"
-                        class="alert alert-success"
-                        style="font-size: 15px; font-weight: 600; justify-content: center"
-                    >
-                        ✓ ¡Los Secretos Compartidos de Alice y Bob Coinciden Perfectamente!
-                    </div>
-                </main>
-            </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ECDH Key Exchange — BlockchainWasm Playground</title>
+    <link rel="stylesheet" href="css/theme.css" />
+  </head>
+  <body>
+    <div class="app-viewport">
+      <header class="app-header">
+        <a href="index.html" class="brand-container">
+          <div class="brand-logo">⚡</div>
+          <div class="brand-title">BlockchainWasm <span class="tag">ECDH Secret App</span></div>
+        </a>
+        <div class="header-status">
+          <div class="wasm-badge">
+            <span class="status-dot" id="wasm-status-dot"></span>
+            <span id="wasm-status-text">Cargando WASM...</span>
+          </div>
         </div>
+      </header>
 
-        <script type="module">
-            import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard } from "./js/common.js"
-            import { Secp256k1, Ecdh } from "../../dist/index.js"
+      <div class="app-body">
+        <nav class="app-sidebar">
+          <div class="sidebar-title">Módulos Criptográficos</div>
+          <a href="index.html" class="sidebar-item">
+            <span>⚡ Dashboard Central</span>
+            <span class="item-badge">HUB</span>
+          </a>
+          <a href="address.html" class="sidebar-item">
+            <span>📫 Address (BTC/ETH)</span>
+          </a>
+          <a href="hash.html" class="sidebar-item">
+            <span>🧪 Hash Lab</span>
+          </a>
+          <a href="encoding.html" class="sidebar-item">
+            <span>🔤 Encoding</span>
+          </a>
+          <a href="multisig.html" class="sidebar-item">
+            <span>🤝 MuSig2 / Multisig</span>
+            <span class="item-badge">BIP327</span>
+          </a>
+          <a href="hd-visualizer.html" class="sidebar-item">
+            <span>🌲 HD Visualizer</span>
+          </a>
+          <a href="message-signing.html" class="sidebar-item">
+            <span>🖋️ Msg Signing</span>
+          </a>
+          <a href="vanity.html" class="sidebar-item">
+            <span>✨ Vanity Search</span>
+          </a>
+          <a href="bip39.html" class="sidebar-item">
+            <span>🌱 BIP-39 Mnemonic</span>
+            <span class="item-badge">BIP39</span>
+          </a>
+          <a href="bip32.html" class="sidebar-item">
+            <span>🌳 BIP-32 HD Tree</span>
+            <span class="item-badge">BIP32</span>
+          </a>
+          <a href="bip44.html" class="sidebar-item">
+            <span>💼 BIP-44 Wallet</span>
+            <span class="item-badge">BIP44</span>
+          </a>
+          <a href="ecdsa.html" class="sidebar-item">
+            <span>✍️ ECDSA Secp256k1</span>
+            <span class="item-badge">ECDSA</span>
+          </a>
+          <a href="schnorr.html" class="sidebar-item">
+            <span>⚡ Schnorr Taproot</span>
+            <span class="item-badge">BIP340</span>
+          </a>
+          <a href="ecdh.html" class="sidebar-item active">
+            <span>🔐 ECDH Secret</span>
+            <span class="item-badge">ECDH</span>
+          </a>
+          <a href="secp256k1.html" class="sidebar-item">
+            <span>📈 Curve Secp256k1</span>
+            <span class="item-badge">SECP</span>
+          </a>
+          <a href="pbkdf2.html" class="sidebar-item">
+            <span>🔑 PBKDF2 SHA-512</span>
+            <span class="item-badge">KDF</span>
+          </a>
+          <a href="wif.html" class="sidebar-item">
+            <span>🎫 WIF Format</span>
+            <span class="item-badge">WIF</span>
+          </a>
+        </nav>
 
-            window.copyTxt = (id, name) => {
-                const text = document.getElementById(id).innerText
-                if (text !== "-") copyToClipboard(text, name)
-            }
+        <main class="app-content">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">🔐 ECDH Key Exchange Laboratory</h1>
+              <p class="page-description">
+                Intercambio de claves Diffie-Hellman en la curva Secp256k1 para establecer un secreto compartido entre
+                Alice y Bob.
+              </p>
+            </div>
+            <button class="btn btn-primary" id="btn-regen">🎲 Regenerar Ambas Claves</button>
+          </div>
 
-            await initWasm()
+          <div class="grid-2">
+            <!-- Alice Panel -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title"><span class="icon">👩</span> Participante Alice</span>
+              </div>
 
-            const alicePrivIn = document.getElementById("alice-priv")
-            const bobPrivIn = document.getElementById("bob-priv")
-            const btnRegen = document.getElementById("btn-regen")
-            const matchAlert = document.getElementById("match-alert")
+              <div class="form-group">
+                <label class="form-label">Alice Private Key (32B Hex)</label>
+                <input type="text" id="alice-priv" class="input-text" />
+              </div>
 
-            function runEcdh() {
-                try {
-                    const aPriv = parseHexInput(alicePrivIn.value)
-                    const bPriv = parseHexInput(bobPrivIn.value)
-                    if (aPriv.length !== 32 || bPriv.length !== 32) return
+              <div class="form-group">
+                <label class="form-label">Alice Public Key (65B Uncompressed)</label>
+                <div class="output-box">
+                  <span id="alice-pub">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('alice-pub', 'Alice Pub')">Copiar</button>
+                </div>
+              </div>
 
-                    const aPub = Secp256k1.getPublicKey(aPriv, false)
-                    const bPub = Secp256k1.getPublicKey(bPriv, false)
+              <div class="form-group">
+                <label class="form-label"
+                  >Secreto Calculado por Alice <span class="extra">sharedSecret(Alice.priv, Bob.pub)</span></label
+                >
+                <div class="output-box">
+                  <span id="alice-secret">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('alice-secret', 'Alice Secret')">Copiar</button>
+                </div>
+              </div>
+            </div>
 
-                    document.getElementById("alice-pub").innerText = bytesToHex(aPub)
-                    document.getElementById("bob-pub").innerText = bytesToHex(bPub)
+            <!-- Bob Panel -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title"><span class="icon">👨</span> Participante Bob</span>
+              </div>
 
-                    const aSecret = Ecdh.sharedSecret(aPriv, bPub)
-                    const bSecret = Ecdh.sharedSecret(bPriv, aPub)
+              <div class="form-group">
+                <label class="form-label">Bob Private Key (32B Hex)</label>
+                <input type="text" id="bob-priv" class="input-text" />
+              </div>
 
-                    const aSecHex = bytesToHex(aSecret)
-                    const bSecHex = bytesToHex(bSecret)
+              <div class="form-group">
+                <label class="form-label">Bob Public Key (65B Uncompressed)</label>
+                <div class="output-box">
+                  <span id="bob-pub">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('bob-pub', 'Bob Pub')">Copiar</button>
+                </div>
+              </div>
 
-                    document.getElementById("alice-secret").innerText = aSecHex
-                    document.getElementById("bob-secret").innerText = bSecHex
+              <div class="form-group">
+                <label class="form-label"
+                  >Secreto Calculado por Bob <span class="extra">sharedSecret(Bob.priv, Alice.pub)</span></label
+                >
+                <div class="output-box">
+                  <span id="bob-secret">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('bob-secret', 'Bob Secret')">Copiar</button>
+                </div>
+              </div>
+            </div>
+          </div>
 
-                    if (aSecHex === bSecHex) {
-                        matchAlert.className = "alert alert-success"
-                        matchAlert.innerText =
-                            "✓ ¡Los Secretos Compartidos de Alice y Bob Coinciden (32 Bytes IDÉNTICOS)!"
-                    } else {
-                        matchAlert.className = "alert alert-error"
-                        matchAlert.innerText = "❌ Los Secretos NO coinciden"
-                    }
-                } catch (err) {
-                    console.error(err)
-                    matchAlert.className = "alert alert-error"
-                    matchAlert.innerText = "❌ Error: " + err.message
-                }
-            }
+          <div
+            id="match-alert"
+            class="alert alert-success"
+            style="font-size: 15px; font-weight: 600; justify-content: center"
+          >
+            ✓ ¡Los Secretos Compartidos de Alice y Bob Coinciden Perfectamente!
+          </div>
+        </main>
+      </div>
+    </div>
 
-            btnRegen.addEventListener("click", () => {
-                alicePrivIn.value = getRandomHexKey()
-                bobPrivIn.value = getRandomHexKey()
-                runEcdh()
-            })
+    <script type="module">
+      import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard } from "./js/common.js"
+      import { Secp256k1, Ecdh } from "../../dist/index.js"
 
-            alicePrivIn.addEventListener("input", runEcdh)
-            bobPrivIn.addEventListener("input", runEcdh)
+      window.copyTxt = (id, name) => {
+        const text = document.getElementById(id).innerText
+        if (text !== "-") copyToClipboard(text, name)
+      }
 
-            // Initial setup
-            alicePrivIn.value = getRandomHexKey()
-            bobPrivIn.value = getRandomHexKey()
-            runEcdh()
-        </script>
-    </body>
+      await initWasm()
+
+      const alicePrivIn = document.getElementById("alice-priv")
+      const bobPrivIn = document.getElementById("bob-priv")
+      const btnRegen = document.getElementById("btn-regen")
+      const matchAlert = document.getElementById("match-alert")
+
+      function runEcdh() {
+        try {
+          const aPriv = parseHexInput(alicePrivIn.value)
+          const bPriv = parseHexInput(bobPrivIn.value)
+          if (aPriv.length !== 32 || bPriv.length !== 32) return
+
+          const aPub = Secp256k1.getPublicKey(aPriv, false)
+          const bPub = Secp256k1.getPublicKey(bPriv, false)
+
+          document.getElementById("alice-pub").innerText = bytesToHex(aPub)
+          document.getElementById("bob-pub").innerText = bytesToHex(bPub)
+
+          const aSecret = Ecdh.sharedSecret(aPriv, bPub)
+          const bSecret = Ecdh.sharedSecret(bPriv, aPub)
+
+          const aSecHex = bytesToHex(aSecret)
+          const bSecHex = bytesToHex(bSecret)
+
+          document.getElementById("alice-secret").innerText = aSecHex
+          document.getElementById("bob-secret").innerText = bSecHex
+
+          if (aSecHex === bSecHex) {
+            matchAlert.className = "alert alert-success"
+            matchAlert.innerText = "✓ ¡Los Secretos Compartidos de Alice y Bob Coinciden (32 Bytes IDÉNTICOS)!"
+          } else {
+            matchAlert.className = "alert alert-error"
+            matchAlert.innerText = "❌ Los Secretos NO coinciden"
+          }
+        } catch (err) {
+          console.error(err)
+          matchAlert.className = "alert alert-error"
+          matchAlert.innerText = "❌ Error: " + err.message
+        }
+      }
+
+      btnRegen.addEventListener("click", () => {
+        alicePrivIn.value = getRandomHexKey()
+        bobPrivIn.value = getRandomHexKey()
+        runEcdh()
+      })
+
+      alicePrivIn.addEventListener("input", runEcdh)
+      bobPrivIn.addEventListener("input", runEcdh)
+
+      // Initial setup
+      alicePrivIn.value = getRandomHexKey()
+      bobPrivIn.value = getRandomHexKey()
+      runEcdh()
+    </script>
+  </body>
 </html>

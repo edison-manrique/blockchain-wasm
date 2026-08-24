@@ -1,295 +1,302 @@
 <!doctype html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>MuSig2 (BIP-327) — BlockchainWasm Playground</title>
-        <link rel="stylesheet" href="css/theme.css" />
-        <style>
-            .priv-in {
-                width: 100%;
-                background: var(--bg-dark-0);
-                border: 1px solid var(--border-color);
-                border-radius: 4px;
-                padding: 4px 6px;
-                color: var(--text-main);
-                font-family: var(--font-mono);
-                font-size: 11px;
-            }
-            .mono {
-                font-family: var(--font-mono);
-                font-size: 11px;
-                word-break: break-all;
-            }
-            .step-card {
-                position: relative;
-                padding-left: 28px;
-            }
-            .step-number {
-                position: absolute;
-                left: -12px;
-                top: 14px;
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                background: var(--gold-primary);
-                color: #000;
-                font-weight: bold;
-                font-size: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="app-viewport">
-            <header class="app-header">
-                <a href="index.html" class="brand-container">
-                    <div class="brand-logo">⚡</div>
-                    <div class="brand-title">BlockchainWasm <span class="tag">MuSig2 / BIP-327</span></div>
-                </a>
-                <div class="header-status">
-                    <div class="wasm-badge">
-                        <span class="status-dot" id="wasm-status-dot"></span>
-                        <span id="wasm-status-text">Cargando WASM...</span>
-                    </div>
-                </div>
-            </header>
-            <div class="app-body">
-                <nav class="app-sidebar">
-                    <div class="sidebar-title">Módulos Criptográficos</div>
-                    <a href="index.html" class="sidebar-item">
-                        <span>⚡ Dashboard Central</span>
-                        <span class="item-badge">HUB</span>
-                    </a>
-                    <a href="address.html" class="sidebar-item">
-                        <span>📫 Address (BTC/ETH)</span>
-                    </a>
-                    <a href="hash.html" class="sidebar-item">
-                        <span>🧪 Hash Lab</span>
-                    </a>
-                    <a href="encoding.html" class="sidebar-item">
-                        <span>🔤 Encoding</span>
-                    </a>
-                    <a href="multisig.html" class="sidebar-item active">
-                        <span>🤝 MuSig2 / Multisig</span>
-                        <span class="item-badge">BIP327</span>
-                    </a>
-                    <a href="hd-visualizer.html" class="sidebar-item">
-                        <span>🌲 HD Visualizer</span>
-                    </a>
-                    <a href="message-signing.html" class="sidebar-item">
-                        <span>🖋️ Msg Signing</span>
-                    </a>
-                    <a href="vanity.html" class="sidebar-item">
-                        <span>✨ Vanity Search</span>
-                    </a>
-                    <a href="bip39.html" class="sidebar-item">
-                        <span>🌱 BIP-39 Mnemonic</span>
-                        <span class="item-badge">BIP39</span>
-                    </a>
-                    <a href="bip32.html" class="sidebar-item">
-                        <span>🌳 BIP-32 HD Tree</span>
-                        <span class="item-badge">BIP32</span>
-                    </a>
-                    <a href="bip44.html" class="sidebar-item">
-                        <span>💼 BIP-44 Wallet</span>
-                        <span class="item-badge">BIP44</span>
-                    </a>
-                    <a href="ecdsa.html" class="sidebar-item">
-                        <span>✍️ ECDSA Secp256k1</span>
-                        <span class="item-badge">ECDSA</span>
-                    </a>
-                    <a href="schnorr.html" class="sidebar-item">
-                        <span>⚡ Schnorr Taproot</span>
-                        <span class="item-badge">BIP340</span>
-                    </a>
-                    <a href="ecdh.html" class="sidebar-item">
-                        <span>🔐 ECDH Secret</span>
-                        <span class="item-badge">ECDH</span>
-                    </a>
-                    <a href="secp256k1.html" class="sidebar-item">
-                        <span>📈 Curve Secp256k1</span>
-                        <span class="item-badge">SECP</span>
-                    </a>
-                    <a href="pbkdf2.html" class="sidebar-item">
-                        <span>🔑 PBKDF2 SHA-512</span>
-                        <span class="item-badge">KDF</span>
-                    </a>
-                    <a href="wif.html" class="sidebar-item">
-                        <span>🎫 WIF Format</span>
-                        <span class="item-badge">WIF</span>
-                    </a>
-                </nav>
-
-                <main class="app-content">
-                    <div class="page-header">
-                        <div>
-                            <h1 class="page-title">🤝 MuSig2 (BIP-327) Multi-Signature Protocol</h1>
-                            <p class="page-description">
-                                Esquema multifirma Schnorr de 2 rondas estricto según la especificación <b>BIP-327</b>. Agrega $N$ claves públicas en una única clave $Q$ ($a_i P_i$) resistente a ataques rogue-key y produce una firma de 64 bytes indistinguible de una firma Taproot estándar.
-                            </p>
-                        </div>
-                        <div class="btn-group">
-                            <button class="btn btn-primary" id="btn-add-signer">+ Participante</button>
-                            <button class="btn btn-secondary" id="btn-rand-all">🎲 Regenerar Claves</button>
-                        </div>
-                    </div>
-
-                    <!-- Signers Table -->
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <span class="card-title"><span class="icon">👥</span> Participantes ($N$ Firmantes)</span>
-                            <span class="text-muted" style="font-size: 11px;">Mínimo 2, máximo 8 signers</span>
-                        </div>
-                        <div class="table-container">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Clave Privada $d_i$ (32 B)</th>
-                                        <th>Clave Pública $P_i$ (33 B)</th>
-                                        <th>Coeficiente $a_i$ (KeyAgg)</th>
-                                        <th>Firma Parcial $s_i$ (32 B)</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbl-musig-signers"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Pipeline Steps -->
-                    <div class="grid-2">
-                        <!-- Step 1 -->
-                        <div class="card step-card">
-                            <div class="step-number">1</div>
-                            <div class="card-header">
-                                <span class="card-title">Paso 1: Key Aggregation (KeyAgg)</span>
-                            </div>
-                            <p style="font-size: 11px; color: var(--text-muted)">
-                                Calcula $L = \text{Hash}(\text{KeyAgg list}, P_1 \parallel \dots \parallel P_n)$, coeficientes $a_i = \text{Hash}(\text{KeyAgg coefficient}, L \parallel P_i)$ y la clave agregada $Q = \sum a_i P_i$.
-                            </p>
-                            <div class="form-group">
-                                <label class="form-label">Clave Agregada $Q$ (x-only 32 B)</label>
-                                <div class="output-box">
-                                    <span id="musig-q">-</span>
-                                    <button class="copy-btn" onclick="window.copyTxt('musig-q', 'Q')">Copiar</button>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Paridad de $Q.y$ ($gacc$)</label>
-                                <div class="output-box"><span id="musig-gacc">-</span></div>
-                            </div>
-                        </div>
-
-                        <!-- Step 2 -->
-                        <div class="card step-card">
-                            <div class="step-number">2</div>
-                            <div class="card-header">
-                                <span class="card-title">Paso 2: Ronda 1 — Generar & Agregar Nonces</span>
-                            </div>
-                            <p style="font-size: 11px; color: var(--text-muted)">
-                                Cada firmante genera en secreto $(k_{i,1}, k_{i,2})$ y publica su nonce público $R_{i,1} \parallel R_{i,2}$ (66 B). Se agregan en $aggNonce = \sum R_{i,1} \parallel \sum R_{i,2}$.
-                            </p>
-                            <div class="form-group">
-                                <label class="form-label">Nonce Agregado $aggNonce$ (66 B)</label>
-                                <div class="output-box">
-                                    <span id="musig-aggnonce">-</span>
-                                    <button class="copy-btn" onclick="window.copyTxt('musig-aggnonce', 'aggNonce')">Copiar</button>
-                                </div>
-                            </div>
-                            <div class="btn-group">
-                                <button class="btn btn-sm btn-secondary" id="btn-regen-nonces">🔄 Regenerar Nonces (Ronda 1)</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid-2 mt-4">
-                        <!-- Step 3 -->
-                        <div class="card step-card">
-                            <div class="step-number">3</div>
-                            <div class="card-header">
-                                <span class="card-title">Paso 3: Mensaje & Inicialización de Sesión</span>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Mensaje a Firmar</label>
-                                <input type="text" id="musig-msg-in" class="input-text" value="BIP-327 MuSig2 Multi-Signature Authorization" />
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Desafío $e$ (BIP-340 challenge hash)</label>
-                                <div class="output-box"><span id="musig-e">-</span></div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Punto $R$ Agregado ($R_x$ 32 B)</label>
-                                <div class="output-box"><span id="musig-rx">-</span></div>
-                            </div>
-                            <div class="btn-group">
-                                <button class="btn btn-primary" id="btn-musig-sign">✍️ Ejecutar Ronda 2 (Firmas Parciales)</button>
-                            </div>
-                        </div>
-
-                        <!-- Step 4 -->
-                        <div class="card step-card">
-                            <div class="step-number">4</div>
-                            <div class="card-header">
-                                <span class="card-title">Paso 4: Agregación de Firmas (SigAgg)</span>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Firma Schnorr Final BIP-340 (64 B = $R_x \parallel s$)</label>
-                                <div class="output-box">
-                                    <span id="musig-final-sig">-</span>
-                                    <button class="copy-btn" onclick="window.copyTxt('musig-final-sig', 'Firma MuSig2')">Copiar</button>
-                                </div>
-                            </div>
-                            <div id="musig-badge-verify" class="alert alert-success mt-2">—</div>
-                            <p style="font-size: 11px; color: var(--text-dim); margin-top: 8px;">
-                                💡 <b>Verificación Universal:</b> Cualquier nodo o validador estándar de Bitcoin/Taproot valida esta firma con <code>Schnorr.verify(sig, msg, Q)</code> sin necesidad de conocer los participantes individuales.
-                            </p>
-                        </div>
-                    </div>
-                </main>
-            </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MuSig2 (BIP-327) — BlockchainWasm Playground</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <style>
+      .priv-in {
+        width: 100%;
+        background: var(--bg-dark-0);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 4px 6px;
+        color: var(--text-main);
+        font-family: var(--font-mono);
+        font-size: 11px;
+      }
+      .mono {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        word-break: break-all;
+      }
+      .step-card {
+        position: relative;
+        padding-left: 28px;
+      }
+      .step-number {
+        position: absolute;
+        left: -12px;
+        top: 14px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--gold-primary);
+        color: #000;
+        font-weight: bold;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-viewport">
+      <header class="app-header">
+        <a href="index.html" class="brand-container">
+          <div class="brand-logo">⚡</div>
+          <div class="brand-title">BlockchainWasm <span class="tag">MuSig2 / BIP-327</span></div>
+        </a>
+        <div class="header-status">
+          <div class="wasm-badge">
+            <span class="status-dot" id="wasm-status-dot"></span>
+            <span id="wasm-status-text">Cargando WASM...</span>
+          </div>
         </div>
+      </header>
+      <div class="app-body">
+        <nav class="app-sidebar">
+          <div class="sidebar-title">Módulos Criptográficos</div>
+          <a href="index.html" class="sidebar-item">
+            <span>⚡ Dashboard Central</span>
+            <span class="item-badge">HUB</span>
+          </a>
+          <a href="address.html" class="sidebar-item">
+            <span>📫 Address (BTC/ETH)</span>
+          </a>
+          <a href="hash.html" class="sidebar-item">
+            <span>🧪 Hash Lab</span>
+          </a>
+          <a href="encoding.html" class="sidebar-item">
+            <span>🔤 Encoding</span>
+          </a>
+          <a href="multisig.html" class="sidebar-item active">
+            <span>🤝 MuSig2 / Multisig</span>
+            <span class="item-badge">BIP327</span>
+          </a>
+          <a href="hd-visualizer.html" class="sidebar-item">
+            <span>🌲 HD Visualizer</span>
+          </a>
+          <a href="message-signing.html" class="sidebar-item">
+            <span>🖋️ Msg Signing</span>
+          </a>
+          <a href="vanity.html" class="sidebar-item">
+            <span>✨ Vanity Search</span>
+          </a>
+          <a href="bip39.html" class="sidebar-item">
+            <span>🌱 BIP-39 Mnemonic</span>
+            <span class="item-badge">BIP39</span>
+          </a>
+          <a href="bip32.html" class="sidebar-item">
+            <span>🌳 BIP-32 HD Tree</span>
+            <span class="item-badge">BIP32</span>
+          </a>
+          <a href="bip44.html" class="sidebar-item">
+            <span>💼 BIP-44 Wallet</span>
+            <span class="item-badge">BIP44</span>
+          </a>
+          <a href="ecdsa.html" class="sidebar-item">
+            <span>✍️ ECDSA Secp256k1</span>
+            <span class="item-badge">ECDSA</span>
+          </a>
+          <a href="schnorr.html" class="sidebar-item">
+            <span>⚡ Schnorr Taproot</span>
+            <span class="item-badge">BIP340</span>
+          </a>
+          <a href="ecdh.html" class="sidebar-item">
+            <span>🔐 ECDH Secret</span>
+            <span class="item-badge">ECDH</span>
+          </a>
+          <a href="secp256k1.html" class="sidebar-item">
+            <span>📈 Curve Secp256k1</span>
+            <span class="item-badge">SECP</span>
+          </a>
+          <a href="pbkdf2.html" class="sidebar-item">
+            <span>🔑 PBKDF2 SHA-512</span>
+            <span class="item-badge">KDF</span>
+          </a>
+          <a href="wif.html" class="sidebar-item">
+            <span>🎫 WIF Format</span>
+            <span class="item-badge">WIF</span>
+          </a>
+        </nav>
 
-        <script type="module">
-            import { initWasm, copyToClipboard, bytesToHex, hexToBytes, getRandomHexKey, showToast } from "./js/common.js";
-            import { Musig2, Schnorr, Secp256k1, getRandomBytes } from "../../dist/index.js";
+        <main class="app-content">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">🤝 MuSig2 (BIP-327) Multi-Signature Protocol</h1>
+              <p class="page-description">
+                Esquema multifirma Schnorr de 2 rondas estricto según la especificación <b>BIP-327</b>. Agrega $N$
+                claves públicas en una única clave $Q$ ($a_i P_i$) resistente a ataques rogue-key y produce una firma de
+                64 bytes indistinguible de una firma Taproot estándar.
+              </p>
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-primary" id="btn-add-signer">+ Participante</button>
+              <button class="btn btn-secondary" id="btn-rand-all">🎲 Regenerar Claves</button>
+            </div>
+          </div>
 
-            window.copyTxt = (id, name) => {
-                const t = document.getElementById(id).innerText;
-                if (t && t !== "-") copyToClipboard(t, name);
-            };
+          <!-- Signers Table -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <span class="card-title"><span class="icon">👥</span> Participantes ($N$ Firmantes)</span>
+              <span class="text-muted" style="font-size: 11px">Mínimo 2, máximo 8 signers</span>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Clave Privada $d_i$ (32 B)</th>
+                    <th>Clave Pública $P_i$ (33 B)</th>
+                    <th>Coeficiente $a_i$ (KeyAgg)</th>
+                    <th>Firma Parcial $s_i$ (32 B)</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="tbl-musig-signers"></tbody>
+              </table>
+            </div>
+          </div>
 
-            await initWasm();
-            const $ = (id) => document.getElementById(id);
-            const enc = (s) => new TextEncoder().encode(s);
-            const setBadge = (el, ok, okT, badT) => {
-                el.className = "alert " + (ok ? "alert-success" : "alert-error");
-                el.textContent = ok ? okT : badT;
-            };
+          <!-- Pipeline Steps -->
+          <div class="grid-2">
+            <!-- Step 1 -->
+            <div class="card step-card">
+              <div class="step-number">1</div>
+              <div class="card-header">
+                <span class="card-title">Paso 1: Key Aggregation (KeyAgg)</span>
+              </div>
+              <p style="font-size: 11px; color: var(--text-muted)">
+                Calcula $L = \text{Hash}(\text{KeyAgg list}, P_1 \parallel \dots \parallel P_n)$, coeficientes $a_i =
+                \text{Hash}(\text{KeyAgg coefficient}, L \parallel P_i)$ y la clave agregada $Q = \sum a_i P_i$.
+              </p>
+              <div class="form-group">
+                <label class="form-label">Clave Agregada $Q$ (x-only 32 B)</label>
+                <div class="output-box">
+                  <span id="musig-q">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('musig-q', 'Q')">Copiar</button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Paridad de $Q.y$ ($gacc$)</label>
+                <div class="output-box"><span id="musig-gacc">-</span></div>
+              </div>
+            </div>
 
-            let signers = [
-                { priv: getRandomHexKey() },
-                { priv: getRandomHexKey() },
-                { priv: getRandomHexKey() }
-            ];
+            <!-- Step 2 -->
+            <div class="card step-card">
+              <div class="step-number">2</div>
+              <div class="card-header">
+                <span class="card-title">Paso 2: Ronda 1 — Generar & Agregar Nonces</span>
+              </div>
+              <p style="font-size: 11px; color: var(--text-muted)">
+                Cada firmante genera en secreto $(k_{i,1}, k_{i,2})$ y publica su nonce público $R_{i,1} \parallel
+                R_{i,2}$ (66 B). Se agregan en $aggNonce = \sum R_{i,1} \parallel \sum R_{i,2}$.
+              </p>
+              <div class="form-group">
+                <label class="form-label">Nonce Agregado $aggNonce$ (66 B)</label>
+                <div class="output-box">
+                  <span id="musig-aggnonce">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('musig-aggnonce', 'aggNonce')">Copiar</button>
+                </div>
+              </div>
+              <div class="btn-group">
+                <button class="btn btn-sm btn-secondary" id="btn-regen-nonces">🔄 Regenerar Nonces (Ronda 1)</button>
+              </div>
+            </div>
+          </div>
 
-            let nonces = [];
-            let musigState = {};
+          <div class="grid-2 mt-4">
+            <!-- Step 3 -->
+            <div class="card step-card">
+              <div class="step-number">3</div>
+              <div class="card-header">
+                <span class="card-title">Paso 3: Mensaje & Inicialización de Sesión</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Mensaje a Firmar</label>
+                <input
+                  type="text"
+                  id="musig-msg-in"
+                  class="input-text"
+                  value="BIP-327 MuSig2 Multi-Signature Authorization"
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Desafío $e$ (BIP-340 challenge hash)</label>
+                <div class="output-box"><span id="musig-e">-</span></div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Punto $R$ Agregado ($R_x$ 32 B)</label>
+                <div class="output-box"><span id="musig-rx">-</span></div>
+              </div>
+              <div class="btn-group">
+                <button class="btn btn-primary" id="btn-musig-sign">✍️ Ejecutar Ronda 2 (Firmas Parciales)</button>
+              </div>
+            </div>
 
-            function initSigners() {
-                renderMusigSigners();
-                recomputeMusig();
-            }
+            <!-- Step 4 -->
+            <div class="card step-card">
+              <div class="step-number">4</div>
+              <div class="card-header">
+                <span class="card-title">Paso 4: Agregación de Firmas (SigAgg)</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Firma Schnorr Final BIP-340 (64 B = $R_x \parallel s$)</label>
+                <div class="output-box">
+                  <span id="musig-final-sig">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('musig-final-sig', 'Firma MuSig2')">Copiar</button>
+                </div>
+              </div>
+              <div id="musig-badge-verify" class="alert alert-success mt-2">—</div>
+              <p style="font-size: 11px; color: var(--text-dim); margin-top: 8px">
+                💡 <b>Verificación Universal:</b> Cualquier nodo o validador estándar de Bitcoin/Taproot valida esta
+                firma con <code>Schnorr.verify(sig, msg, Q)</code> sin necesidad de conocer los participantes
+                individuales.
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
 
-            function renderMusigSigners() {
-                const tb = $("tbl-musig-signers");
-                tb.innerHTML = "";
-                signers.forEach((s, i) => {
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
+    <script type="module">
+      import { initWasm, copyToClipboard, bytesToHex, hexToBytes, getRandomHexKey, showToast } from "./js/common.js"
+      import { Musig2, Schnorr, Secp256k1, getRandomBytes } from "../../dist/index.js"
+
+      window.copyTxt = (id, name) => {
+        const t = document.getElementById(id).innerText
+        if (t && t !== "-") copyToClipboard(t, name)
+      }
+
+      await initWasm()
+      const $ = (id) => document.getElementById(id)
+      const enc = (s) => new TextEncoder().encode(s)
+      const setBadge = (el, ok, okT, badT) => {
+        el.className = "alert " + (ok ? "alert-success" : "alert-error")
+        el.textContent = ok ? okT : badT
+      }
+
+      let signers = [{ priv: getRandomHexKey() }, { priv: getRandomHexKey() }, { priv: getRandomHexKey() }]
+
+      let nonces = []
+      let musigState = {}
+
+      function initSigners() {
+        renderMusigSigners()
+        recomputeMusig()
+      }
+
+      function renderMusigSigners() {
+        const tb = $("tbl-musig-signers")
+        tb.innerHTML = ""
+        signers.forEach((s, i) => {
+          const tr = document.createElement("tr")
+          tr.innerHTML = `
                         <td class="mono" style="color:var(--gold-primary); font-weight:bold;">S${i + 1}</td>
                         <td>
                             <div style="display:flex;gap:4px">
@@ -303,155 +310,162 @@
                         <td>
                             <button class="btn btn-sm btn-secondary" data-del="${i}" ${signers.length <= 2 ? "disabled" : ""}>✖</button>
                         </td>
-                    `;
-                    tb.appendChild(tr);
-                });
+                    `
+          tb.appendChild(tr)
+        })
 
-                tb.querySelectorAll(".priv-in").forEach(inp => {
-                    inp.addEventListener("input", () => {
-                        signers[+inp.dataset.idx].priv = inp.value.trim().padStart(64, "0");
-                        recomputeMusig();
-                    });
-                });
+        tb.querySelectorAll(".priv-in").forEach((inp) => {
+          inp.addEventListener("input", () => {
+            signers[+inp.dataset.idx].priv = inp.value.trim().padStart(64, "0")
+            recomputeMusig()
+          })
+        })
 
-                tb.querySelectorAll("[data-rand]").forEach(btn => {
-                    btn.addEventListener("click", () => {
-                        signers[+btn.dataset.rand].priv = getRandomHexKey();
-                        renderMusigSigners();
-                        recomputeMusig();
-                    });
-                });
+        tb.querySelectorAll("[data-rand]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            signers[+btn.dataset.rand].priv = getRandomHexKey()
+            renderMusigSigners()
+            recomputeMusig()
+          })
+        })
 
-                tb.querySelectorAll("[data-del]").forEach(btn => {
-                    btn.addEventListener("click", () => {
-                        if (signers.length > 2) {
-                            signers.splice(+btn.dataset.del, 1);
-                            renderMusigSigners();
-                            recomputeMusig();
-                        }
-                    });
-                });
+        tb.querySelectorAll("[data-del]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            if (signers.length > 2) {
+              signers.splice(+btn.dataset.del, 1)
+              renderMusigSigners()
+              recomputeMusig()
             }
+          })
+        })
+      }
 
-            function recomputeMusig() {
-                try {
-                    const privBytes = signers.map(s => hexToBytes(s.priv));
-                    const pub33List = privBytes.map(d => Secp256k1.getPublicKey(d, true));
+      function recomputeMusig() {
+        try {
+          const privBytes = signers.map((s) => hexToBytes(s.priv))
+          const pub33List = privBytes.map((d) => Secp256k1.getPublicKey(d, true))
 
-                    // Step 1: KeyAgg (BIP-327)
-                    const { aggregatedPubkey: q, gacc } = Musig2.keyAgg(pub33List);
-                    const coeffs = Musig2.keyAggCoeffs(pub33List);
+          // Step 1: KeyAgg (BIP-327)
+          const { aggregatedPubkey: q, gacc } = Musig2.keyAgg(pub33List)
+          const coeffs = Musig2.keyAggCoeffs(pub33List)
 
-                    musigState.q = q;
-                    musigState.gacc = gacc;
-                    musigState.coeffs = coeffs;
-                    musigState.pub33List = pub33List;
-                    musigState.privBytes = privBytes;
+          musigState.q = q
+          musigState.gacc = gacc
+          musigState.coeffs = coeffs
+          musigState.pub33List = pub33List
+          musigState.privBytes = privBytes
 
-                    $("musig-q").textContent = bytesToHex(q);
-                    $("musig-gacc").textContent = gacc === 0 ? "0 (par — sin negación)" : "1 (impar — escalar d se niega)";
+          $("musig-q").textContent = bytesToHex(q)
+          $("musig-gacc").textContent = gacc === 0 ? "0 (par — sin negación)" : "1 (impar — escalar d se niega)"
 
-                    pub33List.forEach((pb, i) => {
-                        const elPub = $("musig-pub-" + i);
-                        if (elPub) elPub.textContent = bytesToHex(pb);
-                        const elCoeff = $("musig-coeff-" + i);
-                        if (elCoeff) elCoeff.textContent = bytesToHex(coeffs[i]).slice(0, 16) + "…";
-                    });
+          pub33List.forEach((pb, i) => {
+            const elPub = $("musig-pub-" + i)
+            if (elPub) elPub.textContent = bytesToHex(pb)
+            const elCoeff = $("musig-coeff-" + i)
+            if (elCoeff) elCoeff.textContent = bytesToHex(coeffs[i]).slice(0, 16) + "…"
+          })
 
-                    // Step 2: Generar nonces
-                    generateNonces();
-                } catch (err) {
-                    showToast("❌ Error MuSig2: " + err.message);
-                }
+          // Step 2: Generar nonces
+          generateNonces()
+        } catch (err) {
+          showToast("❌ Error MuSig2: " + err.message)
+        }
+      }
+
+      function generateNonces() {
+        const msg = enc($("musig-msg-in").value)
+        nonces = musigState.privBytes.map((sk, i) => {
+          const secrand = getRandomBytes(32)
+          return Musig2.nonceGen(secrand, musigState.pub33List[i], sk, msg)
+        })
+
+        const pubNonces = nonces.map((n) => n.pubNonce)
+        const aggNonce = Musig2.nonceAgg(pubNonces)
+        musigState.aggNonce = aggNonce
+        musigState.pubNonces = pubNonces
+
+        $("musig-aggnonce").textContent = bytesToHex(aggNonce)
+
+        // Step 3: Session
+        const session = Musig2.sessionInit(aggNonce, musigState.q, msg)
+        musigState.session = session
+
+        $("musig-e").textContent = bytesToHex(session.slice(32, 64))
+        $("musig-rx").textContent = bytesToHex(session.slice(64, 96))
+        $("musig-final-sig").textContent = "-"
+        $("musig-badge-verify").textContent = "—"
+      }
+
+      function executeMusigSign() {
+        try {
+          const session = musigState.session
+          const gacc = musigState.gacc
+          const partialSigs = []
+
+          signers.forEach((_, i) => {
+            const secNonce = nonces[i].secNonce
+            const priv = musigState.privBytes[i]
+            const coeff = musigState.coeffs[i]
+            const psig = Musig2.partialSign(session, gacc, secNonce, priv, coeff)
+            partialSigs.push(psig)
+
+            // Partial verify individual
+            const ok = Musig2.partialVerify(
+              psig,
+              session,
+              gacc,
+              musigState.pubNonces[i],
+              musigState.pub33List[i],
+              coeff
+            )
+            const el = $("musig-psig-" + i)
+            if (el) {
+              el.textContent = bytesToHex(psig).slice(0, 16) + "… " + (ok ? "✓" : "✗")
+              el.style.color = ok ? "var(--color-success)" : "var(--color-error)"
             }
+          })
 
-            function generateNonces() {
-                const msg = enc($("musig-msg-in").value);
-                nonces = musigState.privBytes.map((sk, i) => {
-                    const secrand = getRandomBytes(32);
-                    return Musig2.nonceGen(secrand, musigState.pub33List[i], sk, msg);
-                });
+          // Step 5: SigAgg
+          const s = Musig2.partialSigAgg(partialSigs)
+          const rx = session.slice(64, 96)
+          const finalSig = new Uint8Array(64)
+          finalSig.set(rx, 0)
+          finalSig.set(s, 32)
 
-                const pubNonces = nonces.map(n => n.pubNonce);
-                const aggNonce = Musig2.nonceAgg(pubNonces);
-                musigState.aggNonce = aggNonce;
-                musigState.pubNonces = pubNonces;
+          $("musig-final-sig").textContent = bytesToHex(finalSig)
 
-                $("musig-aggnonce").textContent = bytesToHex(aggNonce);
+          // Verificar con Schnorr BIP-340 estándar
+          const msg = enc($("musig-msg-in").value)
+          const verified = Schnorr.verify(finalSig, msg, musigState.q)
 
-                // Step 3: Session
-                const session = Musig2.sessionInit(aggNonce, musigState.q, msg);
-                musigState.session = session;
+          setBadge(
+            $("musig-badge-verify"),
+            verified,
+            "✓ Firma MuSig2 verificada: Schnorr.verify(sig, msg, Q) == TRUE",
+            "✗ Firma MuSig2 inválida"
+          )
+        } catch (err) {
+          showToast("❌ Error al firmar MuSig2: " + err.message)
+        }
+      }
 
-                $("musig-e").textContent = bytesToHex(session.slice(32, 64));
-                $("musig-rx").textContent = bytesToHex(session.slice(64, 96));
-                $("musig-final-sig").textContent = "-";
-                $("musig-badge-verify").textContent = "—";
-            }
+      $("btn-add-signer").addEventListener("click", () => {
+        if (signers.length < 8) {
+          signers.push({ priv: getRandomHexKey() })
+          initSigners()
+        }
+      })
 
-            function executeMusigSign() {
-                try {
-                    const session = musigState.session;
-                    const gacc = musigState.gacc;
-                    const partialSigs = [];
+      $("btn-rand-all").addEventListener("click", () => {
+        signers = signers.map(() => ({ priv: getRandomHexKey() }))
+        initSigners()
+      })
 
-                    signers.forEach((_, i) => {
-                        const secNonce = nonces[i].secNonce;
-                        const priv = musigState.privBytes[i];
-                        const coeff = musigState.coeffs[i];
-                        const psig = Musig2.partialSign(session, gacc, secNonce, priv, coeff);
-                        partialSigs.push(psig);
+      $("btn-regen-nonces").addEventListener("click", generateNonces)
+      $("btn-musig-sign").addEventListener("click", executeMusigSign)
+      $("musig-msg-in").addEventListener("input", generateNonces)
 
-                        // Partial verify individual
-                        const ok = Musig2.partialVerify(psig, session, gacc, musigState.pubNonces[i], musigState.pub33List[i], coeff);
-                        const el = $("musig-psig-" + i);
-                        if (el) {
-                            el.textContent = bytesToHex(psig).slice(0, 16) + "… " + (ok ? "✓" : "✗");
-                            el.style.color = ok ? "var(--color-success)" : "var(--color-error)";
-                        }
-                    });
-
-                    // Step 5: SigAgg
-                    const s = Musig2.partialSigAgg(partialSigs);
-                    const rx = session.slice(64, 96);
-                    const finalSig = new Uint8Array(64);
-                    finalSig.set(rx, 0);
-                    finalSig.set(s, 32);
-
-                    $("musig-final-sig").textContent = bytesToHex(finalSig);
-
-                    // Verificar con Schnorr BIP-340 estándar
-                    const msg = enc($("musig-msg-in").value);
-                    const verified = Schnorr.verify(finalSig, msg, musigState.q);
-
-                    setBadge(
-                        $("musig-badge-verify"),
-                        verified,
-                        "✓ Firma MuSig2 verificada: Schnorr.verify(sig, msg, Q) == TRUE",
-                        "✗ Firma MuSig2 inválida"
-                    );
-                } catch (err) {
-                    showToast("❌ Error al firmar MuSig2: " + err.message);
-                }
-            }
-
-            $("btn-add-signer").addEventListener("click", () => {
-                if (signers.length < 8) {
-                    signers.push({ priv: getRandomHexKey() });
-                    initSigners();
-                }
-            });
-
-            $("btn-rand-all").addEventListener("click", () => {
-                signers = signers.map(() => ({ priv: getRandomHexKey() }));
-                initSigners();
-            });
-
-            $("btn-regen-nonces").addEventListener("click", generateNonces);
-            $("btn-musig-sign").addEventListener("click", executeMusigSign);
-            $("musig-msg-in").addEventListener("input", generateNonces);
-
-            initSigners();
-        </script>
-    </body>
+      initSigners()
+    </script>
+  </body>
 </html>

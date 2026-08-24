@@ -1,249 +1,232 @@
 <!doctype html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>WIF Format — BlockchainWasm Playground</title>
-        <link rel="stylesheet" href="css/theme.css" />
-    </head>
-    <body>
-        <div class="app-viewport">
-            <header class="app-header">
-                <a href="index.html" class="brand-container">
-                    <div class="brand-logo">⚡</div>
-                    <div class="brand-title">BlockchainWasm <span class="tag">WIF App</span></div>
-                </a>
-                <div class="header-status">
-                    <div class="wasm-badge">
-                        <span class="status-dot" id="wasm-status-dot"></span>
-                        <span id="wasm-status-text">Cargando WASM...</span>
-                    </div>
-                </div>
-            </header>
-
-            <div class="app-body">
-                <nav class="app-sidebar">
-                    <div class="sidebar-title">Módulos Criptográficos</div>
-                    <a href="index.html" class="sidebar-item">
-                        <span>⚡ Dashboard Central</span>
-                        <span class="item-badge">HUB</span>
-                    </a>
-                    <a href="address.html" class="sidebar-item">
-                        <span>📫 Address (BTC/ETH)</span>
-                    </a>
-                    <a href="hash.html" class="sidebar-item">
-                        <span>🧪 Hash Lab</span>
-                    </a>
-                    <a href="encoding.html" class="sidebar-item">
-                        <span>🔤 Encoding</span>
-                    </a>
-                    <a href="multisig.html" class="sidebar-item">
-                        <span>🤝 MuSig2 / Multisig</span>
-                        <span class="item-badge">BIP327</span>
-                    </a>
-                    <a href="hd-visualizer.html" class="sidebar-item">
-                        <span>🌲 HD Visualizer</span>
-                    </a>
-                    <a href="message-signing.html" class="sidebar-item">
-                        <span>🖋️ Msg Signing</span>
-                    </a>
-                    <a href="vanity.html" class="sidebar-item">
-                        <span>✨ Vanity Search</span>
-                    </a>
-                    <a href="bip39.html" class="sidebar-item">
-                        <span>🌱 BIP-39 Mnemonic</span>
-                        <span class="item-badge">BIP39</span>
-                    </a>
-                    <a href="bip32.html" class="sidebar-item">
-                        <span>🌳 BIP-32 HD Tree</span>
-                        <span class="item-badge">BIP32</span>
-                    </a>
-                    <a href="bip44.html" class="sidebar-item">
-                        <span>💼 BIP-44 Wallet</span>
-                        <span class="item-badge">BIP44</span>
-                    </a>
-                    <a href="ecdsa.html" class="sidebar-item">
-                        <span>✍️ ECDSA Secp256k1</span>
-                        <span class="item-badge">ECDSA</span>
-                    </a>
-                    <a href="schnorr.html" class="sidebar-item">
-                        <span>⚡ Schnorr Taproot</span>
-                        <span class="item-badge">BIP340</span>
-                    </a>
-                    <a href="ecdh.html" class="sidebar-item">
-                        <span>🔐 ECDH Secret</span>
-                        <span class="item-badge">ECDH</span>
-                    </a>
-                    <a href="secp256k1.html" class="sidebar-item">
-                        <span>📈 Curve Secp256k1</span>
-                        <span class="item-badge">SECP</span>
-                    </a>
-                    <a href="pbkdf2.html" class="sidebar-item">
-                        <span>🔑 PBKDF2 SHA-512</span>
-                        <span class="item-badge">KDF</span>
-                    </a>
-                    <a href="wif.html" class="sidebar-item active">
-                        <span>🎫 WIF Format</span>
-                        <span class="item-badge">WIF</span>
-                    </a>
-                </nav>
-
-                <main class="app-content">
-                    <div class="page-header">
-                        <div>
-                            <h1 class="page-title">🎫 Wallet Import Format (WIF) Converter</h1>
-                            <p class="page-description">
-                                Codificación Base58Check de clave privada a WIF comprimida / descomprimida y
-                                decodificación inversa.
-                            </p>
-                        </div>
-                        <button class="btn btn-primary" id="btn-rand">🎲 Clave Aleatoria</button>
-                    </div>
-
-                    <div class="grid-2">
-                        <!-- Codificador WIF -->
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title"
-                                    ><span class="icon">🔒</span> Codificar (Raw Privkey → WIF)</span
-                                >
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Clave Privada Raw (32-bytes Hex)</label>
-                                <input type="text" id="input-enc-priv" class="input-text" />
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Flag de Compresión de Llave Pública</label>
-                                <select id="sel-enc-comp" class="select-custom">
-                                    <option value="true" selected>Comprimida (Empieza con K o L)</option>
-                                    <option value="false">Descomprimida (Empieza con 5)</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Resultado WIF Encoded (Base58Check)</label>
-                                <div class="output-box">
-                                    <span id="txt-wif-encoded">-</span>
-                                    <button class="copy-btn" onclick="window.copyTxt('txt-wif-encoded', 'WIF')">
-                                        Copiar
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Decodificador WIF -->
-                        <div class="card">
-                            <div class="card-header">
-                                <span class="card-title"
-                                    ><span class="icon">🔓</span> Decodificar (WIF → Raw Privkey)</span
-                                >
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">String WIF a Decodificar</label>
-                                <input
-                                    type="text"
-                                    id="input-dec-wif"
-                                    class="input-text"
-                                    placeholder="Ingresa un string WIF..."
-                                />
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Clave Privada Decodificada (32-bytes Hex)</label>
-                                <div class="output-box">
-                                    <span id="txt-dec-priv">-</span>
-                                    <button
-                                        class="copy-btn"
-                                        onclick="window.copyTxt('txt-dec-priv', 'Decoded PrivKey')"
-                                    >
-                                        Copiar
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Flag de Compresión Detectado</label>
-                                <div class="output-box">
-                                    <span id="txt-dec-comp">-</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </main>
-            </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WIF Format — BlockchainWasm Playground</title>
+    <link rel="stylesheet" href="css/theme.css" />
+  </head>
+  <body>
+    <div class="app-viewport">
+      <header class="app-header">
+        <a href="index.html" class="brand-container">
+          <div class="brand-logo">⚡</div>
+          <div class="brand-title">BlockchainWasm <span class="tag">WIF App</span></div>
+        </a>
+        <div class="header-status">
+          <div class="wasm-badge">
+            <span class="status-dot" id="wasm-status-dot"></span>
+            <span id="wasm-status-text">Cargando WASM...</span>
+          </div>
         </div>
+      </header>
 
-        <script type="module">
-            import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard } from "./js/common.js"
-            import { Wif } from "../../dist/index.js"
+      <div class="app-body">
+        <nav class="app-sidebar">
+          <div class="sidebar-title">Módulos Criptográficos</div>
+          <a href="index.html" class="sidebar-item">
+            <span>⚡ Dashboard Central</span>
+            <span class="item-badge">HUB</span>
+          </a>
+          <a href="address.html" class="sidebar-item">
+            <span>📫 Address (BTC/ETH)</span>
+          </a>
+          <a href="hash.html" class="sidebar-item">
+            <span>🧪 Hash Lab</span>
+          </a>
+          <a href="encoding.html" class="sidebar-item">
+            <span>🔤 Encoding</span>
+          </a>
+          <a href="multisig.html" class="sidebar-item">
+            <span>🤝 MuSig2 / Multisig</span>
+            <span class="item-badge">BIP327</span>
+          </a>
+          <a href="hd-visualizer.html" class="sidebar-item">
+            <span>🌲 HD Visualizer</span>
+          </a>
+          <a href="message-signing.html" class="sidebar-item">
+            <span>🖋️ Msg Signing</span>
+          </a>
+          <a href="vanity.html" class="sidebar-item">
+            <span>✨ Vanity Search</span>
+          </a>
+          <a href="bip39.html" class="sidebar-item">
+            <span>🌱 BIP-39 Mnemonic</span>
+            <span class="item-badge">BIP39</span>
+          </a>
+          <a href="bip32.html" class="sidebar-item">
+            <span>🌳 BIP-32 HD Tree</span>
+            <span class="item-badge">BIP32</span>
+          </a>
+          <a href="bip44.html" class="sidebar-item">
+            <span>💼 BIP-44 Wallet</span>
+            <span class="item-badge">BIP44</span>
+          </a>
+          <a href="ecdsa.html" class="sidebar-item">
+            <span>✍️ ECDSA Secp256k1</span>
+            <span class="item-badge">ECDSA</span>
+          </a>
+          <a href="schnorr.html" class="sidebar-item">
+            <span>⚡ Schnorr Taproot</span>
+            <span class="item-badge">BIP340</span>
+          </a>
+          <a href="ecdh.html" class="sidebar-item">
+            <span>🔐 ECDH Secret</span>
+            <span class="item-badge">ECDH</span>
+          </a>
+          <a href="secp256k1.html" class="sidebar-item">
+            <span>📈 Curve Secp256k1</span>
+            <span class="item-badge">SECP</span>
+          </a>
+          <a href="pbkdf2.html" class="sidebar-item">
+            <span>🔑 PBKDF2 SHA-512</span>
+            <span class="item-badge">KDF</span>
+          </a>
+          <a href="wif.html" class="sidebar-item active">
+            <span>🎫 WIF Format</span>
+            <span class="item-badge">WIF</span>
+          </a>
+        </nav>
 
-            window.copyTxt = (id, name) => {
-                const text = document.getElementById(id).innerText
-                if (text !== "-") copyToClipboard(text, name)
-            }
+        <main class="app-content">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">🎫 Wallet Import Format (WIF) Converter</h1>
+              <p class="page-description">
+                Codificación Base58Check de clave privada a WIF comprimida / descomprimida y decodificación inversa.
+              </p>
+            </div>
+            <button class="btn btn-primary" id="btn-rand">🎲 Clave Aleatoria</button>
+          </div>
 
-            await initWasm()
+          <div class="grid-2">
+            <!-- Codificador WIF -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title"><span class="icon">🔒</span> Codificar (Raw Privkey → WIF)</span>
+              </div>
 
-            const inputEncPriv = document.getElementById("input-enc-priv")
-            const selEncComp = document.getElementById("sel-enc-comp")
-            const btnRand = document.getElementById("btn-rand")
-            const inputDecWif = document.getElementById("input-dec-wif")
+              <div class="form-group">
+                <label class="form-label">Clave Privada Raw (32-bytes Hex)</label>
+                <input type="text" id="input-enc-priv" class="input-text" />
+              </div>
 
-            function runEncode() {
-                try {
-                    const privBytes = parseHexInput(inputEncPriv.value)
-                    if (privBytes.length !== 32) return
+              <div class="form-group">
+                <label class="form-label">Flag de Compresión de Llave Pública</label>
+                <select id="sel-enc-comp" class="select-custom">
+                  <option value="true" selected>Comprimida (Empieza con K o L)</option>
+                  <option value="false">Descomprimida (Empieza con 5)</option>
+                </select>
+              </div>
 
-                    const isCompressed = selEncComp.value === "true"
-                    const wifStr = Wif.encode(privBytes, isCompressed)
+              <div class="form-group">
+                <label class="form-label">Resultado WIF Encoded (Base58Check)</label>
+                <div class="output-box">
+                  <span id="txt-wif-encoded">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('txt-wif-encoded', 'WIF')">Copiar</button>
+                </div>
+              </div>
+            </div>
 
-                    document.getElementById("txt-wif-encoded").innerText = wifStr
+            <!-- Decodificador WIF -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title"><span class="icon">🔓</span> Decodificar (WIF → Raw Privkey)</span>
+              </div>
 
-                    if (!inputDecWif.value || inputDecWif.dataset.auto === "true") {
-                        inputDecWif.value = wifStr
-                        inputDecWif.dataset.auto = "true"
-                        runDecode()
-                    }
-                } catch (err) {
-                    console.error(err)
-                }
-            }
+              <div class="form-group">
+                <label class="form-label">String WIF a Decodificar</label>
+                <input type="text" id="input-dec-wif" class="input-text" placeholder="Ingresa un string WIF..." />
+              </div>
 
-            function runDecode() {
-                try {
-                    const wif = inputDecWif.value.trim()
-                    if (!wif) return
+              <div class="form-group">
+                <label class="form-label">Clave Privada Decodificada (32-bytes Hex)</label>
+                <div class="output-box">
+                  <span id="txt-dec-priv">-</span>
+                  <button class="copy-btn" onclick="window.copyTxt('txt-dec-priv', 'Decoded PrivKey')">Copiar</button>
+                </div>
+              </div>
 
-                    const decoded = Wif.decode(wif)
-                    document.getElementById("txt-dec-priv").innerText = bytesToHex(decoded.privateKey)
-                    document.getElementById("txt-dec-comp").innerText = decoded.compressed
-                        ? "✓ True (Comprimida)"
-                        : "False (Descomprimida)"
-                } catch (err) {
-                    document.getElementById("txt-dec-priv").innerText = "❌ WIF Inválido"
-                    document.getElementById("txt-dec-comp").innerText = "❌ Error"
-                }
-            }
+              <div class="form-group">
+                <label class="form-label">Flag de Compresión Detectado</label>
+                <div class="output-box">
+                  <span id="txt-dec-comp">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
 
-            btnRand.addEventListener("click", () => {
-                inputEncPriv.value = getRandomHexKey()
-                inputDecWif.dataset.auto = "true"
-                runEncode()
-            })
+    <script type="module">
+      import { initWasm, getRandomHexKey, parseHexInput, bytesToHex, copyToClipboard } from "./js/common.js"
+      import { Wif } from "../../dist/index.js"
 
-            inputEncPriv.addEventListener("input", runEncode)
-            selEncComp.addEventListener("change", runEncode)
-            inputDecWif.addEventListener("input", () => {
-                inputDecWif.dataset.auto = "false"
-                runDecode()
-            })
+      window.copyTxt = (id, name) => {
+        const text = document.getElementById(id).innerText
+        if (text !== "-") copyToClipboard(text, name)
+      }
 
-            // Initial setup
-            inputEncPriv.value = getRandomHexKey()
-            runEncode()
-        </script>
-    </body>
+      await initWasm()
+
+      const inputEncPriv = document.getElementById("input-enc-priv")
+      const selEncComp = document.getElementById("sel-enc-comp")
+      const btnRand = document.getElementById("btn-rand")
+      const inputDecWif = document.getElementById("input-dec-wif")
+
+      function runEncode() {
+        try {
+          const privBytes = parseHexInput(inputEncPriv.value)
+          if (privBytes.length !== 32) return
+
+          const isCompressed = selEncComp.value === "true"
+          const wifStr = Wif.encode(privBytes, isCompressed)
+
+          document.getElementById("txt-wif-encoded").innerText = wifStr
+
+          if (!inputDecWif.value || inputDecWif.dataset.auto === "true") {
+            inputDecWif.value = wifStr
+            inputDecWif.dataset.auto = "true"
+            runDecode()
+          }
+        } catch (err) {
+          console.error(err)
+        }
+      }
+
+      function runDecode() {
+        try {
+          const wif = inputDecWif.value.trim()
+          if (!wif) return
+
+          const decoded = Wif.decode(wif)
+          document.getElementById("txt-dec-priv").innerText = bytesToHex(decoded.privateKey)
+          document.getElementById("txt-dec-comp").innerText = decoded.compressed
+            ? "✓ True (Comprimida)"
+            : "False (Descomprimida)"
+        } catch (err) {
+          document.getElementById("txt-dec-priv").innerText = "❌ WIF Inválido"
+          document.getElementById("txt-dec-comp").innerText = "❌ Error"
+        }
+      }
+
+      btnRand.addEventListener("click", () => {
+        inputEncPriv.value = getRandomHexKey()
+        inputDecWif.dataset.auto = "true"
+        runEncode()
+      })
+
+      inputEncPriv.addEventListener("input", runEncode)
+      selEncComp.addEventListener("change", runEncode)
+      inputDecWif.addEventListener("input", () => {
+        inputDecWif.dataset.auto = "false"
+        runDecode()
+      })
+
+      // Initial setup
+      inputEncPriv.value = getRandomHexKey()
+      runEncode()
+    </script>
+  </body>
 </html>
