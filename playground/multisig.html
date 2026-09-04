@@ -128,8 +128,8 @@
             <div>
               <h1 class="page-title">🤝 MuSig2 (BIP-327) Multi-Signature Protocol</h1>
               <p class="page-description">
-                Esquema multifirma Schnorr de 2 rondas estricto según la especificación <b>BIP-327</b>. Agrega $N$
-                claves públicas en una única clave $Q$ ($a_i P_i$) resistente a ataques rogue-key y produce una firma de
+                Esquema multifirma Schnorr de 2 rondas estricto según la especificación <b>BIP-327</b>. Agrega <b>N</b>
+                claves públicas en una única clave <b>Q</b> (∑ aᵢPᵢ) resistente a ataques rogue-key y produce una firma de
                 64 bytes indistinguible de una firma Taproot estándar.
               </p>
             </div>
@@ -142,7 +142,7 @@
           <!-- Signers Table -->
           <div class="card mb-4">
             <div class="card-header">
-              <span class="card-title"><span class="icon">👥</span> Participantes ($N$ Firmantes)</span>
+              <span class="card-title"><span class="icon">👥</span> Participantes (N Firmantes)</span>
               <span class="text-muted" style="font-size: 11px">Mínimo 2, máximo 8 signers</span>
             </div>
             <div class="table-container">
@@ -150,10 +150,10 @@
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th>Clave Privada $d_i$ (32 B)</th>
-                    <th>Clave Pública $P_i$ (33 B)</th>
-                    <th>Coeficiente $a_i$ (KeyAgg)</th>
-                    <th>Firma Parcial $s_i$ (32 B)</th>
+                    <th>Clave Privada dᵢ (32 B)</th>
+                    <th>Clave Pública Pᵢ (33 B)</th>
+                    <th>Coeficiente aᵢ (KeyAgg)</th>
+                    <th>Firma Parcial sᵢ (32 B)</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -171,18 +171,18 @@
                 <span class="card-title">Paso 1: Key Aggregation (KeyAgg)</span>
               </div>
               <p style="font-size: 11px; color: var(--text-muted)">
-                Calcula $L = \text{Hash}(\text{KeyAgg list}, P_1 \parallel \dots \parallel P_n)$, coeficientes $a_i =
-                \text{Hash}(\text{KeyAgg coefficient}, L \parallel P_i)$ y la clave agregada $Q = \sum a_i P_i$.
+                Calcula <code>L = Hash(KeyAgg list, P₁ ‖ … ‖ Pₙ)</code>, coeficientes <code>aᵢ = Hash(KeyAgg coeff, L ‖ Pᵢ)</code>
+                y la clave agregada <code>Q = ∑ aᵢPᵢ</code>.
               </p>
               <div class="form-group">
-                <label class="form-label">Clave Agregada $Q$ (x-only 32 B)</label>
+                <label class="form-label">Clave Agregada Q (x-only 32 B)</label>
                 <div class="output-box">
                   <span id="musig-q">-</span>
                   <button class="copy-btn" onclick="window.copyTxt('musig-q', 'Q')">Copiar</button>
                 </div>
               </div>
               <div class="form-group">
-                <label class="form-label">Paridad de $Q.y$ ($gacc$)</label>
+                <label class="form-label">Paridad de Q.y (gacc)</label>
                 <div class="output-box"><span id="musig-gacc">-</span></div>
               </div>
             </div>
@@ -194,11 +194,11 @@
                 <span class="card-title">Paso 2: Ronda 1 — Generar & Agregar Nonces</span>
               </div>
               <p style="font-size: 11px; color: var(--text-muted)">
-                Cada firmante genera en secreto $(k_{i,1}, k_{i,2})$ y publica su nonce público $R_{i,1} \parallel
-                R_{i,2}$ (66 B). Se agregan en $aggNonce = \sum R_{i,1} \parallel \sum R_{i,2}$.
+                Cada firmante genera en secreto <code>(kᵢ₁, kᵢ₂)</code> y publica su nonce público <code>Rᵢ₁ ‖ Rᵢ₂</code>
+                (66 B). Se agregan en <code>aggNonce = ∑Rᵢ₁ ‖ ∑Rᵢ₂</code>.
               </p>
               <div class="form-group">
-                <label class="form-label">Nonce Agregado $aggNonce$ (66 B)</label>
+                <label class="form-label">Nonce Agregado aggNonce (66 B)</label>
                 <div class="output-box">
                   <span id="musig-aggnonce">-</span>
                   <button class="copy-btn" onclick="window.copyTxt('musig-aggnonce', 'aggNonce')">Copiar</button>
@@ -227,11 +227,11 @@
                 />
               </div>
               <div class="form-group">
-                <label class="form-label">Desafío $e$ (BIP-340 challenge hash)</label>
+                <label class="form-label">Desafío <em>e</em> (BIP-340 challenge hash)</label>
                 <div class="output-box"><span id="musig-e">-</span></div>
               </div>
               <div class="form-group">
-                <label class="form-label">Punto $R$ Agregado ($R_x$ 32 B)</label>
+                <label class="form-label">Punto R Agregado (Rₓ 32 B)</label>
                 <div class="output-box"><span id="musig-rx">-</span></div>
               </div>
               <div class="btn-group">
@@ -246,7 +246,7 @@
                 <span class="card-title">Paso 4: Agregación de Firmas (SigAgg)</span>
               </div>
               <div class="form-group">
-                <label class="form-label">Firma Schnorr Final BIP-340 (64 B = $R_x \parallel s$)</label>
+                <label class="form-label">Firma Schnorr Final BIP-340 (64 B = Rₓ ‖ s)</label>
                 <div class="output-box">
                   <span id="musig-final-sig">-</span>
                   <button class="copy-btn" onclick="window.copyTxt('musig-final-sig', 'Firma MuSig2')">Copiar</button>
