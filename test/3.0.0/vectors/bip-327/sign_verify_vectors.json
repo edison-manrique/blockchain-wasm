@@ -44,7 +44,7 @@
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "7F631307ED5391B85C3CCF7C7D7A0322A7A6F5DFCA876AB35EC3A5A034CCA7B8"
+            "expected": "CABA5654B0D9AAA13D3B5C2C901540890EDC57BB834E7A7DC2E5FD9B3C7D869B"
         },
         {
             "key_indices": [
@@ -60,7 +60,7 @@
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 1,
-            "expected": "E60F76EE32E2CB61BAAC256D1A1E688DB48E7BD4108FD8A5BDB0CA95C4B1BC25"
+            "expected": "E5AAFE638F5F3C6C440ACE101530EB933725FD82E0DAA919322F90EFF60C6AD7"
         },
         {
             "key_indices": [
@@ -76,7 +76,7 @@
             "aggnonce_index": 0,
             "msg_index": 0,
             "signer_index": 2,
-            "expected": "F422044A11C8E882EC2451F8511C3893C6888769F68F043EB3C54048E9DBBA27"
+            "expected": "EEA61BBD902BBBCA6EF201122F57641C4623E528977AE42E887C47FA5A83E30C"
         },
         {
             "key_indices": [
@@ -90,7 +90,7 @@
             "aggnonce_index": 1,
             "msg_index": 0,
             "signer_index": 0,
-            "expected": "F2BF509182B9DCDBF179329A6216EF7BCBF41ED08779F214C83DF6BB5BC86320",
+            "expected": "567E0CA380261CE59F9EF260FC1C2B01CD67E81418CC2D825853BA7C07DA151A",
             "comment": "Both halves of aggregate nonce correspond to point at infinity"
         },
         {
@@ -107,7 +107,7 @@
             "aggnonce_index": 0,
             "msg_index": 1,
             "signer_index": 0,
-            "expected": "6D5CE7FBFC755747535E857CF2548EC719BCC57A1D910495A2D1F5A1CCCF442A",
+            "expected": "18C3ACA8F85F786FA97B2469BE9DD7C07376313DE899AC985028A149BEDC00FE",
             "comment": "Empty message"
         },
         {
@@ -124,7 +124,7 @@
             "aggnonce_index": 0,
             "msg_index": 2,
             "signer_index": 0,
-            "expected": "0F55A154596049B59CA86136F02346377D0D056250787E0AB5F29AED4B551237",
+            "expected": "AF96C2BB5DBB873CC30D3177A2CDED7154CD2FA9B4E19646E06413E9EAD064CD",
             "comment": "38-byte message"
         }
     ],

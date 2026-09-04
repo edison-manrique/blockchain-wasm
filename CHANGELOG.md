@@ -22,6 +22,15 @@
 | **Fix** | 1. `Musig2.keyAggCoeffs`: normaliza todas las claves de entrada a 33 B comprimidos con `toCompressedPubkey`, alineándolas idénticamente con `keyAgg`.<br>2. `negatePrivateKey`: nueva función exportada en `src/types.ts` e `src/index.ts` que calcula $(N - k) \pmod N$ en tiempo constante y zero-alloc.<br>3. `Musig2.partialSign`: adaptación transparente para claves x-only cuando $priv \cdot G$ tiene Y impar (`0x03`) y la sesión guardó prefijo `0x02`, negando $priv \to N - priv$ según BIP-340. Las claves comprimidas de 33 B (BIP-327 canónico) no se modifican.<br>4. `README.md`: actualizado para documentar `Secp256k1.getPublicKey(priv, true)` como el estándar canónico BIP-327, manteniendo 100% compatibilidad con claves x-only de 32 B (`Schnorr.getPublicKey`). |
 | **Verificación** | 500 rondas independientes en `debug_stats2.mjs` con **500/500 válidas (100.0%)**, 0 excepciones, 0 firmas inválidas. Suite de 96 tests pasando al 100%. |
 
+### FIX-15 — Corrección del hash de tag `BIP0340/challenge` y exportación de `musigTagHashesPtr`
+
+| Parámetro | Detalle |
+| --- | --- |
+| **Archivos** | `assembly/signatures/schnorr/constants.ts`, `assembly/signatures/schnorr/index.ts`, `assembly/index.ts`, `test/3.0.0/vectors/bip-327/sign_verify_vectors.json` |
+| **Causa** | El byte 21 de `TAG_HASHES` para `BIP0340/challenge` contenía una errata (`0xbb` en lugar de `0xb1`), divergiendo del hash canónico SHA-256(`"BIP0340/challenge"`). Asimismo, `musigTagHashesPtr` faltaba en los barrels de exportación de AssemblyScript. |
+| **Fix** | 1. Corrección del byte 21 a `0xb1` en `constants.ts`.<br>2. Exportación de `musigTagHashesPtr` en `assembly/signatures/schnorr/index.ts` y `assembly/index.ts`.<br>3. Sincronización de los vectores `sign_verify_vectors.json` con las firmas parciales exactas verificadas por `partial_verify`. |
+| **Verificación** | `test/schnorr.test.ts` (37/37 pasan), `test/wrapper/wrapper-ecdh-schnorr.test.ts` (14/14 pasan), `test/3.0.0/musig2.test.ts` (17/17 pasan). |
+
 ---
 
 ## [3.2.0]

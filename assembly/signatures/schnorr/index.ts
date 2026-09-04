@@ -76,3 +76,4 @@ export {
   musig2_partial_sig_agg,
   musig2_sign_all
 } from "./musig2"
+export { musigTagHashesPtr } from "./core"

@@ -154,7 +154,8 @@ export {
   musig2_partial_sign,
   musig2_partial_verify,
   musig2_partial_sig_agg,
-  musig2_sign_all
+  musig2_sign_all,
+  musigTagHashesPtr
 } from "./signatures/schnorr"
 
 // ═══════════════════════════════════════════════════════════════════════════
