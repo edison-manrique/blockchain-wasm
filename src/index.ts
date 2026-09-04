@@ -37,6 +37,7 @@ export {
   concatBytes,
   getGlobalValue,
   isValidPrivateKey,
+  negatePrivateKey,
   MAX_PASSPHRASE_BYTES,
   PRIVKEY_BYTES,
   PUBKEY_COMPRESSED_BYTES,

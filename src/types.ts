@@ -371,6 +371,24 @@ export function isValidPrivateKey(privateKey: Uint8Array): boolean {
   return false // k == N
 }
 
+/** Calcula (N - k) mod N para un escalar válido 0 < k < N (bytes big-endian). */
+export function negatePrivateKey(privateKey: Uint8Array): Uint8Array {
+  const out = new Uint8Array(32)
+  let borrow = 0
+  for (let i = 31; i >= 0; i--) {
+    let diff = N_BE[i] - privateKey[i] - borrow
+    if (diff < 0) {
+      diff += 256
+      borrow = 1
+    } else {
+      borrow = 0
+    }
+    out[i] = diff
+  }
+  return out
+}
+
 // ── Límite de passphrase BIP39 (E5) ────────────────────────────────────────
 /** Máx. bytes UTF-8 de la passphrase: HASH_WORK 4096 − SALT_OFF 2200 − 8 = 1888. */
 export const MAX_PASSPHRASE_BYTES = 1888
+

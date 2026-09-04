@@ -68,13 +68,13 @@ await BlockchainWasm.load()
 ### 2. MuSig2 (BIP-327) — Multifirma Schnorr de 2 Rondas
 
 ```typescript
-import { Musig2, Schnorr, getRandomBytes, bytesToHex } from "blockchain-wasm"
+import { Musig2, Schnorr, Secp256k1, getRandomBytes, bytesToHex } from "blockchain-wasm"
 
-// 1. Claves de los participantes
+// 1. Claves de los participantes (soporta 33 B compressed estándar BIP-327 o 32 B x-only)
 const priv1 = getRandomBytes(32)
 const priv2 = getRandomBytes(32)
-const pub1 = Schnorr.getPublicKey(priv1)
-const pub2 = Schnorr.getPublicKey(priv2)
+const pub1 = Secp256k1.getPublicKey(priv1, true) // 33 B compressed (o Schnorr.getPublicKey(priv1) para 32 B x-only)
+const pub2 = Secp256k1.getPublicKey(priv2, true)
 
 // 2. Agregación de Claves (KeyAgg con coeficientes a_i anti-rogue)
 const { aggregatedPubkey: Q, gacc } = Musig2.keyAgg([pub1, pub2])

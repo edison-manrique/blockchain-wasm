@@ -27,6 +27,7 @@ import {
   HALF_ZONE,
   toUint8Array,
   isValidPrivateKey,
+  negatePrivateKey,
   MUSIG_PUBNONCE_BYTES,
   MUSIG_SECNONCE_BYTES,
   MUSIG_SESSION_BYTES,
@@ -157,7 +158,29 @@ export class Musig2 {
     if (coeff.length !== 32) {
       throw new InvalidArgumentError("coeff debe ser 32 bytes", "musig2")
     }
-    return BlockchainWasm.getInstance().musig2PartialSign(session, gacc, secNonce, priv, coeff)
+
+    // Adaptación transparente para claves x-only (BIP-340):
+    // Si secNonce guardó pk con prefijo 0x02 (típico de x-only), pero priv*G tiene Y impar (0x03),
+    // la clave privada BIP-340 correspondiente al punto (P.x, par) es N - priv.
+    let signingPriv = priv
+    const pkPrefix = secNonce[64]
+    if (pkPrefix === 0x02 || pkPrefix === 0x03) {
+      const pub = BlockchainWasm.getInstance().getPublicKey(priv, true)
+      if (pub[0] !== pkPrefix) {
+        let xMatches = true
+        for (let i = 0; i < 32; i++) {
+          if (pub[1 + i] !== secNonce[65 + i]) {
+            xMatches = false
+            break
+          }
+        }
+        if (xMatches) {
+          signingPriv = negatePrivateKey(priv)
+        }
+      }
+    }
+
+    return BlockchainWasm.getInstance().musig2PartialSign(session, gacc, secNonce, signingPriv, coeff)
   }
 
   /** Verifica una firma parcial. Retorna true si es válida. */
@@ -258,11 +281,15 @@ export class Musig2 {
    * a_0 = 1 y a_{2ª distinta} = 1 (limbs LE); resto = H("KeyAgg coefficient", L‖pk) mod N.
    */
   static keyAggCoeffs(pubkeys: Uint8Array[]): Uint8Array[] {
+    if (pubkeys.length === 0 || pubkeys.length > MUSIG_MAX_SIGNERS) {
+      throw new InvalidArgumentError(`se requieren 1..${MUSIG_MAX_SIGNERS} pubkeys`, "musig2")
+    }
+    const compressed = pubkeys.map((p, i) => toCompressedPubkey(p, `pubkey[${i}]`))
     const wasm = BlockchainWasm.getInstance()
-    const L = wasm.musig2KeyAggListHash(pubkeys)
+    const L = wasm.musig2KeyAggListHash(compressed)
     let secondIdx = -1
-    for (let i = 1; i < pubkeys.length; i++) {
-      if (!musigBytesEq(pubkeys[i], pubkeys[0])) {
+    for (let i = 1; i < compressed.length; i++) {
+      if (!musigBytesEq(compressed[i], compressed[0])) {
         secondIdx = i
         break
       }
@@ -270,9 +297,9 @@ export class Musig2 {
     const ONE = new Uint8Array(32)
     ONE[0] = 1 // limbs LE de 1 (coincide con store<u64>(one, 1) del WASM)
     const out: Uint8Array[] = []
-    for (let i = 0; i < pubkeys.length; i++) {
-      const isSecond = secondIdx !== -1 && musigBytesEq(pubkeys[i], pubkeys[secondIdx])
-      out.push(isSecond ? ONE.slice() : wasm.musig2KeyAggCoeff(L, pubkeys[i]))
+    for (let i = 0; i < compressed.length; i++) {
+      const isSecond = secondIdx !== -1 && musigBytesEq(compressed[i], compressed[secondIdx])
+      out.push(isSecond ? ONE.slice() : wasm.musig2KeyAggCoeff(L, compressed[i]))
     }
     return out
   }

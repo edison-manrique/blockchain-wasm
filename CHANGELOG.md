@@ -1,6 +1,30 @@
 # 📦 CHANGELOG — blockchain-wasm
 
-## [3.2.0] — release actual
+## [3.2.1] — release actual
+
+> **Versión previa:** 3.2.0
+> **Tipo de release:** _patch_ — corrección crítica de MuSig2 (BIP-327) y soporte de claves públicas x-only (BIP-340).
+> **Sin cambios rompedores de API pública.**
+
+---
+
+## 🐛 Bug crítico corregido
+
+### FIX-14 — MuSig2 (BIP-327) desalineación en `keyAggCoeffs` y paridad de claves x-only (BIP-340)
+
+| Parámetro | Detalle |
+| --- | --- |
+| **Archivos** | `src/musig2.ts`, `src/types.ts`, `src/index.ts`, `README.md` |
+| **Funciones afectadas** | `Musig2.keyAggCoeffs`, `Musig2.partialSign`, `negatePrivateKey` |
+| **Síntoma** | Al ejecutar el pipeline MuSig2 con claves públicas x-only de 32 bytes (como en el ejemplo del README), `partialSign` lanzaba `WasmError(-12)` en ~74.6% de las rondas y en el 25.4% restante la firma final era inválida (`Schnorr.verify == false`), con **0% de firmas válidas**. |
+| **Causa 1 (`keyAggCoeffs`)** | `Musig2.keyAgg` convertía las claves públicas a 33 bytes comprimidos mediante `toCompressedPubkey`, pero `Musig2.keyAggCoeffs` pasaba el array de claves de 32 bytes directamente al WASM. Como las funciones WASM esperan claves de 33 B con stride de 33 B, se leía basura de memoria para el 33º byte, corrompiendo el hash de lista $L$ y los coeficientes $a_i$. |
+| **Causa 2 (Paridad x-only BIP-340)** | En BIP-327 las claves de firmantes son comprimidas de 33 B. Al usar claves de 32 B x-only (BIP-340), `toCompressedPubkey` asumía prefijo `0x02` (Y par). Si $priv \cdot G$ tenía Y impar (`0x03`, probabilidad 50% por clave, ~75% para 2 firmantes), el WASM rechazaba la firma con error `-12` (`MUSIG_ERR_PRIVKEY`) al verificar que $cbytes(priv \cdot G) == pk_{sec}$. Conforme a BIP-340, la clave privada correspondiente al punto x-only $(P.x, \text{par})$ cuando $priv \cdot G$ es impar es la negación modular $d = N - priv$. |
+| **Fix** | 1. `Musig2.keyAggCoeffs`: normaliza todas las claves de entrada a 33 B comprimidos con `toCompressedPubkey`, alineándolas idénticamente con `keyAgg`.<br>2. `negatePrivateKey`: nueva función exportada en `src/types.ts` e `src/index.ts` que calcula $(N - k) \pmod N$ en tiempo constante y zero-alloc.<br>3. `Musig2.partialSign`: adaptación transparente para claves x-only cuando $priv \cdot G$ tiene Y impar (`0x03`) y la sesión guardó prefijo `0x02`, negando $priv \to N - priv$ según BIP-340. Las claves comprimidas de 33 B (BIP-327 canónico) no se modifican.<br>4. `README.md`: actualizado para documentar `Secp256k1.getPublicKey(priv, true)` como el estándar canónico BIP-327, manteniendo 100% compatibilidad con claves x-only de 32 B (`Schnorr.getPublicKey`). |
+| **Verificación** | 500 rondas independientes en `debug_stats2.mjs` con **500/500 válidas (100.0%)**, 0 excepciones, 0 firmas inválidas. Suite de 96 tests pasando al 100%. |
+
+---
+
+## [3.2.0]
 
 > **Versión previa:** 3.1.0
 > **Tipo de release:** _patch_ — corrección crítica de aritmética de campo + refactor de legibilidad.

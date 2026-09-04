@@ -13,6 +13,10 @@ import { describe, test, expect, beforeAll } from "bun:test"
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import { BlockchainWasm } from "../../src/blockchain-wasm"
+import { Musig2 } from "../../src/musig2"
+import { Schnorr } from "../../src/schnorr"
+import { Secp256k1 } from "../../src/secp256k1"
+import { getRandomBytes } from "../../src/csprng"
 import { bytesToHex, hexToBytes } from "../../src/types"
 
 let wasm: BlockchainWasm
@@ -389,3 +393,68 @@ describe("BIP-327 — tweak_vectors / det_sign_vectors", () => {
     console.log("  (skip) ApplyTweak no implementado todavía (requiere tacc/gacc encadenados)")
   })
 })
+
+describe("Musig2 — fachada de dominio (BIP-327 y x-only)", () => {
+  test("flujo completo con claves x-only de 32 B (Schnorr.getPublicKey, 50 rondas)", () => {
+    for (let i = 0; i < 50; i++) {
+      const priv1 = getRandomBytes(32)
+      const pub1 = Schnorr.getPublicKey(priv1)
+      const priv2 = getRandomBytes(32)
+      const pub2 = Schnorr.getPublicKey(priv2)
+
+      const { aggregatedPubkey: Q, gacc } = Musig2.keyAgg([pub1, pub2])
+      const coeffs = Musig2.keyAggCoeffs([pub1, pub2])
+      const msg = new TextEncoder().encode(`xonly test round ${i}`)
+
+      const nonce1 = Musig2.nonceGen(getRandomBytes(32), pub1, priv1, msg)
+      const nonce2 = Musig2.nonceGen(getRandomBytes(32), pub2, priv2, msg)
+      const aggNonce = Musig2.nonceAgg([nonce1.pubNonce, nonce2.pubNonce])
+      const session = Musig2.sessionInit(aggNonce, Q, msg)
+
+      const psig1 = Musig2.partialSign(session, gacc, nonce1.secNonce, priv1, coeffs[0])
+      const psig2 = Musig2.partialSign(session, gacc, nonce2.secNonce, priv2, coeffs[1])
+
+      expect(Musig2.partialVerify(psig1, session, gacc, nonce1.pubNonce, pub1, coeffs[0])).toBe(true)
+      expect(Musig2.partialVerify(psig2, session, gacc, nonce2.pubNonce, pub2, coeffs[1])).toBe(true)
+
+      const s = Musig2.partialSigAgg([psig1, psig2])
+      const rx = session.slice(64, 96)
+      const finalSig = new Uint8Array(64)
+      finalSig.set(rx, 0)
+      finalSig.set(s, 32)
+      expect(Schnorr.verify(finalSig, msg, Q)).toBe(true)
+    }
+  })
+
+  test("flujo completo con claves comprimidas de 33 B (Secp256k1.getPublicKey, 50 rondas)", () => {
+    for (let i = 0; i < 50; i++) {
+      const priv1 = getRandomBytes(32)
+      const pub1 = Secp256k1.getPublicKey(priv1, true)
+      const priv2 = getRandomBytes(32)
+      const pub2 = Secp256k1.getPublicKey(priv2, true)
+
+      const { aggregatedPubkey: Q, gacc } = Musig2.keyAgg([pub1, pub2])
+      const coeffs = Musig2.keyAggCoeffs([pub1, pub2])
+      const msg = new TextEncoder().encode(`compressed test round ${i}`)
+
+      const nonce1 = Musig2.nonceGen(getRandomBytes(32), pub1, priv1, msg)
+      const nonce2 = Musig2.nonceGen(getRandomBytes(32), pub2, priv2, msg)
+      const aggNonce = Musig2.nonceAgg([nonce1.pubNonce, nonce2.pubNonce])
+      const session = Musig2.sessionInit(aggNonce, Q, msg)
+
+      const psig1 = Musig2.partialSign(session, gacc, nonce1.secNonce, priv1, coeffs[0])
+      const psig2 = Musig2.partialSign(session, gacc, nonce2.secNonce, priv2, coeffs[1])
+
+      expect(Musig2.partialVerify(psig1, session, gacc, nonce1.pubNonce, pub1, coeffs[0])).toBe(true)
+      expect(Musig2.partialVerify(psig2, session, gacc, nonce2.pubNonce, pub2, coeffs[1])).toBe(true)
+
+      const s = Musig2.partialSigAgg([psig1, psig2])
+      const rx = session.slice(64, 96)
+      const finalSig = new Uint8Array(64)
+      finalSig.set(rx, 0)
+      finalSig.set(s, 32)
+      expect(Schnorr.verify(finalSig, msg, Q)).toBe(true)
+    }
+  })
+})
+
