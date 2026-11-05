@@ -13,20 +13,20 @@
  * 256→129→~2 bits). Con 3 pasadas converge siempre. Al final, si res ≥ N, se
  * resta N hasta normalizar (máx. unas pocas restas).
  *
- * Zero-alloc: usa la arena Memory (save/restore).
+ * Zero-alloc: usa la arena Arena (save/restore).
  */
 import { CN0, CN1, CN2, CN3 } from "../constants"
 import { mul } from "../field/mul"
 import { addRaw, isZero } from "../field/raw"
 import { subN, isGreaterOrEqualN } from "./addsub"
-import { Memory } from "../../utils/memory"
+import { Arena } from "../../utils/arena"
 
 /** reduce: res (32 B) = a (64 B, 512 bits) mod N. */
 export function reduce(res: usize, a: usize): void {
-  const ctx = Memory.save()
-  const h = Memory.alloc(32) // limbs altos en reducción progresiva
-  const c = Memory.alloc(32) // C_SCALAR
-  const hc = Memory.alloc(64) // h · C (512 bits)
+  const ctx = Arena.save()
+  const h = Arena.alloc(32) // limbs altos en reducción progresiva
+  const c = Arena.alloc(32) // C_SCALAR
+  const hc = Arena.alloc(64) // h · C (512 bits)
 
   // res = L (limbs bajos)
   store<u64>(res, load<u64>(a))
@@ -74,5 +74,5 @@ export function reduce(res: usize, a: usize): void {
   // Normalización final: res < N
   while (isGreaterOrEqualN(res)) subN(res, res)
 
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }

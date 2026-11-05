@@ -11,7 +11,7 @@
  */
 
 // ── Punteros de I/O ───────────────────────────────────────────────────────
-export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../utils/memory"
+export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../utils/arena"
 
 // ── ECDH + códigos de error ───────────────────────────────────────────────
 export { ecdh_shared_secret, ECDH_OK, ECDH_ERR_PRIV_LEN, ECDH_ERR_PUB_FORMAT, ECDH_ERR_INFINITY } from "./ecdh"

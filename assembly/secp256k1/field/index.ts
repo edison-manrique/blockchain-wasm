@@ -20,8 +20,8 @@
 // ── Constantes del campo ────────────────────────────────────────────────────
 export { P0, P1, P2, P3, C_FIELD } from "../constants"
 
-// ── Punteros de I/O de la arena (para tests y wrapper; el layout vive en memory.ts) ──
-export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../../utils/memory"
+// ── Punteros de I/O de la arena (para tests y wrapper; el layout vive en arena.ts) ──
+export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../../utils/arena"
 
 // ── Aritmética "cruda" (sin módulo) — compartida con scalar ─────────────────
 export { addRaw, subRaw, cmp, isZero, shr1Raw, select64 } from "./raw"

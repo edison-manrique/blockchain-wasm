@@ -12,7 +12,7 @@
  */
 import { sha256_hash_raw, sha512_hmac_raw } from "../../hash/sha2"
 import { ripemd160_hash_raw } from "../../hash/ripemd160"
-import { BIP32_WORK_PTR, align8 } from "../../utils/memory"
+import { BIP32_WORK_PTR, align8 } from "../../utils/arena"
 import { BW_SHA256_TMP, BW_HASH160_TMP } from "./constants"
 
 /**

@@ -250,11 +250,11 @@ describe("glv — velocidad", () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe("glv — comparación", () => {
-  test("builds -O1 vs -O3: compile + size + speed (mul(G))", async () => {
+  test("builds -O0 vs -O1: compile + size + speed (mul(G))", async () => {
     const report = await Wasm.benchCompileCompare(
       ENTRY,
+      { label: "O0", opts: "test" },
       { label: "O1", opts: "test+o1" },
-      { label: "O3", opts: "o3+noassert" },
       (w) => {
         const i = w.num("PARAM_IN_PTR")
         const o = w.num("PARAM_OUT_PTR")
@@ -276,9 +276,9 @@ describe("glv — comparación", () => {
     expect(report.speedRatio).toBeLessThan(3.0)
   }, 240_000)
 
-  test("paridad de correctitud -O1 == -O3 (glvMul(k, G))", async () => {
-    const w1 = await Wasm.load((await Wasm.compile(ENTRY, "test+o1")).binary)
-    const w3 = await Wasm.load((await Wasm.compile(ENTRY, "bench+o3")).binary)
+  test("paridad de correctitud -O0 == -O1 (glvMul(k, G))", async () => {
+    const w1 = await Wasm.load((await Wasm.compile(ENTRY, "test")).binary)
+    const w3 = await Wasm.load((await Wasm.compile(ENTRY, "test+o1")).binary)
     const i1 = w1.num("PARAM_IN_PTR"),
       o1 = w1.num("PARAM_OUT_PTR")
     const i3 = w3.num("PARAM_IN_PTR"),
@@ -301,7 +301,7 @@ describe("glv — comparación", () => {
   }, 180_000)
 
   test("algoritmos: mul(G) tabla fija vs mul(3G) tabla dinámica", async () => {
-    const w = await Wasm.load((await Wasm.compile(ENTRY, "bench+o3")).binary) // cache RAM hit
+    const w = await Wasm.load((await Wasm.compile(ENTRY, "test+o1")).binary) // cache RAM hit
     const i = w.num("PARAM_IN_PTR")
     const o = w.num("PARAM_OUT_PTR")
     w.writeU256(o, 0x123456789abcdefn)

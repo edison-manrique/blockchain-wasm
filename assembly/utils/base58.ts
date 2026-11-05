@@ -9,7 +9,7 @@
  * ── ARQUITECTURA (alineada con SHA-2 / RIPEMD-160 / Keccak-256) ──────────
  * • Trabajo sobre HASH_WORK_PTR (layout fijo, zero-alloc).
  * • Alfabeto y tabla inversa como StaticArray<u8> (data segment).
- * • CERO Memory.alloc / Memory.save / Memory.restore.
+ * • CERO Arena.alloc / Arena.save / Arena.restore.
  * • CERO heap, CERO memory.grow.
  * • Base58Check usa sha256_hash_raw (módulo sha2, mismo HASH_WORK — seguro
  *   porque base58 NO usa HASH_WORK durante la llamada a sha256: el buffer
@@ -28,7 +28,7 @@
  *
  * El wrapper TS convierte índices (0–57) ↔ caracteres ASCII.
  */
-import { HASH_WORK_PTR, align8, PARAM_IN_PTR, PARAM_OUT_PTR } from "./memory"
+import { HASH_WORK_PTR, align8, PARAM_IN_PTR, PARAM_OUT_PTR } from "./arena"
 import { sha256_hash_raw } from "../hash/sha2"
 export { PARAM_IN_PTR, PARAM_OUT_PTR }
 

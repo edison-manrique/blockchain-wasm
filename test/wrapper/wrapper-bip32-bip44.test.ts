@@ -6,7 +6,7 @@ import { Secp256k1 } from "../../src/secp256k1"
 import { hexToBytes, bytesToHex } from "../../src/types"
 import { join } from "path"
 
-const WASM_PATH = join(import.meta.dirname, "../../dist/blockchain.wasm")
+const WASM_PATH = join(import.meta.dirname, "../../dist/blockchain-wasm.wasm")
 
 // BIP32 Test Vector 1
 const SEED_TV1 = "000102030405060708090a0b0c0d0e0f"

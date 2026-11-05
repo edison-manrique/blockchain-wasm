@@ -1,6 +1,6 @@
 {
   "name": "blockchain-wasm",
-  "version": "3.2.1",
+  "version": "3.3.0",
   "description": "Motor criptográfico zero-alloc para wallets Bitcoin y Ethereum: un único binario WebAssembly (AssemblyScript) con un wrapper TypeScript ergonómico de clases de dominio. secp256k1, BIP-32/39/44, Schnorr (BIP-340), ECDSA, ECDH, direcciones P2PKH/P2SH-P2WPKH/P2TR/ETH, WIF y PBKDF2 — sin heap, sin memory.grow, isomórfico (Node, Bun, Deno y navegador).",
   "author": "Edison Manrique",
   "license": "Apache-2.0",
@@ -12,7 +12,8 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./blockchain-wasm.wasm": "./dist/blockchain-wasm.wasm"
   },
   "files": [
     "dist"
@@ -25,7 +26,15 @@
     "release": "bun run asbuild && bun run tsbuild",
     "prepublishOnly": "npm run release",
     "pack": "npm pack --dry-run",
-    "publish": "npm publish --access public"
+    "publish": "npm publish --access public",
+    "prebuild": "bun run scripts/prebuild-tests.ts",
+    "test": "bun test",
+    "test:parallel": "bun test --parallel",
+    "test:all": "bun run prebuild && bun test",
+    "test:cold": "bun run scripts/prebuild-tests.ts --clear --force && bun test",
+    "test:watch": "bun test --watch",
+    "bench": "bun test/bench.ts",
+    "bench:wrapper": "bun run scripts/bench-wrapper.ts"
   },
   "keywords": [
     "wasm",
@@ -65,5 +74,9 @@
   "homepage": "https://github.com/edison-manrique/blockchain-wasm#readme",
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0"
   }
 }

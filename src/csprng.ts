@@ -38,6 +38,8 @@ export type RandomBytesGenerator = (size: number) => Uint8Array
 /** Rellenador interno (in-place, zero-alloc en el path por defecto). */
 type RandomFiller = (buf: Uint8Array) => void
 
+import { EntropyError, InvalidArgumentError, RuntimeCode } from "./errors"
+
 /** Límite de bytes por llamada de la Web Crypto API (64 KB). */
 const CHUNK = 65536
 
@@ -68,9 +70,10 @@ function getDefaultFiller(): RandomFiller {
     }
   }
   if (_defaultFiller === null) {
-    throw new Error(
+    throw new EntropyError(
       "CRÍTICO: Criptografía segura (CSPRNG / Web Crypto) no disponible en este entorno. " +
-        "Inyecta un `generator` o usa un runtime con crypto.getRandomValues."
+        "Inyecta un `generator` o usa un runtime con crypto.getRandomValues.",
+      RuntimeCode.ENTROPY_UNAVAILABLE
     )
   }
   return _defaultFiller
@@ -81,7 +84,10 @@ function adaptGenerator(gen: RandomBytesGenerator): RandomFiller {
   return (buf: Uint8Array): void => {
     const r = gen(buf.length)
     if (r.length !== buf.length) {
-      throw new Error(`generator devolvió ${r.length} bytes, se esperaban ${buf.length}`)
+      throw new EntropyError(
+        `generator devolvió ${r.length} bytes, se esperaban ${buf.length}`,
+        RuntimeCode.ENTROPY_INVALID
+      )
     }
     buf.set(r)
   }
@@ -117,7 +123,7 @@ function assertBip39Entropy(n: number): void {
     }
   }
   if (!ok) {
-    throw new Error(`BIP39 entropy debe ser 16/20/24/28/32 bytes, recibido ${n}`)
+    throw new InvalidArgumentError(`BIP39 entropy debe ser 16/20/24/28/32 bytes, recibido ${n}`, "csprng")
   }
 }
 
@@ -226,32 +232,11 @@ export class EntropySource {
     this.fillInto(ptr, SCALAR_BYTES)
   }
 
-  // ── Dominio MuSig2 (variantes que devuelven Uint8Array) ─────────────────
-
-  /** Secret random de 32 B para musig2_nonce_gen. */
-  musigSecrand(): Uint8Array {
-    return this.bytes(SCALAR_BYTES)
-  }
-
-  /** Array de `n` secret randoms (uno por signer). */
-  musigSecrands(n: number): Uint8Array[] {
-    const out: Uint8Array[] = []
-    for (let i = 0; i < n; i++) out.push(this.bytes(SCALAR_BYTES))
-    return out
-  }
-
-  // ── Dominio MuSig2 (variantes zero-copia en memoria WASM) ───────────────
-
-  /** Secret random de 32 B en `ptr` (para musig2_nonce_gen). */
-  musigSecrandInto(ptr: number): void {
-    this.fillInto(ptr, SCALAR_BYTES)
-  }
-
   // ── Interno ─────────────────────────────────────────────────────────────
 
   private _requireMemory(): void {
     if (this._memory === null) {
-      throw new Error("EntropySource: métodos *Into requieren construir con WebAssembly.Memory")
+      throw new InvalidArgumentError("EntropySource: métodos *Into requieren WebAssembly.Memory", "csprng")
     }
   }
 }

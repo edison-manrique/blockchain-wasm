@@ -2,7 +2,7 @@ import { describe, test, expect, beforeAll } from "bun:test"
 import { BlockchainWasm, Ecdsa, Schnorr, Secp256k1, SignatureFormat, hexToBytes } from "../../src/index"
 import { join } from "path"
 
-const WASM_PATH = join(import.meta.dirname, "../../dist/blockchain.wasm")
+const WASM_PATH = join(import.meta.dirname, "../../dist/blockchain-wasm.wasm")
 
 const PRIV1 = "0000000000000000000000000000000000000000000000000000000000000001"
 const TEXT = "Autorizo esta transacción"

@@ -10,7 +10,7 @@
  *
  * ── ÚNICO CAMBIO: base del scratch = align8(HASH_WORK_PTR) ─────────────────
  * El original usaba align8(CRYPTO_WORK_PTR) (su memoria privada). Aquí se usa
- * la zona disjunta HASH_WORK_PTR (ver memory.ts) para coexistir con secp256k1.
+ * la zona disjunta HASH_WORK_PTR (ver arena.ts) para coexistir con secp256k1.
  *
  * ── POR QUÉ ES SEGURO (no hay solape con sha256/sha512) ────────────────────
  * Esta función NUNCA llama a hash_raw / hmac_raw / hmac_compute (las que
@@ -29,7 +29,7 @@
  * Todo el layout es fijo sobre HASH_WORK: sin heap, sin cursor mutable, sin
  * memory.grow. Reentrante con secp256k1 (mundos disjuntos).
  */
-import { HASH_WORK_PTR, align8 } from "../../utils/memory"
+import { HASH_WORK_PTR, align8 } from "../../utils/arena"
 import { Sha256, Sha256Context } from "./sha256"
 import { Sha512, Sha512Context } from "./sha512"
 

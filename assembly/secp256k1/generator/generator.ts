@@ -18,7 +18,7 @@
  *   (Para binario más pequeño: WINDOW=6, ENTRIES=64, STEPS=22 → 180 KB.)
  */
 import { P0, P1, P2, P3, BETA_0, BETA_1, BETA_2, BETA_3 } from "../constants"
-import { Memory } from "../../utils/memory"
+import { Arena } from "../../utils/arena"
 import { mulMod, sqrMod, sub, modInverse } from "../field"
 import { double, addMixed, toAffine, generator, setInfinity } from "../point"
 import { decompose } from "../glv"
@@ -50,12 +50,12 @@ function extractWindow(ptr: usize, start: i32): i32 {
  * dest[0] no se toca (la entrada 0 no se usa: u=0 ⇒ skip).
  */
 function batchNormalize(dest: usize, jac_src: usize, n: i32): void {
-  const ctx = Memory.save()
-  const products = Memory.alloc(<usize>(n * 32))
-  const inv_zs = Memory.alloc(<usize>(n * 32))
-  const tmp = Memory.alloc(32)
-  const zi2 = Memory.alloc(32)
-  const zi3 = Memory.alloc(32)
+  const ctx = Arena.save()
+  const products = Arena.alloc(<usize>(n * 32))
+  const inv_zs = Arena.alloc(<usize>(n * 32))
+  const tmp = Arena.alloc(32)
+  const zi2 = Arena.alloc(32)
+  const zi3 = Arena.alloc(32)
 
   // products[1] = Z_1 ; products[i] = products[i-1] · Z_i
   memory.copy(products + 32, jac_src + 96 + 64, 32)
@@ -84,20 +84,20 @@ function batchNormalize(dest: usize, jac_src: usize, n: i32): void {
     mulMod(dst + 32, src + 32, zi3)
   }
 
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }
 
 /** Precomputa T1 y T2 (llamado una vez, lazy desde multiplyG). */
 export function init(): void {
   if (initialized) return
-  const ctx = Memory.save()
+  const ctx = Arena.save()
 
-  const base1 = Memory.alloc(96)  // 2^(8i)·G   (Jacobiano)
-  const base2 = Memory.alloc(96)  // 2^(8i)·φ(G)
-  const acc = Memory.alloc(96)
-  const affBase = Memory.alloc(64) // base afín (para addMixed)
-  const beta = Memory.alloc(32)
-  const tempJac = Memory.alloc(<usize>(ENTRIES * 96)) // lote de puntos Jacobianos
+  const base1 = Arena.alloc(96)  // 2^(8i)·G   (Jacobiano)
+  const base2 = Arena.alloc(96)  // 2^(8i)·φ(G)
+  const acc = Arena.alloc(96)
+  const affBase = Arena.alloc(64) // base afín (para addMixed)
+  const beta = Arena.alloc(32)
+  const tempJac = Arena.alloc(<usize>(ENTRIES * 96)) // lote de puntos Jacobianos
 
   // base1 = G ;  base2 = φ(G) = (BETA·Gx, Gy, 1)
   memory.copy(base1, generator(), 96)
@@ -141,7 +141,7 @@ export function init(): void {
   }
 
   initialized = true
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }
 
 /**
@@ -150,13 +150,13 @@ export function init(): void {
  */
 export function multiplyG(res: usize, k: usize): void {
   init()
-  const ctx = Memory.save()
-  const k1 = Memory.alloc(32)
-  const k2 = Memory.alloc(32)
-  const signs = Memory.alloc(2)
-  const acc = Memory.alloc(96)
-  const ty = Memory.alloc(32)
-  const prime = Memory.alloc(32)
+  const ctx = Arena.save()
+  const k1 = Arena.alloc(32)
+  const k2 = Arena.alloc(32)
+  const signs = Arena.alloc(2)
+  const acc = Arena.alloc(96)
+  const ty = Arena.alloc(32)
+  const prime = Arena.alloc(32)
 
   decompose(k, k1, k2, signs)
   const neg1 = load<u8>(signs) != 0
@@ -204,5 +204,5 @@ export function multiplyG(res: usize, k: usize): void {
   }
 
   memory.copy(res, acc, 96)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }

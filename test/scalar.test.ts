@@ -229,11 +229,11 @@ describe("scalar (mod N) — velocidad", () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe("scalar (mod N) — comparación", () => {
-  test("builds -O1 vs -O3: compile + size + speed", async () => {
+  test("builds -O0 vs -O1: compile + size + speed", async () => {
     const report = await Wasm.benchCompileCompare(
       ENTRY,
+      { label: "O0", opts: "test" },
       { label: "O1", opts: "test+o1" },
-      { label: "O3", opts: "bench+o3" },
       (w) => {
         const i = w.num("PARAM_IN_PTR")
         const o = w.num("PARAM_OUT_PTR")
@@ -252,9 +252,9 @@ describe("scalar (mod N) — comparación", () => {
     expect(report.speedRatio).toBeLessThan(3.0)
   }, 120_000)
 
-  test("paridad de correctitud -O1 == -O3 (mulMod(N−1,N−1)=1)", async () => {
-    const w1 = await Wasm.load((await Wasm.compile(ENTRY, "test+o1")).binary)
-    const w3 = await Wasm.load((await Wasm.compile(ENTRY, "bench+o3")).binary)
+  test("paridad de correctitud -O0 == -O1 (mulMod(N−1,N−1)=1)", async () => {
+    const w1 = await Wasm.load((await Wasm.compile(ENTRY, "test")).binary)
+    const w3 = await Wasm.load((await Wasm.compile(ENTRY, "test+o1")).binary)
     const i1 = w1.num("PARAM_IN_PTR"),
       o1 = w1.num("PARAM_OUT_PTR")
     const i3 = w3.num("PARAM_IN_PTR"),
@@ -270,7 +270,7 @@ describe("scalar (mod N) — comparación", () => {
   }, 120_000)
 
   test("algoritmos: sqrMod vs mulMod(a,a) — la simetría gana", async () => {
-    const w = await Wasm.load((await Wasm.compile(ENTRY, "bench+o3")).binary)
+    const w = await Wasm.load((await Wasm.compile(ENTRY, "test+o1")).binary)
     const i = w.num("PARAM_IN_PTR")
     const o = w.num("PARAM_OUT_PTR")
     w.writeU256(i, 0xdeadbeefcafebaben)

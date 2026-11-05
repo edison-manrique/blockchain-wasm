@@ -3,7 +3,7 @@
  *  address/constants.ts — Constantes y layout de ADDRESS_WORK
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * Offsets RELATIVOS a ADDRESS_WORK_PTR (ver memory.ts). Los buffers se usan
+ * Offsets RELATIVOS a ADDRESS_WORK_PTR (ver arena.ts). Los buffers se usan
  * de forma secuencial/disjunta dentro de cada función de address/.
  *
  * Version bytes (BIP32 / Bitcoin):

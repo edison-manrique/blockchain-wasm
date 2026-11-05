@@ -36,7 +36,7 @@ function stringToIndices(s: string, ptr: number): void {
 
 describe("base58 — compilación", () => {
   test("compilar y reportar stats", async () => {
-    const cr: CompileResult = await Wasm.compile(ENTRY, { profile: "bench", forceRecompile: true })
+    const cr: CompileResult = await Wasm.compile(ENTRY, { profile: "bench" })
     Wasm.printCompileStats(cr, "bench")
     expect(cr.sizeBytes).toBeGreaterThan(1024)
     expect(cr.sizeBytes).toBeLessThan(65536)

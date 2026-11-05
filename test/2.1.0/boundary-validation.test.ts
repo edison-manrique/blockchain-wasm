@@ -30,8 +30,8 @@ function wasmBytes(): Uint8Array {
   const candidates = [
     join(here, "..", "..", "build", "release.wasm"),
     join(here, "..", "..", "dist", "release.wasm"),
-    join(here, "..", "..", "build", "blockchain.wasm"),
-    join(here, "..", "..", "dist", "blockchain.wasm")
+    join(here, "..", "..", "build", "blockchain-wasm.wasm"),
+    join(here, "..", "..", "dist", "blockchain-wasm.wasm")
   ]
   for (const p of candidates) {
     if (existsSync(p)) return new Uint8Array(readFileSync(p))

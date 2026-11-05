@@ -3,7 +3,7 @@
  *  point/point.ts — Aritmética de curva secp256k1 (coordenadas Jacobianas)
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * Zero-alloc: todos los temporales se reservan en la arena Memory con
+ * Zero-alloc: todos los temporales se reservan en la arena Arena con
  * save/restore (RAII). NO hay registros globales compartidos → es imposible
  * la colisión de registros que plagaba al Point legacy.
  *
@@ -14,7 +14,7 @@
  * entrada (los parciales van a la arena y se copian al destino al final).
  */
 import { GY_0, GY_1, GY_2, GY_3, GX_0, GX_1, GX_2, GX_3, P0, P1, P2, P3 } from "../constants"
-import { Memory } from "../../utils/memory"
+import { Arena } from "../../utils/arena"
 import { mulMod, sqrMod, add, sub, modInverse } from "../field"
 
 // ── Constantes de curva en data segment (cero alloc) ──────────────────────
@@ -114,17 +114,17 @@ export function double(res: usize, p: usize): void {
     return
   }
 
-  const ctx = Memory.save()
-  const A = Memory.alloc(32)
-  const B = Memory.alloc(32)
-  const C = Memory.alloc(32)
-  const D = Memory.alloc(32)
-  const E = Memory.alloc(32)
-  const F = Memory.alloc(32)
-  const t = Memory.alloc(32)
-  const X3 = Memory.alloc(32)
-  const Y3 = Memory.alloc(32)
-  const Z3 = Memory.alloc(32)
+  const ctx = Arena.save()
+  const A = Arena.alloc(32)
+  const B = Arena.alloc(32)
+  const C = Arena.alloc(32)
+  const D = Arena.alloc(32)
+  const E = Arena.alloc(32)
+  const F = Arena.alloc(32)
+  const t = Arena.alloc(32)
+  const X3 = Arena.alloc(32)
+  const Y3 = Arena.alloc(32)
+  const Z3 = Arena.alloc(32)
 
   const x = p
   const y = p + 32
@@ -166,7 +166,7 @@ export function double(res: usize, p: usize): void {
   memory.copy(res + 32, Y3, 32)
   memory.copy(res + 64, Z3, 32)
 
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }
 
 /**
@@ -183,22 +183,22 @@ export function addPoint(res: usize, p: usize, q: usize): void {
     return
   }
 
-  const ctx = Memory.save()
-  const z1z1 = Memory.alloc(32)
-  const z2z2 = Memory.alloc(32)
-  const u1 = Memory.alloc(32)
-  const u2 = Memory.alloc(32)
-  const s1 = Memory.alloc(32)
-  const s2 = Memory.alloc(32)
-  const h = Memory.alloc(32)
-  const r = Memory.alloc(32)
-  const h2 = Memory.alloc(32)
-  const h3 = Memory.alloc(32)
-  const v = Memory.alloc(32)
-  const t = Memory.alloc(32)
-  const X3 = Memory.alloc(32)
-  const Y3 = Memory.alloc(32)
-  const Z3 = Memory.alloc(32)
+  const ctx = Arena.save()
+  const z1z1 = Arena.alloc(32)
+  const z2z2 = Arena.alloc(32)
+  const u1 = Arena.alloc(32)
+  const u2 = Arena.alloc(32)
+  const s1 = Arena.alloc(32)
+  const s2 = Arena.alloc(32)
+  const h = Arena.alloc(32)
+  const r = Arena.alloc(32)
+  const h2 = Arena.alloc(32)
+  const h3 = Arena.alloc(32)
+  const v = Arena.alloc(32)
+  const t = Arena.alloc(32)
+  const X3 = Arena.alloc(32)
+  const Y3 = Arena.alloc(32)
+  const Z3 = Arena.alloc(32)
 
   const x1 = p
   const y1 = p + 32
@@ -218,11 +218,11 @@ export function addPoint(res: usize, p: usize, q: usize): void {
 
   if (eqField(u1, u2)) {
     if (eqField(s1, s2)) {
-      Memory.restore(ctx)
+      Arena.restore(ctx)
       double(res, p)      // P == Q
       return
     }
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     setInfinity(res)      // P == −Q
     return
   }
@@ -250,7 +250,7 @@ export function addPoint(res: usize, p: usize, q: usize): void {
   memory.copy(res + 32, Y3, 32)
   memory.copy(res + 64, Z3, 32)
 
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }
 
 /**
@@ -268,20 +268,20 @@ export function addMixed(res: usize, p: usize, q_x: usize, q_y: usize): void {
     return
   }
 
-  const ctx = Memory.save()
-  const z1z1 = Memory.alloc(32)
-  const u2 = Memory.alloc(32)
-  const z1z1z1 = Memory.alloc(32)
-  const s2 = Memory.alloc(32)
-  const h = Memory.alloc(32)
-  const r = Memory.alloc(32)
-  const h2 = Memory.alloc(32)
-  const h3 = Memory.alloc(32)
-  const v = Memory.alloc(32)
-  const t = Memory.alloc(32)
-  const X3 = Memory.alloc(32)
-  const Y3 = Memory.alloc(32)
-  const Z3 = Memory.alloc(32)
+  const ctx = Arena.save()
+  const z1z1 = Arena.alloc(32)
+  const u2 = Arena.alloc(32)
+  const z1z1z1 = Arena.alloc(32)
+  const s2 = Arena.alloc(32)
+  const h = Arena.alloc(32)
+  const r = Arena.alloc(32)
+  const h2 = Arena.alloc(32)
+  const h3 = Arena.alloc(32)
+  const v = Arena.alloc(32)
+  const t = Arena.alloc(32)
+  const X3 = Arena.alloc(32)
+  const Y3 = Arena.alloc(32)
+  const Z3 = Arena.alloc(32)
 
   const x1 = p
   const y1 = p + 32
@@ -294,11 +294,11 @@ export function addMixed(res: usize, p: usize, q_x: usize, q_y: usize): void {
 
   if (eqField(x1, u2)) {
     if (eqField(y1, s2)) {
-      Memory.restore(ctx)
+      Arena.restore(ctx)
       double(res, p)
       return
     }
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     setInfinity(res)
     return
   }
@@ -325,14 +325,14 @@ export function addMixed(res: usize, p: usize, q_x: usize, q_y: usize): void {
   memory.copy(res + 32, Y3, 32)
   memory.copy(res + 64, Z3, 32)
 
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }
 
 /** Negación: res = −P = (X, P−Y, Z). Aliasing-safe. */
 export function negate(res: usize, p: usize): void {
-  const ctx = Memory.save()
-  const prime = Memory.alloc(32)
-  const Y3 = Memory.alloc(32)
+  const ctx = Arena.save()
+  const prime = Arena.alloc(32)
+  const Y3 = Arena.alloc(32)
   store<u64>(prime, P0)
   store<u64>(prime, P1, 8)
   store<u64>(prime, P2, 16)
@@ -341,7 +341,7 @@ export function negate(res: usize, p: usize): void {
   memory.copy(res, p, 32)
   memory.copy(res + 32, Y3, 32)
   memory.copy(res + 64, p + 64, 32)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }
 
 /**
@@ -361,12 +361,12 @@ export function toAffine(res: usize, p: usize): void {
     store<u64>(res, 0, 56)
     return
   }
-  const ctx = Memory.save()
-  const zi = Memory.alloc(32)
-  const zi2 = Memory.alloc(32)
-  const zi3 = Memory.alloc(32)
-  const X = Memory.alloc(32)
-  const Y = Memory.alloc(32)
+  const ctx = Arena.save()
+  const zi = Arena.alloc(32)
+  const zi2 = Arena.alloc(32)
+  const zi3 = Arena.alloc(32)
+  const X = Arena.alloc(32)
+  const Y = Arena.alloc(32)
 
   modInverse(zi, p + 64)   // zi = Z⁻¹
   sqrMod(zi2, zi)          // zi² = Z⁻²
@@ -376,7 +376,56 @@ export function toAffine(res: usize, p: usize): void {
 
   memory.copy(res, X, 32)
   memory.copy(res + 32, Y, 32)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
+}
+
+/**
+ * Batch Jacobiano → Afín con UNA sola inversión modular (Montgomery).
+ *
+ * Normaliza `src[i]` (Jacobiano 96 B, stride 96) a `dest[i]` (afín 64 B,
+ * stride 64) para i ∈ [0, n). `dest` y `src` deben ser zonas distintas (o
+ * como mínimo no solaparse de forma peligrosa).
+ *
+ * Sustituye N llamadas a `toAffine` (N modInverse) por 1 modInverse + 3N mul.
+ * Se usa al construir las tablas wNAF de un punto arbitrario (ECDH, ECDSA
+ * verify, Schnorr verify), donde antes se pagaban 8 inversas por tabla.
+ */
+export function batchToAffine(dest: usize, src: usize, n: i32): void {
+  if (n <= 0) return
+  const ctx = Arena.save()
+  const products = Arena.alloc(<usize>(n * 32))
+  const invZs = Arena.alloc(<usize>(n * 32))
+  const tmp = Arena.alloc(32)
+  const zi2 = Arena.alloc(32)
+  const zi3 = Arena.alloc(32)
+
+  // products[i] = Z_0 · Z_1 · … · Z_i
+  memory.copy(products, src + 64, 32)
+  for (let i: i32 = 1; i < n; i++) {
+    mulMod(products + <usize>(i * 32), products + <usize>((i - 1) * 32), src + <usize>(i * 96) + 64)
+  }
+
+  // tmp = (Z_0 · … · Z_{n-1})⁻¹
+  modInverse(tmp, products + <usize>((n - 1) * 32))
+
+  // invZs[i] = tmp · products[i-1] ; tmp ← tmp · Z_i  (de n-1 a 1)
+  for (let i: i32 = n - 1; i > 0; i--) {
+    mulMod(invZs + <usize>(i * 32), tmp, products + <usize>((i - 1) * 32))
+    mulMod(tmp, tmp, src + <usize>(i * 96) + 64)
+  }
+  memory.copy(invZs, tmp, 32) // invZs[0]
+
+  for (let i: i32 = 0; i < n; i++) {
+    const iz = invZs + <usize>(i * 32)
+    const s = src + <usize>(i * 96)
+    const d = dest + <usize>(i * 64)
+    sqrMod(zi2, iz)
+    mulMod(zi3, zi2, iz)
+    mulMod(d, s, zi2)
+    mulMod(d + 32, s + 32, zi3)
+  }
+
+  Arena.restore(ctx)
 }
 
 /**
@@ -384,20 +433,20 @@ export function toAffine(res: usize, p: usize): void {
  *   X1·Z2² == X2·Z1²  ∧  Y1·Z2³ == Y2·Z1³
  */
 export function eqJacobian(a: usize, b: usize): bool {
-  const ctx = Memory.save()
-  const z1_2 = Memory.alloc(32)
-  const z2_2 = Memory.alloc(32)
-  const z1_3 = Memory.alloc(32)
-  const z2_3 = Memory.alloc(32)
-  const t1 = Memory.alloc(32)
-  const t2 = Memory.alloc(32)
+  const ctx = Arena.save()
+  const z1_2 = Arena.alloc(32)
+  const z2_2 = Arena.alloc(32)
+  const z1_3 = Arena.alloc(32)
+  const z2_3 = Arena.alloc(32)
+  const t1 = Arena.alloc(32)
+  const t2 = Arena.alloc(32)
 
   sqrMod(z1_2, a + 64)
   sqrMod(z2_2, b + 64)
   mulMod(t1, a, z2_2)      // X1·Z2²
   mulMod(t2, b, z1_2)      // X2·Z1²
   if (!eqField(t1, t2)) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return false
   }
   mulMod(z1_3, z1_2, a + 64)
@@ -405,6 +454,6 @@ export function eqJacobian(a: usize, b: usize): bool {
   mulMod(t1, a + 32, z2_3) // Y1·Z2³
   mulMod(t2, b + 32, z1_3) // Y2·Z1³
   const ok = eqField(t1, t2)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   return ok
 }

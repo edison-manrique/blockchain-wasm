@@ -33,7 +33,7 @@
  *   bip39_mnemonic_to_seed(outPtr, mnPtr, mnLen, passPtr, passLen) → 64
  *   bip39_validate_mnemonic(mnPtr, mnLen) → bool
  */
-import { HASH_WORK_PTR, align8 } from "../../utils/memory"
+import { HASH_WORK_PTR, align8 } from "../../utils/arena"
 import { sha256_hash_raw, sha512_pbkdf2_raw } from "../../hash/sha2"
 import { WORDLIST_EN } from "./wordlist_en"
 

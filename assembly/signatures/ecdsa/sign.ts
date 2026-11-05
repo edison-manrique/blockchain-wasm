@@ -10,9 +10,9 @@
  *       recId = paridad de R.y (bit 0), flippeado si se canoniza s.
  *
  * Usa toAffine (más limpio que el z_inv manual del original).
- * Zero-alloc: temporales en CRYPTO_WORK (Memory.save/restore, LIFO).
+ * Zero-alloc: temporales en CRYPTO_WORK (Arena.save/restore, LIFO).
  */
-import { Memory } from "../../utils/memory"
+import { Arena } from "../../utils/arena"
 import { N0, N1, N2, N3 } from "../../secp256k1/constants"
 import {
   fromBytesPtr,
@@ -44,18 +44,18 @@ export function ecdsa_sign(
   hashPtr32: usize,
   privPtr32: usize,
 ): i32 {
-  const ctx = Memory.save()
-  const z = Memory.alloc(32)
-  const d = Memory.alloc(32)
-  const k = Memory.alloc(32)
-  const R = Memory.alloc(96)
-  const r = Memory.alloc(32)
-  const k_inv = Memory.alloc(32)
-  const rd = Memory.alloc(32)
-  const z_rd = Memory.alloc(32)
-  const s = Memory.alloc(32)
-  const n_half = Memory.alloc(32)
-  const N = Memory.alloc(32)
+  const ctx = Arena.save()
+  const z = Arena.alloc(32)
+  const d = Arena.alloc(32)
+  const k = Arena.alloc(32)
+  const R = Arena.alloc(96)
+  const r = Arena.alloc(32)
+  const k_inv = Arena.alloc(32)
+  const rd = Arena.alloc(32)
+  const z_rd = Arena.alloc(32)
+  const s = Arena.alloc(32)
+  const n_half = Arena.alloc(32)
+  const N = Arena.alloc(32)
 
   store<u64>(N, N0)
   store<u64>(N, N1, 8)
@@ -77,7 +77,7 @@ export function ecdsa_sign(
   // R = k·G → afín
   multiplyG(R, k)
   if (isInfinity(R)) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return ECDSA_ERR_K_INF
   }
   toAffine(R, R)
@@ -86,7 +86,7 @@ export function ecdsa_sign(
   memory.copy(r, R, 32)
   reduceScalar(r)
   if (isZero(r)) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return ECDSA_ERR_R_ZERO
   }
 
@@ -100,7 +100,7 @@ export function ecdsa_sign(
   scalarAdd(z_rd, z, rd)
   scalarMul(s, k_inv, z_rd)
   if (isZero(s)) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return ECDSA_ERR_S_ZERO
   }
 
@@ -115,6 +115,6 @@ export function ecdsa_sign(
   toBytesPtr(s, out65 + 32)
   store<u8>(out65 + 64, recId)
 
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   return 65
 }

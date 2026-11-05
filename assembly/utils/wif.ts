@@ -37,8 +37,8 @@
  *   const compressed = flags === 2
  *   const key = wasm.read(OUT, 32)
  */
-import { HASH_WORK_PTR, align8 } from "./memory"
-export { PARAM_IN_PTR, PARAM_OUT_PTR } from "./memory"
+import { HASH_WORK_PTR, align8 } from "./arena"
+export { PARAM_IN_PTR, PARAM_OUT_PTR } from "./arena"
 import { base58check_encode_raw, base58check_decode_raw } from "./base58"
 // ✅ Re-exportar para que el test pueda acceder desde el mismo módulo WASM
 export { base58_indices_to_ascii, base58_ascii_to_indices, base58check_encode_raw } from "./base58"

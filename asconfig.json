@@ -1,8 +1,8 @@
 {
   "targets": {
     "debug": {
-      "outFile": "debug/blockchain.wasm",
-      "textFile": "debug/blockchain.wat",
+      "outFile": "debug/blockchain-wasm.wasm",
+      "textFile": "debug/blockchain-wasm.wat",
       "sourceMap": true,
       "debug": true,
       "initialMemory": 11,
@@ -10,7 +10,7 @@
       "runtime": "stub"
     },
     "release": {
-      "outFile": "dist/blockchain.wasm",
+      "outFile": "dist/blockchain-wasm.wasm",
       "optimizeLevel": 3,
       "shrinkLevel": 2,
       "converge": true,

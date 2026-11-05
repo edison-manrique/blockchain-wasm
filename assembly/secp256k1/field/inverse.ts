@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════
  *
  * modInverse: res = a⁻¹ mod P, vía Binary Extended Euclidean Algorithm (BEEA).
- * Usa la arena `Memory` para los 4 buffers de trabajo (u, v, x1, x2) y los
+ * Usa la arena `Arena` para los 4 buffers de trabajo (u, v, x1, x2) y los
  * libera con save/restore al terminar (zero-alloc en el heap).
  *
  * ⚠️ SEGURIDAD: este BEEA NO es constant-time (los while-loops dependen de los
@@ -16,10 +16,7 @@
  * Lógica EXACTA del BigInt256.modInverse original.
  */
 import { P0, P1, P2, P3 } from "../constants"
-// ⚠️ AJUSTA esta ruta a donde viva tu arena Memory (en aead-wasm estaba en
-// assembly/memory.ts → desde field/ son dos niveles: "../../memory". Si tu
-// proyecto la tiene en utils/Memory como el bigint256 original, usa esa ruta).
-import { Memory } from "../../utils/memory"
+import { Arena } from "../../utils/arena"
 import { isZero, shr1Raw, cmp, subRaw } from "./raw"
 import { sub, addP_shr1 } from "./addsub"
 
@@ -35,11 +32,11 @@ export function modInverse(res: usize, a: usize): void {
     return
   }
 
-  const ctx = Memory.save()
-  const u = Memory.alloc(32)
-  const v = Memory.alloc(32)
-  const x1 = Memory.alloc(32)
-  const x2 = Memory.alloc(32)
+  const ctx = Arena.save()
+  const u = Arena.alloc(32)
+  const v = Arena.alloc(32)
+  const x1 = Arena.alloc(32)
+  const x2 = Arena.alloc(32)
 
   memory.copy(u, a, 32)
   store<u64>(v, P0)
@@ -85,5 +82,5 @@ export function modInverse(res: usize, a: usize): void {
   }
 
   memory.copy(res, x2, 32)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }

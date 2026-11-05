@@ -23,7 +23,7 @@
  *   bech32_charset_to_ascii(idxPtr, len)
  *   bech32_ascii_to_charset(srcPtr, len) → 0 | -1
  */
-import { HASH_WORK_PTR, align8 } from "./memory"
+import { HASH_WORK_PTR, align8 } from "./arena"
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONSTANTES
@@ -310,4 +310,4 @@ export function bech32_ascii_to_charset(srcPtr: usize, len: u32): i32 {
 // RE-EXPORTS
 // ═══════════════════════════════════════════════════════════════════════════
 
-export { PARAM_IN_PTR, PARAM_OUT_PTR } from "./memory"
+export { PARAM_IN_PTR, PARAM_OUT_PTR } from "./arena"

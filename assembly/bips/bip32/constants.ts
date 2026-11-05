@@ -5,7 +5,7 @@
  *
  * Todo es compile-time (StaticArray / const). Sin heap, sin ejecución en
  * _start. Los offsets del xkey y de BIP32_WORK son relativos a la base que
- * el caller (o memory.ts) provea.
+ * el caller (o arena.ts) provea.
  */
 
 // ═══════════════════════════════════════════════════════════════════════════

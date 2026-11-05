@@ -5,7 +5,7 @@
  */
 
 import path from "node:path"
-import { existsSync } from "node:fs"
+import { existsSync, mkdirSync, writeFileSync, unlinkSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import type { CompileOptions, Profile, UncheckedBehavior, BindingsType, TrapMode, WasmFeature, DisableFeature } from "./types.js"
 
@@ -17,33 +17,74 @@ const __dirname: string =
 
 export const ROOT = path.resolve(__dirname, "..", "..", "..")
 
+function isWritableDir(dir: string): boolean {
+  try {
+    // `mkdirSync` sobre una raíz de unidad existente (`R:\`) lanza EPERM en
+    // Windows: solo creamos el directorio si realmente no existe.
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+    const probe = path.join(dir, `.probe-${process.pid}-${Date.now()}`)
+    writeFileSync(probe, "1")
+    unlinkSync(probe)
+    return true
+  } catch {
+    return false
+  }
+}
+
 /**
- * Raíz para escrituras en modo "disk".
+ * Raíz para caché de builds.
  * Prioriza:
- *  1) Variable de entorno `process.env.WASM_RAMDISK`
- *  2) Unidades o puntos de montaje RAM habituales
- *  3) Directorio local `.wasm-disk`
+ *  1) Variable de entorno `WASM_RAMDISK`
+ *  2) Unidades / puntos de montaje en RAM habituales (`R:\` en Windows)
+ *  3) Directorio local `.wasm-cache`
+ *
+ * Los artefactos viven SIEMPRE aquí; los tests no escriben en el repo.
  */
 export const DISK_ROOT: string = (() => {
-  if (process.env.WASM_RAMDISK && existsSync(process.env.WASM_RAMDISK)) {
-    return process.env.WASM_RAMDISK
-  }
-  const candidates = ["R:\\", "/mnt/ramdisk", "/tmp/wasm-build"]
+  const fromEnv = process.env.WASM_RAMDISK
+  if (fromEnv && existsSync(fromEnv) && isWritableDir(fromEnv)) return fromEnv
+
+  const candidates =
+    process.platform === "win32"
+      ? ["R:\\", "C:\\Temp\\wasm-ram"]
+      : ["/dev/shm", "/mnt/ramdisk", "/tmp"]
+
   for (const c of candidates) {
     try {
-      if (existsSync(c)) return c
+      if (existsSync(c) && isWritableDir(c)) return c
     } catch { /* ignore */ }
   }
-  return path.resolve(ROOT, ".wasm-disk")
+  return path.resolve(ROOT, ".wasm-cache")
 })()
 
-export const CACHE_DIR = path.resolve(DISK_ROOT, ".wasm-cache")
+/** Directorio de caché L2 (binarios `.wasm` + metadatos `.json`). */
+export const CACHE_DIR: string = path.resolve(
+  process.env.WASM_CACHE_DIR || path.join(DISK_ROOT, ".wasm-cache-blockchain")
+)
+
+/** Máximo de bytes del caché L2 antes de podar los artefactos más antiguos. */
+export const CACHE_MAX_BYTES: number = Number(process.env.WASM_CACHE_MAX_BYTES || 96 * 1024 * 1024)
+
+/** Caché L2 deshabilitable por entorno (útil para medir builds en frío). */
+export function isCacheEnabled(): boolean {
+  const v = process.env.WASM_NO_CACHE
+  return !(v === "1" || v === "true")
+}
 
 export const PROFILE_FLAGS: Record<Profile, string[]> = {
-  bench: ["-O3", "--shrinkLevel", "2", "--noAssert", "--converge", "--runtime", "stub"],
+  // `release`: máxima optimización, solo para el binario publicado (`dist/`).
+  // Es MUY lento (minutos en los barrels), por eso ningún test lo usa.
+  release: ["-O3", "--shrinkLevel", "2", "--noAssert", "--converge", "--runtime", "stub"],
+  // `bench`: build optimizado para medir velocidad en tests. -O1 compila 3–8×
+  // más rápido que -O3 y el rendimiento medido es equivalente para las
+  // comprobaciones de sanidad de la suite.
+  bench: ["-O1", "--noAssert", "--runtime", "stub"],
   fast: ["-Ospeed", "--noAssert", "--converge", "--runtime", "stub"],
   small: ["-Osize", "--shrinkLevel", "2", "--noAssert", "--converge", "--runtime", "stub"],
-  test: ["-O1", "--noAssert", "--runtime", "stub"],
+  // Correctitud: -O0 compila 10–20× más rápido y no altera la semántica.
+  test: ["-O0", "--noAssert", "--runtime", "stub"],
+  // Variante -O1 (solo para comparativas de builds).
+  test1: ["-O1", "--noAssert", "--runtime", "stub"],
   safe: ["-O0", "--debug", "--sourceMap", "--runtime", "stub"],
   debug: ["-O0", "--debug", "--sourceMap", "--runtime", "stub"]
 }
@@ -76,6 +117,7 @@ export function parseShorthand(shorthand: string): CompileOptions {
 
     switch (p) {
       case "bench": case "b": opts.profile = "bench"; continue
+      case "release": case "r": opts.profile = "release"; continue
       case "fast": case "f": opts.profile = "fast"; continue
       case "small": case "s": opts.profile = "small"; continue
       case "test": case "t": opts.profile = "test"; continue

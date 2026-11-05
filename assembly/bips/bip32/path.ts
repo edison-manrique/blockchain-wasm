@@ -13,7 +13,7 @@
  * Path-walking: alterna entre xkeyA y xkeyB (BIP32_WORK[0..176)) como
  * current/next. bip32_derive() usa BIP32_WORK[176+] internamente → sin solape.
  */
-import { BIP32_WORK_PTR, align8 } from "../../utils/memory"
+import { BIP32_WORK_PTR, align8 } from "../../utils/arena"
 import { HARDENED_OFFSET, BW_XKEY_A, BW_XKEY_B, BIP32_OK, BIP32_ERR_INVALID_PATH } from "./constants"
 import { copyXkey } from "./xkey"
 import { bip32_derive } from "./ckd"

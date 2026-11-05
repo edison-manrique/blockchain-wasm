@@ -18,12 +18,13 @@
  *   pubkeyUncompressedFromPrivkey(out65, priv32)   priv → uncompressed
  *   compressRaw(out33, pub, len) → 33 | -1
  *   uncompressRaw(out65, pub33)  → 65 | -1
+ *   pubkeyValidateRaw(pub, len)  → 1 | 0   (validación de curva OPT-IN)
  *
  * El wrapper TS convierte outPtr → string con TextDecoder (única alloc).
  */
 
 // ── Punteros de I/O ───────────────────────────────────────────────────────
-export { PARAM_IN_PTR, PARAM_OUT_PTR, ADDRESS_WORK_PTR } from "../utils/memory"
+export { PARAM_IN_PTR, PARAM_OUT_PTR, ADDRESS_WORK_PTR } from "../utils/arena"
 
 // ── Códigos de error / versiones (para el wrapper) ────────────────────────
 export { ADDR_OK, ADDR_ERR_PUBKEY, ADDR_ERR_CONVERT, VER_P2PKH, VER_P2SH } from "./constants"
@@ -38,4 +39,10 @@ export { eth_address } from "./eth"
 export { tron_address } from "./tron"
 
 // ── Utilidades de clave pública (re-export desde el módulo compartido) ────
-export { pubkeyFromPrivkey, pubkeyUncompressedFromPrivkey, compressRaw, uncompressRaw } from "../utils/pubkey"
+export {
+  pubkeyFromPrivkey,
+  pubkeyUncompressedFromPrivkey,
+  compressRaw,
+  uncompressRaw,
+  pubkeyValidateRaw
+} from "../utils/pubkey"

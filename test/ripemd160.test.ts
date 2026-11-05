@@ -22,7 +22,7 @@ const hex = (bytes: Uint8Array): string => Wasm.bytesToHex(bytes)
 
 describe("ripemd160 — compilación", () => {
   test("compilar y reportar stats", async () => {
-    const cr: CompileResult = await Wasm.compile(ENTRY, { profile: "bench", forceRecompile: true })
+    const cr: CompileResult = await Wasm.compile(ENTRY, { profile: "bench" })
     Wasm.printCompileStats(cr, "bench")
     expect(cr.sizeBytes).toBeGreaterThan(512)
     expect(cr.sizeBytes).toBeLessThan(51200)

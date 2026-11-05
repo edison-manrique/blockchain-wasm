@@ -11,9 +11,16 @@
  * Aceptan pubkey compressed (33 B) o uncompressed (65 B). Cada función escribe
  * el string ASCII completo en outPtr y retorna su longitud (o < 0 si error).
  *
+ * ⚡ SEGURIDAD OPCIONAL: solo se valida el FORMATO (prefijo) y, cuando el
+ * algoritmo lo exige, se descomprime el punto (P2TR/Bech32 necesitan Y).
+ * La pertenencia a la curva NO se comprueba aquí: es un chequeo explícito
+ * (`pubkeyValidateRaw`, `Secp256k1.isValid`) para no pagar el sqrt modular en
+ * cada dirección. Los llamadores que reciban claves de fuentes no confiables
+ * deben validarlas antes.
+ *
  * Buffers en ADDRESS_WORK; hashing en HASH_WORK; curva en CRYPTO_WORK. Disjuntos.
  */
-import { ADDRESS_WORK_PTR, align8, Memory } from "../utils/memory"
+import { ADDRESS_WORK_PTR, align8, Arena } from "../utils/arena"
 import { sha256_hash_raw } from "../hash/sha2"
 import { ripemd160_hash_raw } from "../hash/ripemd160"
 import { base58check_encode_raw, base58_indices_to_ascii } from "../utils/base58"
@@ -21,7 +28,7 @@ import {
   bech32_encode_raw, convert_bits_raw, bech32_charset_to_ascii,
   BECH32_CONST, BECH32M_CONST
 } from "../utils/bech32"
-import { decompressXY, isOnCurveXY } from "../utils/pubkey"
+import { decompressXY } from "../utils/pubkey"
 import { fromBytesPtr, toBytesPtr } from "../secp256k1/field"
 import { multiplyG } from "../secp256k1/generator"
 import { addPoint, toAffine } from "../secp256k1/point"
@@ -56,46 +63,12 @@ function validPubPrefix(pubPtr: usize, pubLen: u32): bool {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// HELPER: validación de pertenencia a la curva (BLOQUE 3)
-// ═══════════════════════════════════════════════════════════════════════════
-/**
- * Valida que la pubkey esté en la curva:
- *   • 33 B → lift de X (sqrt + verificación y² ≡ x³+7)
- *   • 65 B → verificación directa de (X, Y)
- * Zero-alloc: limbs temporales en CRYPTO_WORK (disjunto de ADDRESS/HASH_WORK).
- */
-// @ts-ignore
-@inline
-function pubkeyOnCurve(pubPtr: usize, pubLen: u32): bool {
-  if (pubLen == 33) {
-    const ctx = Memory.save()
-    const x = Memory.alloc(32)
-    const y = Memory.alloc(32)
-    const ok: bool = decompressXY(x, y, pubPtr) // valida prefijo + curva
-    Memory.restore(ctx)
-    return ok
-  }
-  if (pubLen == 65 && load<u8>(pubPtr) == 0x04) {
-    const ctx = Memory.save()
-    const x = Memory.alloc(32)
-    const y = Memory.alloc(32)
-    fromBytesPtr(x, pubPtr + 1)  // X (BE → limbs)
-    fromBytesPtr(y, pubPtr + 33) // Y (BE → limbs)
-    const ok: bool = isOnCurveXY(x, y)
-    Memory.restore(ctx)
-    return ok
-  }
-  return false
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
 // P2PKH  —  Base58Check( 0x00 ‖ hash160(pub) )
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function btc_p2pkh(outPtr: usize, pubPtr: usize, pubLen: u32): i32 {
   const work = align8(ADDRESS_WORK_PTR)
   if (!validPubPrefix(pubPtr, pubLen)) return ADDR_ERR_PUBKEY
-  if (!pubkeyOnCurve(pubPtr, pubLen)) return ADDR_ERR_PUBKEY // ✅ FIX (BLOQUE 3)
   hash160Raw(work + AW_RIPEMD_TMP, pubPtr, pubLen)
   store<u8>(work + AW_PAYLOAD, VER_P2PKH) // 0x00
   memory.copy(work + AW_PAYLOAD + 1, work + AW_RIPEMD_TMP, 20)
@@ -112,7 +85,6 @@ export function btc_p2pkh(outPtr: usize, pubPtr: usize, pubLen: u32): i32 {
 export function btc_p2sh_p2wpkh(outPtr: usize, pubPtr: usize, pubLen: u32): i32 {
   const work = align8(ADDRESS_WORK_PTR)
   if (!validPubPrefix(pubPtr, pubLen)) return ADDR_ERR_PUBKEY
-  if (!pubkeyOnCurve(pubPtr, pubLen)) return ADDR_ERR_PUBKEY // ✅ FIX (BLOQUE 3)
 
   // redeemScript = 0x00 0x14 ‖ hash160(pub)   (22 B)
   hash160Raw(work + AW_RIPEMD_TMP, pubPtr, pubLen)
@@ -140,7 +112,6 @@ export function btc_p2sh_p2wpkh(outPtr: usize, pubPtr: usize, pubLen: u32): i32 
 export function btc_p2wpkh(outPtr: usize, pubPtr: usize, pubLen: u32): i32 {
   const work = align8(ADDRESS_WORK_PTR)
   if (!validPubPrefix(pubPtr, pubLen)) return ADDR_ERR_PUBKEY
-  if (!pubkeyOnCurve(pubPtr, pubLen)) return ADDR_ERR_PUBKEY // ✅ FIX (BLOQUE 3)
 
   hash160Raw(work + AW_RIPEMD_TMP, pubPtr, pubLen) // 20 B
 
@@ -174,9 +145,9 @@ export function btc_p2tr(outPtr: usize, pubPtr: usize, pubLen: u32): i32 {
   const work = align8(ADDRESS_WORK_PTR)
   if (!validPubPrefix(pubPtr, pubLen)) return ADDR_ERR_PUBKEY
 
-  const ctx = Memory.save()
-  const tBig = Memory.alloc(32)
-  const affine = Memory.alloc(64)
+  const ctx = Arena.save()
+  const tBig = Arena.alloc(32)
+  const affine = Arena.alloc(64)
 
   // 1. x-only con prefijo 0x02 (levanta P con Y par, como exige BIP-341)
   store<u8>(work + AW_XBUF, 0x02)
@@ -187,7 +158,7 @@ export function btc_p2tr(outPtr: usize, pubPtr: usize, pubLen: u32): i32 {
   //    Válido para entrada compressed Y uncompressed (AW_XBUF fuerza el lift
   //    con Y par sobre la misma X en ambos casos).
   if (!decompressXY(work + AW_P, work + AW_P + 32, work + AW_XBUF)) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return ADDR_ERR_PUBKEY
   }
   store<u64>(work + AW_P + 64, 1)
@@ -220,7 +191,7 @@ export function btc_p2tr(outPtr: usize, pubPtr: usize, pubLen: u32): i32 {
   // 8. convert 8→5 + witness v1
   const convLen: i32 = convert_bits_raw(work + AW_BECH32_DATA + 1, work + AW_XBUF, 32, 8, 5, true)
   if (convLen < 0) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return ADDR_ERR_CONVERT
   }
   store<u8>(work + AW_BECH32_DATA, 1) // witness v1
@@ -235,12 +206,12 @@ export function btc_p2tr(outPtr: usize, pubPtr: usize, pubLen: u32): i32 {
   const dataLen: u32 = <u32>convLen + 1
   const idxLen: i32 = bech32_encode_raw(outPtr + 3, work + AW_XBUF, 2, work + AW_BECH32_DATA, dataLen, BECH32M_CONST)
   if (idxLen <= 0) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return -1
   }
   bech32_charset_to_ascii(outPtr + 3, <u32>idxLen)
 
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   return 3 + idxLen
 }
 
@@ -256,7 +227,6 @@ export function btc_p2pkh_uncompressed(outPtr: usize, pubPtr: usize, pubLen: u32
   const work = align8(ADDRESS_WORK_PTR)
   // Solo acepta 65 B con prefijo 0x04
   if (pubLen != 65 || load<u8>(pubPtr) != 0x04) return ADDR_ERR_PUBKEY
-  if (!pubkeyOnCurve(pubPtr, pubLen)) return ADDR_ERR_PUBKEY // ✅ HARDENING v2.1.0
   hash160Raw(work + AW_RIPEMD_TMP, pubPtr, pubLen)
   store<u8>(work + AW_PAYLOAD, VER_P2PKH) // 0x00
   memory.copy(work + AW_PAYLOAD + 1, work + AW_RIPEMD_TMP, 20)

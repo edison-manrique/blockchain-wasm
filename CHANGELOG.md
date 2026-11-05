@@ -1,5 +1,145 @@
 # 📦 CHANGELOG — blockchain-wasm
 
+## [3.3.0] — limpieza MuSig2 + suite de tests ultrarrápida
+
+> **Versión previa:** 3.2.1
+> **Tipo de release:** _minor_ — **elimina la API pública de MuSig2**, renombra el módulo
+> interno `Memory` a `Arena`, cambia el nombre del binario a `blockchain-wasm.wasm` y
+> optimiza el wrapper TypeScript. El resto de la API no cambia.
+
+### 🗑️ Eliminado — MuSig2 (BIP-326/327)
+
+- `Musig2` deja de existir en el wrapper (`src/musig2.ts`, export en `src/index.ts`,
+  tipos y constantes `MUSIG_*`, `negatePrivateKey`).
+- Eliminados `assembly/signatures/schnorr/musig2/*`, las primitivas MuSig de
+  `schnorr/core.ts` y los tags/errores/tamaños MuSig.
+- Eliminados tests, vectores BIP-327 (`test/3.0.0/musig2.test.ts`,
+  `test/3.0.0/vectors/bip-327/`), benchmarks y la página `playground/multisig.html`.
+- Motivo: ~1.400 LOC muertas que se compilaban en cada build que importaba Schnorr.
+
+### ♻️ Interno — `Memory` → `Arena`
+
+- `assembly/utils/memory.ts` pasa a **`assembly/utils/arena.ts`** (minúsculas) y la clase
+  `Memory` pasa a `Arena` (`Arena.alloc/save/restore/wipe`). Ningún módulo importa ya `Memory`.
+- Corregido el desajuste de mayúsculas (`Memory.ts` en git vs imports `memory`) que
+  rompía en sistemas de archivos case-sensitive.
+
+### 📦 Binario — `dist/blockchain-wasm.wasm`
+
+- `asconfig.json` (`debug` y `release`), `getDefaultWasmUrl()`, `package.json`
+  (`exports["./blockchain-wasm.wasm"]`), tests de wrapper, `test/bench.ts` y README
+  apuntan al nuevo nombre **`blockchain-wasm.wasm`** (226.432 B en esa fase; **241.650 B**
+  tras las optimizaciones de sqrt/batch).
+- `playground/` queda sin tocar por la reestructuración en curso.
+
+### 🚀 Wrapper — menos asignaciones en el hot path
+
+- Nuevo benchmark `scripts/bench-wrapper.ts` (`bun run bench:wrapper`) que mide el bundle
+  publicado `dist/index.js` contra `dist/blockchain-wasm.wasm`, con comparación A/B
+  intercalada fachada vs singleton.
+- Overhead medido del wrapper: **~1–3 %** en criptografía pesada y **< 1 %** en
+  direcciones/WIF.
+- `types.ts`: `TextEncoder` compartido (`toUint8Array` ya no construye uno por llamada).
+- `allocator.ts`: `readOutputString()` decodifica directamente desde el heap
+  (`subarray`, sin copia intermedia) y comparte un único `TextDecoder`.
+- `Address.fromPrivateKey` reutiliza una sola instancia del singleton.
+- `ecdsaSign`/`ecdsaSignMessage`: una copia de 65 B y `r`/`s` como vistas del buffer propio.
+
+### ⚡ Seguridad opt-in — la curva ya no se valida en el hot path
+
+- Nuevo export WASM **`pubkeyValidateRaw(pubPtr, pubLen) → 1|0`** (33/64/65 B) y
+  fachada **`Secp256k1.isValid(pub)`**. Es el único punto que hace el exp mod P.
+- **Las direcciones dejan de validar la curva**: `btc_p2pkh`, `btc_p2wpkh`,
+  `btc_p2sh_p2wpkh`, `btc_p2pkh_uncompressed`, `eth_address` y `tron_address` solo
+  comprueban formato/longitud. `p2tr` y `eth`/`tron` con pubkey compressed siguen
+  descomprimiendo porque el algoritmo necesita `Y` (coste inherente, no validación).
+- `isValidPoint` del wrapper ahora delega en `pubkeyValidateRaw` (una sola llamada,
+  sin `copyWithin` ni comparación byte a byte de Y).
+- Medición: `Secp256k1.isValid` ≈ **66 µs** en esa fase (**27,1 µs** tras la
+  cadena de sqrt de la sección de optimización); `p2pkh` baja de ~72 µs a
+  **~5,4 µs** y `p2wpkh` de ~45 µs a **~2,1 µs**. Quien no valide no paga nada.
+- **`BlockchainWasm.wipeSecrets(): this`** → export `secure_wipe()` que borra
+  `PARAM_IN`/`PARAM_OUT` y los cuatro work-worlds (79.360 B). No se ejecuta solo.
+- **`zeroize(...buffers)`** exportado para limpiar las copias JS (claves/firmas).
+- Tests: `test/2.1.0/address-v210.test.ts` reescrito al contrato opt-in y nuevo
+  `test/wrapper/wrapper-security-optin.test.ts` (9 casos).
+
+### 🔒 Lock del scratch — sin corrupción en entornos async (web)
+
+- **Lock por operación**: los 53 métodos públicos que usan el scratch toman
+  `_enter(op)` y lo liberan en `finally`. Si una operación reentra (callback del
+  runtime, dos capas sobre el mismo `PARAM_IN`), se lanza `WasmBusyError` en vez
+  de mezclar bytes. `wasm.isBusy()` / `wasm.currentOperation` para diagnóstico.
+- **`withScratch(fn)`**: bloque síncrono con acceso exclusivo al scratch para
+  orquestar `getAllocator()`/`getExports()` a bajo nivel.
+- **`runExclusive(fn)`**: mutex FIFO para bloques async que parten una operación
+  (`write → await fetch → read`). Un bloque rechazado no rompe la cola.
+- **Single-flight de carga**: `load`/`fromUrl`/`fromBuffer` concurrentes comparten
+  la MISMA promesa e instancia. Antes, dos efectos en React StrictMode instanciaban
+  dos módulos y el último pisaba `instance` mientras el otro seguía usándolo.
+  Mezclar tipos de carga en vuelo lanza `WasmBusyError`.
+- Coste medido del lock: dentro del ruido del benchmark (`p2pkh` 4,95 µs,
+  `p2wpkh` 2,00 µs, `eth` 6,16 µs, `tron` 7,05 µs).
+
+### 🧱 Error unificado
+
+- Nuevo `BlockchainWasmError` como raíz de TODA la librería: `code`, `module`,
+  `cause`, `toJSON()`, `BlockchainWasmError.is(err)` y `.from(err, module, code)`.
+- `WasmError` se conserva como alias de compatibilidad; `NotInitializedError`,
+  `MissingExportError` e `InvalidArgumentError` siguen igual.
+- Nuevos `WasmBusyError` (lock/reentrada/carga concurrente) y `EntropyError`
+  (Web Crypto ausente o generador inválido). `allocator` y `csprng` ya no lanzan
+  `RangeError`/`Error` nativos.
+- Un solo `catch` tipado:
+  ```ts
+  try { … } catch (err) {
+    if (BlockchainWasmError.is(err)) console.error(err.code, err.module)
+    else throw err
+  }
+  ```
+- Eliminado `test/ec_ops_1000.test.js` (script generado por IA, 165 s) y el
+  `--path-ignore-patterns=**/*.test.js` de los scripts `test*`.
+
+### 🔬 Optimización de cuellos de botella WASM
+
+- **`sqrtModP` con cadena de adiciones** de libsecp256k1: 253 `sqrMod` + 13
+  `mulMod` (antes ~256 sqr + ~247 mul, square-and-multiply bit a bit). El
+  exponente `(P+1)/4` son 3 bloques de 1s {2, 22, 223}. Envoltorios
+  `@noinline` evitan duplicar el cuerpo de `mulMod`/`sqrMod` en cada llamada
+  (el binario crecía 60 KB; ahora queda en **241.650 B**).
+  Afecta a `isValid`, `p2tr`, `compress`/`uncompress`, verify ECDSA/Schnorr,
+  ECDH y BIP-32 con pubkey compressed.
+- **`point.batchToAffine`**: normaliza N puntos Jacobianos con **una** inversa
+  modular (Montgomery). `glv.precomputeTable` construía la tabla wNAF con 8
+  `toAffine` (8 inversas); ahora usa 1. La tabla de `φ(P)` se deriva de la de
+  `P` (`BETA·X`, mismo `Y`) sin repetir la precomputación.
+- Medición A/B con el mismo arnés (`bench:wrapper`):
+  | Operación | Antes | Después | Mejora |
+  | --- | ---: | ---: | ---: |
+  | `Secp256k1.isValid` | 63,1 µs | **27,1 µs** | ×2,3 |
+  | `ECDH.sharedSecret` | 395 µs | **96 µs** | ×4,1 |
+  | `Address.p2tr` | 138,7 µs | **115,1 µs** | −17 % |
+  | `fromPrivateKey p2tr` | 152,4 µs | **110,9 µs** | −27 % |
+  | `Schnorr.verify` | 389,8 µs | **337,1 µs** | −13,5 % |
+  | `Ecdsa.verify` | 379,7 µs | **369,1 µs** | −2,8 % |
+- Verificación: `field`, `point`, `glv`, `generator`, `secp256k1`, `ecdh`,
+  `ecdsa`, `schnorr`, `address`, `2.1.0/{address-v210,curve-validation}` y
+  `test/wrapper/**` → **334 pass / 0 fail** (`test/wrapper/**` **85/85**).
+
+### ⚡ Tests — de 10–20 min a segundos
+
+- Caché L2 persistente de binarios WASM en RAM disk (`R:\.wasm-cache-blockchain`),
+  con clave derivada del argv de `asc` y del **grafo de imports** de cada entrada.
+- Perfil `test` → `-O0` (correctitud, 10–20× más rápido de compilar);
+  perfil `bench` → `-O1` para tests; nuevo perfil `release` (`-O3 --converge`) solo
+  para `dist/`.
+- `scripts/prebuild-tests.ts`: prebuild paralelo de 44 artefactos con pool de procesos
+  (`--jobs`, `--force`, `--list`, `--only`, `--clear`).
+- Eliminados los `forceRecompile: true`; las comparativas de builds pasan a `-O0 vs -O1`.
+- Nuevos comandos: `prebuild`, `test:all`, `test:cold`, `test:parallel`, `test:watch`.
+
+---
+
 ## [3.2.1] — release actual
 
 > **Versión previa:** 3.2.0

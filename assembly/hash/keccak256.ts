@@ -11,7 +11,7 @@
  * • Contexto @unmanaged de 208 bytes sobre HASH_WORK_PTR (layout fijo).
  * • El estado sponge (200 B) ES el buffer (XOR directo, sin buffer separado).
  * • RC como StaticArray<u64> en el data segment (sin memory.data manual).
- * • CERO Memory.alloc / Memory.save / Memory.restore.
+ * • CERO Arena.alloc / Arena.save / Arena.restore.
  * • CERO heap, CERO memory.grow.
  *
  * ── SPONGE CONSTRUCTION ───────────────────────────────────────────────────
@@ -25,7 +25,7 @@
  *              keccak256_update_raw(ctxPtr, mPtr, len)
  *              keccak256_final_raw(ctxPtr, outPtr)
  */
-import { HASH_WORK_PTR, align8, PARAM_IN_PTR, PARAM_OUT_PTR } from "../utils/memory"
+import { HASH_WORK_PTR, align8, PARAM_IN_PTR, PARAM_OUT_PTR } from "../utils/arena"
 export { PARAM_IN_PTR, PARAM_OUT_PTR }
 
 // ═══════════════════════════════════════════════════════════════════════════

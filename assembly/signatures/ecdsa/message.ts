@@ -11,11 +11,11 @@
  *   ecdsa_sign_message(out65, msgPtr, msgLen, privPtr32, format) → 65 | <0
  *   ecdsa_verify_message(msgPtr, msgLen, sigPtr64, pubPtr, pubLen, format) → 1 | 0
  *
- * Zero-alloc: buffers en CRYPTO_WORK (Memory.save/restore); el hash temporal
+ * Zero-alloc: buffers en CRYPTO_WORK (Arena.save/restore); el hash temporal
  * se aloja ANTES del save interno de sign/verify, así sobrevive a la llamada.
  * Prefijos como StaticArray (sin String.UTF8.encode / sin heap).
  */
-import { Memory } from "../../utils/memory"
+import { Arena } from "../../utils/arena"
 import { sha256_hash_raw } from "../../hash/sha2"
 import { keccak256_hash_raw } from "../../hash/keccak256"
 import { SignatureFormat, BITCOIN_PREFIX, BITCOIN_PREFIX_LEN, ETHEREUM_PREFIX, ETHEREUM_PREFIX_LEN } from "./constants"
@@ -33,7 +33,7 @@ export function ecdsa_message_hash(out32: usize, msgPtr: usize, msgLen: isize, f
     return 32
   }
 
-  const ctx = Memory.save()
+  const ctx = Arena.save()
 
   if (format == <i32>SignatureFormat.Bitcoin) {
     const ml: u32 = <u32>msgLen
@@ -42,7 +42,7 @@ export function ecdsa_message_hash(out32: usize, msgPtr: usize, msgLen: isize, f
     else if (ml > 0xffff) varintLen = 5
 
     const total: usize = BITCOIN_PREFIX_LEN + varintLen + <usize>ml
-    const buf = Memory.alloc(total)
+    const buf = Arena.alloc(total)
     let off: usize = 0
     for (let i: usize = 0; i < BITCOIN_PREFIX_LEN; i++) {
       store<u8>(buf + off, unchecked(BITCOIN_PREFIX[<i32>i]))
@@ -73,10 +73,10 @@ export function ecdsa_message_hash(out32: usize, msgPtr: usize, msgLen: isize, f
     memory.copy(buf + off, msgPtr, <usize>ml)
 
     // double SHA-256 (hash intermedio en tmp → sin aliasing con msg)
-    const tmp = Memory.alloc(32)
+    const tmp = Arena.alloc(32)
     sha256_hash_raw(tmp, buf, <isize>total)
     sha256_hash_raw(out32, tmp, 32)
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return 32
   }
 
@@ -94,7 +94,7 @@ export function ecdsa_message_hash(out32: usize, msgPtr: usize, msgLen: isize, f
   }
 
   const total: usize = ETHEREUM_PREFIX_LEN + lenStrLen + <usize>ml
-  const buf = Memory.alloc(total)
+  const buf = Arena.alloc(total)
   let off: usize = 0
   for (let i: usize = 0; i < ETHEREUM_PREFIX_LEN; i++) {
     store<u8>(buf + off, unchecked(ETHEREUM_PREFIX[<i32>i]))
@@ -115,7 +115,7 @@ export function ecdsa_message_hash(out32: usize, msgPtr: usize, msgLen: isize, f
   memory.copy(buf + off + lenStrLen, msgPtr, <usize>ml)
 
   keccak256_hash_raw(out32, buf, <isize>total)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   return 32
 }
 
@@ -124,11 +124,11 @@ export function ecdsa_message_hash(out32: usize, msgPtr: usize, msgLen: isize, f
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function ecdsa_sign_message(out65: usize, msgPtr: usize, msgLen: isize, privPtr32: usize, format: i32): i32 {
-  const ctx = Memory.save()
-  const hashTmp = Memory.alloc(32)
+  const ctx = Arena.save()
+  const hashTmp = Arena.alloc(32)
   ecdsa_message_hash(hashTmp, msgPtr, msgLen, format)
   const rc = ecdsa_sign(out65, hashTmp, privPtr32)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   return rc
 }
 
@@ -140,10 +140,10 @@ export function ecdsa_verify_message(
   pubLen: u32,
   format: i32
 ): i32 {
-  const ctx = Memory.save()
-  const hashTmp = Memory.alloc(32)
+  const ctx = Arena.save()
+  const hashTmp = Arena.alloc(32)
   ecdsa_message_hash(hashTmp, msgPtr, msgLen, format)
   const rc = ecdsa_verify(hashTmp, sigPtr64, pubPtr, pubLen)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   return rc
 }

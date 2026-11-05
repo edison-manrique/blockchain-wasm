@@ -14,7 +14,7 @@
  *   k_buf[128] | b[128] | ctx[208] | padded[256] = 720 B; verify añade 64 B.
  */
 import { SHA512_K, SHA512_IV } from "./constants"
-import { HASH_WORK_PTR, align8 } from "../../utils/memory"
+import { HASH_WORK_PTR, align8 } from "../../utils/arena"
 import { store64_be, sigma0_512, sigma1_512, Sigma0_512, Sigma1_512, Ch64, Maj64 } from "./common"
 
 /**

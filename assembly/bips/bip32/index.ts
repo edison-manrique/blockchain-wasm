@@ -22,7 +22,7 @@
  *   bip32_xkey_chaincode_ptr(ptr) → usize
  *   bip32_xkey_keydata_ptr(ptr) → usize
  */
-import { BIP32_WORK_PTR, align8, PARAM_IN_PTR, PARAM_OUT_PTR } from "../../utils/memory"
+import { BIP32_WORK_PTR, align8, PARAM_IN_PTR, PARAM_OUT_PTR } from "../../utils/arena"
 import { PUBKEY_LEN, BW_PUBKEY_TMP, BIP32_OK, BIP32_ERR_NOT_PRIVATE } from "./constants"
 import { isPrivate, keyDataPtr, chainCodePtr, neuterRaw } from "./xkey"
 import { getDepth, getParentFingerprint, getChildIndex } from "./xkey"

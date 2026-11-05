@@ -15,41 +15,29 @@
  *   4. Base58Check(payload) → string ASCII (empieza con 'T')
  *
  * Buffers: ADDRESS_WORK (disjunto de HASH_WORK que usa Base58Check).
+ *
+ * ⚡ SEGURIDAD OPCIONAL: no se valida pertenencia a la curva (el sqrt modular
+ * domina el coste). Usa `pubkeyValidateRaw` / `Secp256k1.isValid` antes si la
+ * clave viene de una fuente no confiable.
  */
-import { ADDRESS_WORK_PTR, align8, Memory } from "../utils/memory"
+import { ADDRESS_WORK_PTR, align8 } from "../utils/arena"
 import { keccak256_hash_raw } from "../hash/keccak256"
-import { uncompressRaw, isOnCurveXY } from "../utils/pubkey"
-import { fromBytesPtr } from "../secp256k1/field"
+import { uncompressRaw } from "../utils/pubkey"
 import { base58check_encode_raw, base58_indices_to_ascii } from "../utils/base58"
 import {
   AW_TWEAK, AW_PAYLOAD, AW_ETH_UNCOMP,
   ADDR_ERR_PUBKEY, TRON_PREFIX
 } from "./constants"
 
-// helper (antes de tron_address):
-// @ts-ignore
-@inline
-function validateXY(xy64: usize): bool {
-  const ctx = Memory.save()
-  const x = Memory.alloc(32)
-  const y = Memory.alloc(32)
-  fromBytesPtr(x, xy64)
-  fromBytesPtr(y, xy64 + 32)
-  const ok: bool = isOnCurveXY(x, y)
-  Memory.restore(ctx)
-  return ok
-}
-
 export function tron_address(outPtr: usize, pubPtr: usize, pubLen: u32): i32 {
   const work = align8(ADDRESS_WORK_PTR)
 
   // 1. pureKey = 64 bytes de pubkey sin prefijo
+  // ⚡ Sin validación de curva obligatoria: X‖Y se hashea tal cual.
   let pureKeyPtr: usize
   if (pubLen == 65 && load<u8>(pubPtr) == 0x04) {
-    if (!validateXY(pubPtr + 1)) return ADDR_ERR_PUBKEY // ✅ HARDENING
     pureKeyPtr = pubPtr + 1
   } else if (pubLen == 64) {
-    if (!validateXY(pubPtr)) return ADDR_ERR_PUBKEY // ✅ HARDENING
     pureKeyPtr = pubPtr
   } else if (pubLen == 33) {
     const p = load<u8>(pubPtr)

@@ -8,7 +8,7 @@
  * Este archivo conserva lo específico de BIP32: pointAddPubkeys (CKDpub),
  * scalarAddModN e isScalarInvalid.
  */
-import { Memory } from "../../utils/memory"
+import { Arena } from "../../utils/arena"
 import { fromBytesPtr, toBytesPtr, isZero } from "../../secp256k1/field"
 import { add as scalarAdd, isGreaterOrEqualN } from "../../secp256k1/scalar"
 import { multiplyG } from "../../secp256k1/generator"
@@ -27,17 +27,17 @@ export { pubkeyFromPrivkey, decompressToPoint }
  *          malformada o fuera de la curva (xpub deserializado inválido).
  */
 export function pointAddPubkeys(out33: usize, parentPub33: usize, scalarIL32: usize): i32 {
-  const ctx = Memory.save()
-  const ilScalar = Memory.alloc(32)
-  const ilPoint = Memory.alloc(96)
-  const parentPoint = Memory.alloc(96)
-  const resultPoint = Memory.alloc(96)
-  const affine = Memory.alloc(64)
+  const ctx = Arena.save()
+  const ilScalar = Arena.alloc(32)
+  const ilPoint = Arena.alloc(96)
+  const parentPoint = Arena.alloc(96)
+  const resultPoint = Arena.alloc(96)
+  const affine = Arena.alloc(64)
 
   // ✅ VALIDACIÓN (BLOQUE 3): la pubkey del padre debe estar en la curva.
   // decompressToPoint verifica prefijo + y² ≡ x³+7 → sin puntos basura.
   if (!decompressToPoint(parentPoint, parentPub33)) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return BIP32_ERR_PUBKEY_INVALID
   }
 
@@ -48,7 +48,7 @@ export function pointAddPubkeys(out33: usize, parentPub33: usize, scalarIL32: us
   const yIsOdd: bool = (load<u64>(affine + 32) & 1) != 0
   store<u8>(out33, yIsOdd ? 0x03 : 0x02)
   toBytesPtr(affine, out33 + 1)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   return BIP32_OK
 }
 
@@ -58,25 +58,25 @@ export function pointAddPubkeys(out33: usize, parentPub33: usize, scalarIL32: us
 
 /** out32 = (a + b) mod N. Entradas/salida en bytes BE (32 B). */
 export function scalarAddModN(out32: usize, a32: usize, b32: usize): void {
-  const ctx = Memory.save()
-  const aLimbs = Memory.alloc(32)
-  const bLimbs = Memory.alloc(32)
-  const resLimbs = Memory.alloc(32)
+  const ctx = Arena.save()
+  const aLimbs = Arena.alloc(32)
+  const bLimbs = Arena.alloc(32)
+  const resLimbs = Arena.alloc(32)
 
   fromBytesPtr(aLimbs, a32)
   fromBytesPtr(bLimbs, b32)
   scalarAdd(resLimbs, aLimbs, bLimbs)
   toBytesPtr(resLimbs, out32)
 
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }
 
 /** ¿Escalar inválido para BIP32? (k == 0 || k >= N). Entrada BE (32 B). */
 export function isScalarInvalid(k32: usize): bool {
-  const ctx = Memory.save()
-  const kLimbs = Memory.alloc(32)
+  const ctx = Arena.save()
+  const kLimbs = Arena.alloc(32)
   fromBytesPtr(kLimbs, k32)
   const invalid: bool = isZero(kLimbs) || isGreaterOrEqualN(kLimbs)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   return invalid
 }

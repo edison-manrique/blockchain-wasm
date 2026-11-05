@@ -127,7 +127,7 @@ function isCanonicalS(sigBytes: Uint8Array): boolean {
 
 describe("ecdsa — compilación", () => {
   test("compilar y reportar stats", async () => {
-    const cr: CompileResult = await Wasm.compile(ENTRY, { profile: "bench", forceRecompile: true })
+    const cr: CompileResult = await Wasm.compile(ENTRY, { profile: "bench" })
     Wasm.printCompileStats(cr, "bench")
     expect(cr.sizeBytes).toBeGreaterThan(1024)
     expect(cr.compileTimeMs).toBeGreaterThan(0)

@@ -18,7 +18,7 @@
  * que el wrapper TypeScript localice las zonas de entrada/salida, y los
  * punteros de las zonas de trabajo por transparencia/diagnóstico.
  */
-import { PARAM_IN_PTR, PARAM_OUT_PTR, CRYPTO_WORK_PTR, HASH_WORK_PTR, align8 } from "../../utils/memory"
+import { PARAM_IN_PTR, PARAM_OUT_PTR, CRYPTO_WORK_PTR, HASH_WORK_PTR, align8 } from "../../utils/arena"
 import { Sha256, Sha256Context } from "./sha256"
 import { Sha512, Sha512Context } from "./sha512"
 import { Pbkdf2 } from "./pbkdf2"

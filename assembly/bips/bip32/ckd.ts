@@ -11,7 +11,7 @@
  * Zero-alloc: todos los temporales en BIP32_WORK (offsets fijos) o en
  * CRYPTO_WORK / HASH_WORK (vía las funciones de crypto.ts / hash.ts).
  */
-import { BIP32_WORK_PTR, align8 } from "../../utils/memory"
+import { BIP32_WORK_PTR, align8 } from "../../utils/arena"
 import {
   HARDENED_OFFSET, BITCOIN_SEED, BITCOIN_SEED_LEN,
   BW_HMAC_RESULT, BW_IL, BW_IR, BW_HMAC_DATA, BW_PUBKEY_TMP,

@@ -163,7 +163,8 @@ export async function benchCompileCompare(
   benchOpts: number | BenchOptions = 1000
 ): Promise<CompileCompareReport> {
   const runOne = async (spec: CompileBenchSpec): Promise<CompileBenchResult> => {
-    const cr = await compile(entryRel, { ...resolveOpts(spec.opts), forceRecompile: true })
+    // Sin `forceRecompile`: la primera vez compila, las siguientes sirven del caché L2.
+    const cr = await compile(entryRel, resolveOpts(spec.opts))
     const wasm = await load(cr.binary)
     const bench = benchSpeed(spec.label, iterations, benchFn(wasm), benchOpts)
     return { label: spec.label, compileTimeMs: cr.compileTimeMs, sizeBytes: cr.sizeBytes, cached: cr.cached, bench }
@@ -208,9 +209,11 @@ export function printCompileCompare(r: CompileCompareReport): void {
 
 export function printCompileStats(cr: CompileResult, label = ""): void {
   const tag = label ? `[${label}] ` : ""
+  const where =
+    cr.source === "compiled" ? "" : cr.source === "memory" ? " | L1" : " | L2"
   console.log(
     `${tag}compile: ${cr.compileTimeMs.toFixed(1)} ms | ` +
-      `size: ${(cr.sizeBytes / 1024).toFixed(2)} KB (${cr.sizeBytes} B)${cr.cached ? " | cached" : ""}`
+      `size: ${(cr.sizeBytes / 1024).toFixed(2)} KB (${cr.sizeBytes} B)${where}`
   )
 }
 

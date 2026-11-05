@@ -11,8 +11,9 @@
  *  NOTA off-curve: X=1 ESTÁ en la curva (1³+7=8 es residuo cuadrático mod P).
  *  El primer X pequeño sin raíz válida es X=5 (5³+7=132 no es RC) → OFF_CURVE_X = 5.
  *
- *  ⚠️ Los tests marcados con [HARDENING] requieren el Apéndice A (validación
- *     de 65 B en tron.ts y btc_p2pkh_uncompressed). Sin el parche, fallan.
+ *  ⚡ La pertenencia a la curva es OPT-IN (`pubkeyValidateRaw`): las
+ *     direcciones solo validan formato. P2TR/ETH/Tron con compressed siguen
+ *     fallando para X sin raíz válida porque el algoritmo necesita Y.
  *
  *  Corre con:  bun test test/2.1.0/address-v210.test.ts
  */
@@ -178,55 +179,75 @@ describe("address v2.1.0 — P2PKH uncompressed", () => {
 })
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 3) VALIDACIÓN DE CURVA EN DIRECCIONES (SEC-1 / SEC-2)
+// 3) VALIDACIÓN DE CURVA OPT-IN (SEC-1 / SEC-2)
 // ═══════════════════════════════════════════════════════════════════════════
+// Las direcciones ya NO validan pertenencia a la curva (coste sqrt en el hot
+// path). El chequeo vive en `pubkeyValidateRaw(pub, len) → 1 | 0`.
+// P2TR/ETH/Tron con compressed SÍ siguen descomprimiendo (necesitan Y), así que
+// una X sin raíz válida les impide calcular la dirección por algoritmo.
 
-describe("address v2.1.0 — validación de curva", () => {
+describe("address v2.1.0 — pubkeyValidateRaw (opt-in)", () => {
   beforeAll(useDefault, 300_000)
 
-  test("P2PKH rechaza X fuera de la curva (compressed)", () => {
-    wasm.write(IN, offCurveCompressed(0x02))
-    expect(wasm.exports.btc_p2pkh(OUT, IN, 33)).toBeLessThan(0)
+  const validate = (pub: Uint8Array): number => {
+    wasm.write(IN, pub)
+    return wasm.exports.pubkeyValidateRaw(IN, pub.length)
+  }
+
+  test("acepta compressed de la curva (33 B)", () => {
+    for (const v of VECTORS_V210) expect(validate(Wasm.hexToBytes(v.comp))).toBe(1)
   })
 
-  test("P2WPKH rechaza X fuera de la curva", () => {
-    wasm.write(IN, offCurveCompressed(0x03))
-    expect(wasm.exports.btc_p2wpkh(OUT, IN, 33)).toBeLessThan(0)
+  test("acepta uncompressed de la curva (65 B)", () => {
+    for (const v of VECTORS_V210) expect(validate(Wasm.hexToBytes(v.uncomp))).toBe(1)
   })
 
-  test("P2SH-P2WPKH rechaza X fuera de la curva", () => {
-    wasm.write(IN, offCurveCompressed(0x02))
-    expect(wasm.exports.btc_p2sh_p2wpkh(OUT, IN, 33)).toBeLessThan(0)
+  test("acepta raw64 X‖Y de la curva (64 B)", () => {
+    for (const v of VECTORS_V210) expect(validate(Wasm.hexToBytes(v.uncomp.slice(2)))).toBe(1)
   })
 
-  test("P2TR rechaza X fuera de la curva", () => {
-    wasm.write(IN, offCurveCompressed(0x02))
+  test("rechaza compressed con X fuera de la curva", () => {
+    expect(validate(offCurveCompressed(0x02))).toBe(0)
+    expect(validate(offCurveCompressed(0x03))).toBe(0)
+  })
+
+  test("rechaza uncompressed/raw64 con (X,Y) fuera de la curva", () => {
+    const bad = offCurveUncompressed()
+    expect(validate(bad)).toBe(0)
+    expect(validate(bad.subarray(1))).toBe(0)
+  })
+
+  test("rechaza prefijo o longitud inválidos", () => {
+    const bad = new Uint8Array(33)
+    bad[0] = 0x05
+    expect(validate(bad)).toBe(0)
+    expect(validate(new Uint8Array(32))).toBe(0)
+  })
+})
+
+describe("address v2.1.0 — direcciones sin validación de curva", () => {
+  beforeAll(useDefault, 300_000)
+
+  test("P2PKH/P2WPKH/P2SH-P2WPKH hashean compressed sin validar la curva", () => {
+    const bad = offCurveCompressed(0x02)
+    expect(callAddr("btc_p2pkh", bad).length).toBeGreaterThan(0)
+    expect(callAddr("btc_p2wpkh", bad).length).toBeGreaterThan(0)
+    expect(callAddr("btc_p2sh_p2wpkh", bad).length).toBeGreaterThan(0)
+  })
+
+  test("P2TR/ETH/Tron compressed rechazan X fuera de la curva (necesitan descomprimir)", () => {
+    const bad = offCurveCompressed(0x02)
+    wasm.write(IN, bad)
     expect(wasm.exports.btc_p2tr(OUT, IN, 33)).toBeLessThan(0)
-  })
-
-  test("ETH rechaza X fuera de la curva", () => {
-    wasm.write(IN, offCurveCompressed(0x02))
     expect(wasm.exports.eth_address(OUT, IN, 33)).toBeLessThan(0)
-  })
-
-  test("Tron rechaza X fuera de la curva", () => {
-    wasm.write(IN, offCurveCompressed(0x02))
     expect(wasm.exports.tron_address(OUT, IN, 33)).toBeLessThan(0)
   })
 
-  test("[HARDENING] P2PKH uncompressed rechaza (X,Y) fuera de la curva", () => {
-    wasm.write(IN, offCurveUncompressed())
-    expect(wasm.exports.btc_p2pkh_uncompressed(OUT, IN, 65)).toBeLessThan(0)
-  })
-
-  test("ETH rechaza (X,Y) fuera de la curva (65 B)", () => {
-    wasm.write(IN, offCurveUncompressed())
-    expect(wasm.exports.eth_address(OUT, IN, 65)).toBeLessThan(0)
-  })
-
-  test("[HARDENING] Tron rechaza (X,Y) fuera de la curva (65 B)", () => {
-    wasm.write(IN, offCurveUncompressed())
-    expect(wasm.exports.tron_address(OUT, IN, 65)).toBeLessThan(0)
+  test("P2PKH_u/ETH/Tron hashean (X,Y) de 65 B sin validar la curva", () => {
+    const bad = offCurveUncompressed()
+    expect(callAddr("btc_p2pkh_uncompressed", bad).length).toBeGreaterThan(0)
+    expect(callAddr("eth_address", bad).length).toBeGreaterThan(0)
+    expect(callAddr("tron_address", bad).length).toBeGreaterThan(0)
   })
 })
 

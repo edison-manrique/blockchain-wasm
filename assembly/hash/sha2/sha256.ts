@@ -12,7 +12,7 @@
  * El código original calculaba sus buffers temporales desde
  * `align8(CRYPTO_WORK_PTR)` (su memoria privada). Aquí se calculan desde
  * `align8(HASH_WORK_PTR)`, la zona DISJUNTA de la arena de secp256k1 definida
- * en memory.ts. Esto es lo que permite que SHA2 coexista y se anide con
+ * en arena.ts. Esto es lo que permite que SHA2 coexista y se anide con
  * secp256k1 (necesario para BIP32/BIP39) sin que los buffers se pisen.
  *
  * ── ZERO-ALLOC ─────────────────────────────────────────────────────────────
@@ -28,7 +28,7 @@
  *   lee después). update/final NUNCA tocan HASH_WORK por su cuenta.
  */
 import { SHA256_K, SHA256_IV } from "./constants"
-import { HASH_WORK_PTR, align8 } from "../../utils/memory"
+import { HASH_WORK_PTR, align8 } from "../../utils/arena"
 import { store32_be, sigma0_256, sigma1_256, Sigma0_256, Sigma1_256, Ch32, Maj32 } from "./common"
 
 /**

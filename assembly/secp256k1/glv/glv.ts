@@ -19,11 +19,11 @@ import {
   A1_0, A1_1, B1_0, B1_1, A2_0, A2_1, A2_2,
   N0, N1, N2, N3, NH0, NH1, NH2, NH3,
 } from "../constants"
-import { Memory } from "../../utils/memory"
+import { Arena } from "../../utils/arena"
 import { mulMod, sub as subP } from "../field"
 import { mul as mulWide, addRaw, sub as subN, reduce, cmp } from "../scalar"
 import { compute as wnafCompute } from "../wnaf"
-import { addMixed, double, setInfinity, toAffine, generator } from "../point"
+import { addMixed, double, setInfinity, toAffine, batchToAffine, generator } from "../point"
 
 // ── Tabla de G en data segment (2 × 8 entradas afines de 64 B = 1 KB) ─────
 const G_TABLE_1: usize = memory.data(512)
@@ -75,14 +75,14 @@ function addOne(p: usize): void {
  */
 export function decompose(k: usize, k1: usize, k2: usize, signs: usize): void {
   initLattice()
-  const ctx = Memory.save()
-  const wide = Memory.alloc(64)
-  const c1 = Memory.alloc(32)
-  const c2 = Memory.alloc(32)
-  const v1 = Memory.alloc(32)
-  const v2 = Memory.alloc(32)
-  const v3 = Memory.alloc(32)
-  const v4 = Memory.alloc(32)
+  const ctx = Arena.save()
+  const wide = Arena.alloc(64)
+  const c1 = Arena.alloc(32)
+  const c2 = Arena.alloc(32)
+  const v1 = Arena.alloc(32)
+  const v2 = Arena.alloc(32)
+  const v3 = Arena.alloc(32)
+  const v4 = Arena.alloc(32)
 
   // c1 = round(k·b2 / N)
   mulWide(wide, k, _B2)
@@ -122,7 +122,7 @@ export function decompose(k: usize, k1: usize, k2: usize, signs: usize): void {
     store<u8>(signs + 1, 1)
   }
 
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }
 
 /**
@@ -130,32 +130,35 @@ export function decompose(k: usize, k1: usize, k2: usize, signs: usize): void {
  * `table` debe tener ≥ count·64 bytes. Zero-alloc (arena).
  */
 export function precomputeTable(table: usize, p: usize, count: i32): void {
-  const ctx = Memory.save()
-  const p2 = Memory.alloc(96)
-  const p2aff = Memory.alloc(64)
-  const cur = Memory.alloc(96)
-  const aff = Memory.alloc(64)
+  const ctx = Arena.save()
+  const p2 = Arena.alloc(96)
+  const p2aff = Arena.alloc(64)
+  const cur = Arena.alloc(96)
+  const jacs = Arena.alloc(<usize>(count * 96))
 
   double(p2, p)            // p2 = 2P (Jacobiano)
   toAffine(p2aff, p2)      // p2aff = 2P (afín)
   memory.copy(cur, p, 96)  // cur = P
-  for (let i = 0; i < count; i++) {
-    toAffine(aff, cur)     // aff = (2i+1)P afín
-    memory.copy(table + <usize>i * 64, aff, 64)
-    if (i < count - 1) {
-      addMixed(cur, cur, p2aff, p2aff + 32) // cur += 2P → (2i+3)P
-    }
+  memory.copy(jacs, p, 96) // jacs[0] = P
+
+  // Acumula 3P, 5P, … en Jacobiano (addMixed) SIN normalizar cada paso.
+  for (let i: i32 = 1; i < count; i++) {
+    addMixed(cur, cur, p2aff, p2aff + 32) // cur += 2P
+    memory.copy(jacs + <usize>(i * 96), cur, 96)
   }
-  Memory.restore(ctx)
+
+  // Una única inversión modular normaliza los `count` puntos (antes: count).
+  batchToAffine(table, jacs, count)
+  Arena.restore(ctx)
 }
 
 /** Inicializa (una vez) la tabla de G y φ(G). */
 export function initGTable(): void {
   if (gTableReady) return
-  const ctx = Memory.save()
-  const gJac = Memory.alloc(96)
-  const beta = Memory.alloc(32)
-  const betaP = Memory.alloc(96)
+  const ctx = Arena.save()
+  const gJac = Arena.alloc(96)
+  const beta = Arena.alloc(32)
+  const betaP = Arena.alloc(96)
 
   memory.copy(gJac, generator(), 96) // G (Jacobiano, Z=1)
   precomputeTable(G_TABLE_1, gJac, 8)
@@ -169,7 +172,7 @@ export function initGTable(): void {
   precomputeTable(G_TABLE_2, betaP, 8)
 
   gTableReady = true
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }
 
 /**
@@ -177,15 +180,15 @@ export function initGTable(): void {
  * Si P == G usa la tabla precomputada; si no, construye una tabla dinámica en la arena.
  */
 export function mul(res: usize, p: usize, k: usize): void {
-  const ctx = Memory.save()
-  const k1 = Memory.alloc(32)
-  const k2 = Memory.alloc(32)
-  const signs = Memory.alloc(2)
-  const wnaf1 = Memory.alloc(264)
-  const wnaf2 = Memory.alloc(264)
-  const acc = Memory.alloc(96)
-  const ty = Memory.alloc(32)
-  const prime = Memory.alloc(32)
+  const ctx = Arena.save()
+  const k1 = Arena.alloc(32)
+  const k2 = Arena.alloc(32)
+  const signs = Arena.alloc(2)
+  const wnaf1 = Arena.alloc(264)
+  const wnaf2 = Arena.alloc(264)
+  const acc = Arena.alloc(96)
+  const ty = Arena.alloc(32)
+  const prime = Arena.alloc(32)
 
   decompose(k, k1, k2, signs)
   const neg1 = load<u8>(signs) != 0
@@ -213,19 +216,23 @@ export function mul(res: usize, p: usize, k: usize): void {
     table1 = G_TABLE_1
     table2 = G_TABLE_2
   } else {
-    const dyn = Memory.alloc(1024) // 2 tablas × 8 × 64
+    const dyn = Arena.alloc(1024) // 2 tablas × 8 × 64
     table1 = dyn
     table2 = dyn + 512
     precomputeTable(table1, p, 8)
 
-    const beta = Memory.alloc(32)
-    store<u64>(beta, BETA_0); store<u64>(beta, BETA_1, 8)
-    store<u64>(beta, BETA_2, 16); store<u64>(beta, BETA_3, 24)
-    const betaP = Memory.alloc(96)
-    mulMod(betaP, p, beta)              // φ(P).X = BETA·P.X
-    memory.copy(betaP + 32, p + 32, 32) // φ(P).Y = P.Y
-    memory.copy(betaP + 64, p + 64, 32) // φ(P).Z = P.Z
-    precomputeTable(table2, betaP, 8)
+    // φ(P) = (BETA·X, Y). Los múltiplos impares de φ(P) son φ(impares de P):
+    // table2[j] = (BETA · table1[j].X, table1[j].Y). Evita 8 inversas + 7
+    // addMixed de una segunda precomputación.
+    const betaP = Arena.alloc(32)
+    store<u64>(betaP, BETA_0); store<u64>(betaP, BETA_1, 8)
+    store<u64>(betaP, BETA_2, 16); store<u64>(betaP, BETA_3, 24)
+    for (let j: i32 = 0; j < 8; j++) {
+      const src = table1 + <usize>(j * 64)
+      const dst = table2 + <usize>(j * 64)
+      mulMod(dst, src, betaP)
+      memory.copy(dst + 32, src + 32, 32)
+    }
   }
 
   // Primo del campo P (para negar coordenadas Y)
@@ -283,5 +290,5 @@ export function mul(res: usize, p: usize, k: usize): void {
   }
 
   memory.copy(res, acc, 96)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }

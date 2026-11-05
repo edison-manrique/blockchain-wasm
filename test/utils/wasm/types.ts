@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-export type Profile = "debug" | "test" | "bench" | "fast" | "small" | "safe"
+export type Profile = "debug" | "test" | "test1" | "bench" | "release" | "fast" | "small" | "safe"
 export type RuntimeVariant = "stub" | "minimal" | "incremental"
 export type UncheckedBehavior = "default" | "never" | "always"
 export type TrapMode = "allow" | "clamp" | "js"
@@ -97,11 +97,19 @@ export interface CompileOptions {
 export interface CompileResult {
   binary: Uint8Array
   stderr: string
+  /** true si se sirvió desde L1 (RAM) o L2 (RAM disk). */
   cached: boolean
+  /** true si se compiló en esta llamada. */
+  fresh: boolean
+  /** Tiempo real de la compilación (en cache hits: el tiempo original del build). */
   compileTimeMs: number
   sizeBytes: number
   outPath?: string
   mode: CompileMode
+  /** Clave de caché (hash de entry + fingerprint de `assembly/` + argv asc). */
+  cacheKey: string
+  /** Origen de la respuesta: "memory" | "disk-cache" | "compiled". */
+  source: "memory" | "disk-cache" | "compiled"
 }
 
 /**

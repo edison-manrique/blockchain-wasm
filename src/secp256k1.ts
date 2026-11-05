@@ -40,7 +40,13 @@ export class Secp256k1 {
     return BlockchainWasm.getInstance().uncompress(publicKey)
   }
 
-  /** Valida formato + pertenencia a la curva (sin lanzar). */
+  /**
+   * Valida formato + pertenencia a la curva (sin lanzar; acepta 33/64/65 B).
+   *
+   * OPT-IN: no lo ejecutan ni las direcciones ni la firma. Cuesta un exp mod P
+   * (~sqrt) en claves compressed, así que úsalo solo cuando la clave venga de
+   * una fuente no confiable, no en bucles de alto rendimiento.
+   */
   static isValid(publicKey: Uint8Array): boolean {
     return BlockchainWasm.getInstance().isValidPoint(publicKey)
   }

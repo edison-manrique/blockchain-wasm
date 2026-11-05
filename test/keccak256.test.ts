@@ -23,7 +23,7 @@ const hex = (bytes: Uint8Array): string => Wasm.bytesToHex(bytes)
 
 describe("keccak256 — compilación", () => {
   test("compilar y reportar stats", async () => {
-    const cr: CompileResult = await Wasm.compile(ENTRY, { profile: "bench", forceRecompile: true })
+    const cr: CompileResult = await Wasm.compile(ENTRY, { profile: "bench" })
     Wasm.printCompileStats(cr, "bench")
     expect(cr.sizeBytes).toBeGreaterThan(1024)
     expect(cr.sizeBytes).toBeLessThan(65536)

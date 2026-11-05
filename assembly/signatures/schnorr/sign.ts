@@ -13,9 +13,9 @@
  * Convención BIP-340: se trabaja con x-only (Y par). Si P.y (o R.y) es odd,
  * se niega el escalar (d ← N−d, k ← N−k) para que la firma sea válida.
  *
- * Todo zero-alloc: temporales en CRYPTO_WORK (Memory.save/restore, LIFO).
+ * Todo zero-alloc: temporales en CRYPTO_WORK (Arena.save/restore, LIFO).
  */
-import { Memory } from "../../utils/memory"
+import { Arena } from "../../utils/arena"
 import { N0, N1, N2, N3 } from "../../secp256k1/constants"
 import { fromBytesPtr, toBytesPtr } from "../../secp256k1/field"
 import { mulMod as scalarMul, add as scalarAdd, sub as scalarSub, isZero } from "../../secp256k1/scalar"
@@ -30,16 +30,16 @@ import { TAG_AUX, TAG_NONCE, TAG_CHALLENGE, SCHNORR_ERR_K_ZERO } from "./constan
 
 /** out32 = x_only(priv·G) en bytes big-endian. Retorna 32. */
 export function schnorr_get_pubkey(out32: usize, privPtr32: usize): i32 {
-  const ctx = Memory.save()
-  const d = Memory.alloc(32)
-  const P = Memory.alloc(96)
+  const ctx = Arena.save()
+  const d = Arena.alloc(32)
+  const P = Arena.alloc(96)
 
   fromBytesPtr(d, privPtr32)
   multiplyG(P, d)
   toAffine(P, P)
   toBytesPtr(P, out32) // X → bytes BE
 
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   return 32
 }
 
@@ -48,23 +48,23 @@ export function schnorr_get_pubkey(out32: usize, privPtr32: usize): i32 {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function schnorr_sign(out64: usize, msgPtr: usize, msgLen: isize, privPtr32: usize, auxPtr32: usize): i32 {
-  const ctx = Memory.save()
-  const d_ = Memory.alloc(32)
-  const P = Memory.alloc(96)
-  const d = Memory.alloc(32)
-  const pxPtr = Memory.alloc(32)
-  const dPtr = Memory.alloc(32)
-  const auxHash = Memory.alloc(32)
-  const tPtr = Memory.alloc(32)
-  const rand = Memory.alloc(32)
-  const k_ = Memory.alloc(32)
-  const R = Memory.alloc(96)
-  const kVal = Memory.alloc(32)
-  const rxPtr = Memory.alloc(32)
-  const eHash = Memory.alloc(32)
-  const eVal = Memory.alloc(32)
-  const s = Memory.alloc(32)
-  const N = Memory.alloc(32)
+  const ctx = Arena.save()
+  const d_ = Arena.alloc(32)
+  const P = Arena.alloc(96)
+  const d = Arena.alloc(32)
+  const pxPtr = Arena.alloc(32)
+  const dPtr = Arena.alloc(32)
+  const auxHash = Arena.alloc(32)
+  const tPtr = Arena.alloc(32)
+  const rand = Arena.alloc(32)
+  const k_ = Arena.alloc(32)
+  const R = Arena.alloc(96)
+  const kVal = Arena.alloc(32)
+  const rxPtr = Arena.alloc(32)
+  const eHash = Arena.alloc(32)
+  const eVal = Arena.alloc(32)
+  const s = Arena.alloc(32)
+  const N = Arena.alloc(32)
 
   store<u64>(N, N0)
   store<u64>(N, N1, 8)
@@ -97,7 +97,7 @@ export function schnorr_sign(out64: usize, msgPtr: usize, msgLen: isize, privPtr
   taggedHash(rand, TAG_NONCE, tPtr, 32, pxPtr, 32, msgPtr, msgLen)
   scalarFromPtrModN(k_, rand)
   if (isZero(k_)) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return SCHNORR_ERR_K_ZERO
   }
 
@@ -125,6 +125,6 @@ export function schnorr_sign(out64: usize, msgPtr: usize, msgLen: isize, privPtr
   memory.copy(out64, rxPtr, 32)
   toBytesPtr(s, out64 + 32)
 
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   return 64
 }

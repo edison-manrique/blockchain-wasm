@@ -20,9 +20,9 @@
  *    leería como válido). ecdsa_verify_message hereda este contrato.
  *
  * ── ZONA DEL ARENA ─────────────────────────────────────────────────────────
- * Zero-alloc: temporales en CRYPTO_WORK (Memory.save/restore, LIFO).
+ * Zero-alloc: temporales en CRYPTO_WORK (Arena.save/restore, LIFO).
  */
-import { Memory } from "../../utils/memory"
+import { Arena } from "../../utils/arena"
 import { fromBytesPtr, isZero, cmp } from "../../secp256k1/field"
 import { mulMod as scalarMul, modInverse as scalarInv, isGreaterOrEqualN } from "../../secp256k1/scalar"
 import { multiplyG } from "../../secp256k1/generator"
@@ -32,18 +32,18 @@ import { decompressToPoint, isOnCurveXY } from "../../utils/pubkey"
 import { reduceScalar } from "./rfc6979"
 
 export function ecdsa_verify(hashPtr32: usize, sigPtr64: usize, pubPtr: usize, pubLen: u32): i32 {
-  const ctx = Memory.save()
-  const r = Memory.alloc(32)
-  const s = Memory.alloc(32)
-  const z = Memory.alloc(32)
-  const Q = Memory.alloc(96)
-  const s_inv = Memory.alloc(32)
-  const u1 = Memory.alloc(32)
-  const u2 = Memory.alloc(32)
-  const P1 = Memory.alloc(96)
-  const P2 = Memory.alloc(96)
-  const R = Memory.alloc(96)
-  const v = Memory.alloc(32)
+  const ctx = Arena.save()
+  const r = Arena.alloc(32)
+  const s = Arena.alloc(32)
+  const z = Arena.alloc(32)
+  const Q = Arena.alloc(96)
+  const s_inv = Arena.alloc(32)
+  const u1 = Arena.alloc(32)
+  const u2 = Arena.alloc(32)
+  const P1 = Arena.alloc(96)
+  const P2 = Arena.alloc(96)
+  const R = Arena.alloc(96)
+  const v = Arena.alloc(32)
 
   // r, s, z = hash mod N
   fromBytesPtr(r, sigPtr64)
@@ -53,7 +53,7 @@ export function ecdsa_verify(hashPtr32: usize, sigPtr64: usize, pubPtr: usize, p
 
   // r, s ∈ [1, N−1]
   if (isZero(r) || isGreaterOrEqualN(r) || isZero(s) || isGreaterOrEqualN(s)) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return 0
   }
 
@@ -61,24 +61,24 @@ export function ecdsa_verify(hashPtr32: usize, sigPtr64: usize, pubPtr: usize, p
   if (pubLen == 33) {
     const p0 = load<u8>(pubPtr)
     if (p0 != 0x02 && p0 != 0x03) {
-      Memory.restore(ctx)
+      Arena.restore(ctx)
       return 0
     }
     // ✅ VALIDACIÓN: prefijo + y² ≡ x³+7 (rechaza X fuera de la curva)
     if (!decompressToPoint(Q, pubPtr)) {
-      Memory.restore(ctx)
+      Arena.restore(ctx)
       return 0
     }
   } else if (pubLen == 65) {
     if (load<u8>(pubPtr) != 0x04) {
-      Memory.restore(ctx)
+      Arena.restore(ctx)
       return 0
     }
     fromBytesPtr(Q, pubPtr + 1)       // X → limbs LE
     fromBytesPtr(Q + 32, pubPtr + 33) // Y → limbs LE
     // ✅ VALIDACIÓN: (X, Y) debe pertenecer a la curva
     if (!isOnCurveXY(Q, Q + 32)) {
-      Memory.restore(ctx)
+      Arena.restore(ctx)
       return 0
     }
     store<u64>(Q + 64, 1) // Z = 1
@@ -86,7 +86,7 @@ export function ecdsa_verify(hashPtr32: usize, sigPtr64: usize, pubPtr: usize, p
     store<u64>(Q + 80, 0)
     store<u64>(Q + 88, 0)
   } else {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return 0
   }
 
@@ -100,7 +100,7 @@ export function ecdsa_verify(hashPtr32: usize, sigPtr64: usize, pubPtr: usize, p
   glvMul(P2, Q, u2)
   addPoint(R, P1, P2)
   if (isInfinity(R)) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return 0
   }
 
@@ -110,6 +110,6 @@ export function ecdsa_verify(hashPtr32: usize, sigPtr64: usize, pubPtr: usize, p
   reduceScalar(v)
 
   const ok: i32 = cmp(v, r) == 0 ? 1 : 0
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   return ok
 }

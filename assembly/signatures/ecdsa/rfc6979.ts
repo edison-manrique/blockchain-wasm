@@ -11,11 +11,11 @@
  *   reduceScalar(a)
  *       a ← a mod N (while a ≥ N: a −= N). Helper compartido por sign/verify.
  *
- * Zero-alloc: K/V/blobs en CRYPTO_WORK (Memory.save/restore); HMAC usa
+ * Zero-alloc: K/V/blobs en CRYPTO_WORK (Arena.save/restore); HMAC usa
  * HASH_WORK internamente. El aliasing out==key y out==msg de sha256_hmac_raw
  * es el mismo que ejercía el original (Sha256.hmac_ptr), así que es seguro.
  */
-import { Memory } from "../../utils/memory"
+import { Arena } from "../../utils/arena"
 import { fromBytesPtr } from "../../secp256k1/field"
 import { isZero, isGreaterOrEqualN, subN } from "../../secp256k1/scalar"
 import { sha256_hmac_raw } from "../../hash/sha2"
@@ -40,11 +40,11 @@ export function reduceScalar(a: usize): void {
  * hashPtr / privPtr apuntan a 32 bytes big-endian cada uno.
  */
 export function generateK(k_out: usize, hashPtr: usize, privPtr: usize): void {
-  const ctx = Memory.save()
-  const K = Memory.alloc(32)
-  const V = Memory.alloc(32)
-  const blob = Memory.alloc(97) // V(32) ‖ byte(1) ‖ priv(32) ‖ hash(32)
-  const blob2 = Memory.alloc(33) // V(32) ‖ byte(1)
+  const ctx = Arena.save()
+  const K = Arena.alloc(32)
+  const V = Arena.alloc(32)
+  const blob = Arena.alloc(97) // V(32) ‖ byte(1) ‖ priv(32) ‖ hash(32)
+  const blob2 = Arena.alloc(33) // V(32) ‖ byte(1)
 
   // V = 0x01×32, K = 0x00×32
   memory.fill(V, 0x01, 32)
@@ -69,7 +69,7 @@ export function generateK(k_out: usize, hashPtr: usize, privPtr: usize): void {
     sha256_hmac_raw(V, K, 32, V, 32) // V = HMAC(K, V)
     fromBytesPtr(k_out, V) // V (BE) → k_out (limbs LE)
     if (!isZero(k_out) && !isGreaterOrEqualN(k_out)) {
-      Memory.restore(ctx)
+      Arena.restore(ctx)
       return
     }
     // K = HMAC(K, V ‖ 0x00);  V = HMAC(K, V)

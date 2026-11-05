@@ -14,7 +14,7 @@
 export { N0, N1, N2, N3, CN0, CN1, CN2, CN3, NH0, NH1, NH2, NH3 } from "../constants"
 
 // ── Punteros de I/O de la arena (para tests/wrapper) ──────────────────────
-export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../../utils/memory"
+export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../../utils/arena"
 
 // ── Aritmética cruda compartida con field (sin módulo) ────────────────────
 export { addRaw, subRaw, cmp, isZero, shr1Raw, select64 } from "../field/raw"

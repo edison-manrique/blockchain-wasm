@@ -9,9 +9,9 @@
  *
  *   R = s·G + (−e)·P,  con s·G vía multiplyG y (−e)·P vía glv.mul (GLV).
  *
- * Todo zero-alloc: temporales en CRYPTO_WORK (Memory.save/restore, LIFO).
+ * Todo zero-alloc: temporales en CRYPTO_WORK (Arena.save/restore, LIFO).
  */
-import { Memory } from "../../utils/memory"
+import { Arena } from "../../utils/arena"
 import { N0, N1, N2, N3 } from "../../secp256k1/constants"
 import { fromBytesPtr, isGreaterOrEqualP } from "../../secp256k1/field"
 import { sub as scalarSub, isGreaterOrEqualN } from "../../secp256k1/scalar"
@@ -32,22 +32,22 @@ export function schnorr_verify(
   // Formato
   if (sigLen != 64 || pubLen != 32) return 0
 
-  const ctx = Memory.save()
-  const P = Memory.alloc(96)
-  const px = Memory.alloc(32)
-  const rNum = Memory.alloc(32)
-  const sNum = Memory.alloc(32)
-  const eHash = Memory.alloc(32)
-  const eVal = Memory.alloc(32)
-  const N = Memory.alloc(32)
-  const minusE = Memory.alloc(32)
-  const R = Memory.alloc(96)
-  const tempP = Memory.alloc(96)
+  const ctx = Arena.save()
+  const P = Arena.alloc(96)
+  const px = Arena.alloc(32)
+  const rNum = Arena.alloc(32)
+  const sNum = Arena.alloc(32)
+  const eHash = Arena.alloc(32)
+  const eVal = Arena.alloc(32)
+  const N = Arena.alloc(32)
+  const minusE = Arena.alloc(32)
+  const R = Arena.alloc(96)
+  const tempP = Arena.alloc(96)
 
   // P = lift_x(pub);  inválido si pub no está en la curva
   fromBytesPtr(px, pubPtr)
   if (!liftX(P, px)) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return 0
   }
 
@@ -56,11 +56,11 @@ export function schnorr_verify(
   fromBytesPtr(sNum, sigPtr + 32)
 
   if (isGreaterOrEqualN(sNum)) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return 0 // s ≥ N
   }
   if (isGreaterOrEqualP(rNum)) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return 0 // r ≥ P
   }
 
@@ -83,18 +83,18 @@ export function schnorr_verify(
   toAffine(R, R)
 
   if (isInfinity(R)) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return 0 // R en el infinito
   }
   if ((load<u64>(R + 32) & 1) != 0) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return 0 // R.y odd
   }
   if (memory.compare(R, rNum, 32) != 0) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return 0 // R.x ≠ r
   }
 
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   return 1
 }

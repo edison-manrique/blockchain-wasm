@@ -12,22 +12,22 @@
  */
 import { mul, sqr } from "../field/mul"
 import { reduce } from "./reduce"
-import { Memory } from "../../utils/memory"
+import { Arena } from "../../utils/arena"
 
 /** mulMod: res = (a · b) mod N. */
 export function mulMod(res: usize, a: usize, b: usize): void {
-  const ctx = Memory.save()
-  const wide = Memory.alloc(64)
+  const ctx = Arena.save()
+  const wide = Arena.alloc(64)
   mul(wide, a, b)
   reduce(res, wide)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }
 
 /** sqrMod: res = (a²) mod N. */
 export function sqrMod(res: usize, a: usize): void {
-  const ctx = Memory.save()
-  const wide = Memory.alloc(64)
+  const ctx = Arena.save()
+  const wide = Arena.alloc(64)
   sqr(wide, a)
   reduce(res, wide)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }

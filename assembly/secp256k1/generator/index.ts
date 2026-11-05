@@ -2,7 +2,7 @@
  * generator/index.ts — API pública de la multiplicación fija k·G.
  * Re-exporta utilidades de punto y glv.mul (como oráculo para tests).
  */
-export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../../utils/memory"
+export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../../utils/arena"
 
 export { init, multiplyG } from "./generator"
 

@@ -16,7 +16,7 @@
  */
 
 // ── Punteros de I/O ───────────────────────────────────────────────────────
-export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../../utils/memory"
+export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../../utils/arena"
 
 // ── Códigos de error ──────────────────────────────────────────────────────
 export {

@@ -9,7 +9,7 @@
  * ── ARQUITECTURA (alineada con SHA-2) ─────────────────────────────────────
  * • Contexto @unmanaged de 96 bytes sobre HASH_WORK_PTR (layout fijo).
  * • Buffer de padding de 128 bytes contiguo al contexto.
- * • CERO Memory.alloc / Memory.save / Memory.restore.
+ * • CERO Arena.alloc / Arena.save / Arena.restore.
  * • CERO heap, CERO memory.grow.
  * • Comparte HASH_WORK con SHA-2 (seguro: nunca se anidan entre sí;
  *   hash160 = SHA256 primero, RIPEMD160 después, secuencial).
@@ -25,7 +25,7 @@
  *              ripemd160_final_raw(ctxPtr, paddedPtr, outPtr)
  */
 
-import { HASH_WORK_PTR, align8, PARAM_IN_PTR, PARAM_OUT_PTR } from "../utils/memory"
+import { HASH_WORK_PTR, align8, PARAM_IN_PTR, PARAM_OUT_PTR } from "../utils/arena"
 export { PARAM_IN_PTR, PARAM_OUT_PTR }
 
 // ═══════════════════════════════════════════════════════════════════════════

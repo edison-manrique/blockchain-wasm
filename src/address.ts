@@ -7,6 +7,11 @@
  * P2TR), Ethereum y Tron. Mainnet únicamente (prefijos hardcodeados en el
  * WASM). Valida la frontera (longitudes, rango de privkey) y delega en
  * BlockchainWasm.getInstance().
+ *
+ * ⚡ Rendimiento vs. seguridad: aquí solo se valida el FORMATO. La pertenencia
+ * a la curva es un chequeo aparte y explícito — `Secp256k1.isValid(pub)` — que
+ * cuesta un exp mod P en claves compressed. Úsalo con claves no confiables;
+ * omitirlo es correcto cuando la pubkey la generó esta misma librería.
  */
 import { BlockchainWasm } from "./blockchain-wasm"
 import { InvalidArgumentError } from "./errors"
@@ -73,22 +78,23 @@ export class Address {
     if (!isValidPrivateKey(privateKey)) throw new InvalidArgumentError("privateKey fuera de rango (0 o ≥ N)", "address")
     // p2pkh-uncompressed y tron SIEMPRE usan pubkey uncompressed (65 B)
     const useCompressed = type !== "p2pkh-uncompressed" && type !== "tron" && compressed
-    const pub = BlockchainWasm.getInstance().getPublicKey(privateKey, useCompressed)
+    const wasm = BlockchainWasm.getInstance()
+    const pub = wasm.getPublicKey(privateKey, useCompressed)
     switch (type) {
       case "p2pkh":
-        return BlockchainWasm.getInstance().btcP2pkh(pub)
+        return wasm.btcP2pkh(pub)
       case "p2pkh-uncompressed":
-        return BlockchainWasm.getInstance().btcP2pkhUncompressed(pub)
+        return wasm.btcP2pkhUncompressed(pub)
       case "p2sh-p2wpkh":
-        return BlockchainWasm.getInstance().btcP2shP2wpkh(pub)
+        return wasm.btcP2shP2wpkh(pub)
       case "p2wpkh":
-        return BlockchainWasm.getInstance().btcP2wpkh(pub)
+        return wasm.btcP2wpkh(pub)
       case "p2tr":
-        return BlockchainWasm.getInstance().btcP2tr(pub)
+        return wasm.btcP2tr(pub)
       case "eth":
-        return BlockchainWasm.getInstance().ethAddress(pub)
+        return wasm.ethAddress(pub)
       case "tron":
-        return BlockchainWasm.getInstance().tronAddress(pub)
+        return wasm.tronAddress(pub)
     }
     // ✅ switch exhaustivo sobre la unión → ts(2366) resuelto
   }

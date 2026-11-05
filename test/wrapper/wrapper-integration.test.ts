@@ -17,7 +17,7 @@ import {
 } from "../../src/index"
 import { join } from "path"
 
-const WASM_PATH = join(import.meta.dirname, "../../dist/blockchain.wasm")
+const WASM_PATH = join(import.meta.dirname, "../../dist/blockchain-wasm.wasm")
 
 const MNEMONIC = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
 const SEED =

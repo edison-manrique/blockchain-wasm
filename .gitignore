@@ -27,3 +27,7 @@ Thumbs.db
 
 # JSONLock
 package-lock.json
+
+# Caché de builds WASM (fallback local cuando no hay RAM disk)
+.wasm-cache/
+debug/

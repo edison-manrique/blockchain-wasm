@@ -18,7 +18,7 @@
  *   bip44_from_mnemonic_xpub(outPtr, mnPtr, mnLen, passPtr, passLen, p, c, a) → outLen | -1
  *   bip44_from_mnemonic_xprv(outPtr, mnPtr, mnLen, passPtr, passLen, p, c, a) → outLen | -1
  */
-import { BIP32_WORK_PTR, align8, PARAM_IN_PTR, PARAM_OUT_PTR } from "../utils/memory"
+import { BIP32_WORK_PTR, align8, PARAM_IN_PTR, PARAM_OUT_PTR } from "../utils/arena"
 import {
   bip32_from_seed,
   bip32_derive_account,

@@ -14,7 +14,7 @@
 export { GX_0, GX_1, GX_2, GX_3, GY_0, GY_1, GY_2, GY_3 } from "../constants"
 
 // ── Punteros de I/O de la arena (para tests/wrapper) ──────────────────────
-export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../../utils/memory"
+export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../../utils/arena"
 
 // ── Aritmética de punto ───────────────────────────────────────────────────
 export {
@@ -28,5 +28,6 @@ export {
   addMixed,
   negate,
   toAffine,
+  batchToAffine,
   eqJacobian
 } from "./point"

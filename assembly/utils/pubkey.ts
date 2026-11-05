@@ -23,7 +23,7 @@
  *   uncompressRaw(out65, pub33) → i32             ← 33→65 validando curva | -1
  *
  * ── ZONA DEL ARENA ─────────────────────────────────────────────────────────
- * CRYPTO_WORK (Memory.save/restore). Anidable con cualquier caller que use
+ * CRYPTO_WORK (Arena.save/restore). Anidable con cualquier caller que use
  * CRYPTO_WORK (LIFO) o zonas disjuntas (HASH_WORK, BIP32_WORK, ADDRESS_WORK).
  *
  * ── CONTRATOS ──────────────────────────────────────────────────────────────
@@ -33,42 +33,117 @@
  * • isOnCurveXY espera limbs LE (formato interno de campo), NO bytes BE.
  */
 import { P0, P1, P2, P3 } from "../secp256k1/constants"
-import { Memory } from "./memory"
+import { Arena } from "./arena"
 import { mulMod, sqrMod, add as fieldAdd, sub as fieldSub, fromBytesPtr, toBytesPtr } from "../secp256k1/field"
 import { multiplyG } from "../secp256k1/generator"
 import { toAffine } from "../secp256k1/point"
 
-// (P+1)/4 en 4 limbs u64 little-endian (P ≡ 3 mod 4 ⇒ sqrt = a^((P+1)/4))
-const EXP_P14_0: u64 = 0xffffffffbfffff0c
-const EXP_P14_1: u64 = 0xffffffffffffffff
-const EXP_P14_2: u64 = 0xffffffffffffffff
-const EXP_P14_3: u64 = 0x3fffffffffffffff
-
 // ═══════════════════════════════════════════════════════════════════════════
 // SQRT MOD P
 // ═══════════════════════════════════════════════════════════════════════════
-/** out32 = a^((P+1)/4) mod P (square-and-multiply, LSB-first). */
+/**
+ * Envoltorios NO inline para la cadena de sqrt. `mulMod`/`sqrMod` son
+ * `@inline` y muy grandes; si la cadena los llamara directamente, el compilador
+ * duplicaría ~28 copias del cuerpo (binario +60 KB, peor huella de I-cache).
+ * Estas funciones se compilan una sola vez y la cadena paga solo un call.
+ */
+// @ts-ignore
+@noinline
+function sqrtMul(res: usize, a: usize, b: usize): void {
+  mulMod(res, a, b)
+}
+// @ts-ignore
+@noinline
+function sqrtSqr(res: usize, a: usize): void {
+  sqrMod(res, a)
+}
+
+/**
+ * out32 = a^((P+1)/4) mod P.
+ *
+ * `(P+1)/4` tiene 3 bloques de 1s de longitudes {2, 22, 223}. En lugar de un
+ * square-and-multiply bit a bit (~247 mulMod), se usa la cadena de adiciones
+ * de libsecp256k1: 253 sqrMod + 13 mulMod (~47% menos operaciones de campo).
+ * El coste dominaba `isValid`, `p2tr`, `compress`/`uncompress` y ECDH/Schnorr.
+ */
 export function sqrtModP(out32: usize, a32: usize): void {
-  const ctx = Memory.save()
-  const exp = Memory.alloc(32)
-  const base = Memory.alloc(32)
-  store<u64>(exp, EXP_P14_0)
-  store<u64>(exp, EXP_P14_1, 8)
-  store<u64>(exp, EXP_P14_2, 16)
-  store<u64>(exp, EXP_P14_3, 24)
-  memory.copy(base, a32, 32)
-  store<u64>(out32, 1)
-  store<u64>(out32, 0, 8)
-  store<u64>(out32, 0, 16)
-  store<u64>(out32, 0, 24)
-  for (let bit: i32 = 0; bit < 256; bit++) {
-    const word = load<u64>(exp + <usize>((bit >> 6) << 3))
-    if ((word >> (<u64>(bit & 63))) & 1) {
-      mulMod(out32, out32, base)
-    }
-    sqrMod(base, base)
-  }
-  Memory.restore(ctx)
+  const ctx = Arena.save()
+  const x2 = Arena.alloc(32)
+  const x3 = Arena.alloc(32)
+  const x6 = Arena.alloc(32)
+  const x9 = Arena.alloc(32)
+  const x11 = Arena.alloc(32)
+  const x22 = Arena.alloc(32)
+  const x44 = Arena.alloc(32)
+  const x88 = Arena.alloc(32)
+  const x176 = Arena.alloc(32)
+  const x220 = Arena.alloc(32)
+  const x223 = Arena.alloc(32)
+  const t1 = Arena.alloc(32)
+
+  // x2  = a^(2^2 − 1) = a^3
+  sqrtSqr(x2, a32)
+  sqrtMul(x2, x2, a32)
+
+  // x3  = a^(2^3 − 1) = a^7
+  sqrtSqr(x3, x2)
+  sqrtMul(x3, x3, a32)
+
+  // x6  = a^(2^6 − 1)
+  memory.copy(x6, x3, 32)
+  for (let j: i32 = 0; j < 3; j++) sqrtSqr(x6, x6)
+  sqrtMul(x6, x6, x3)
+
+  // x9  = a^(2^9 − 1)
+  memory.copy(x9, x6, 32)
+  for (let j: i32 = 0; j < 3; j++) sqrtSqr(x9, x9)
+  sqrtMul(x9, x9, x3)
+
+  // x11 = a^(2^11 − 1)
+  memory.copy(x11, x9, 32)
+  for (let j: i32 = 0; j < 2; j++) sqrtSqr(x11, x11)
+  sqrtMul(x11, x11, x2)
+
+  // x22 = a^(2^22 − 1)
+  memory.copy(x22, x11, 32)
+  for (let j: i32 = 0; j < 11; j++) sqrtSqr(x22, x22)
+  sqrtMul(x22, x22, x11)
+
+  // x44 = a^(2^44 − 1)
+  memory.copy(x44, x22, 32)
+  for (let j: i32 = 0; j < 22; j++) sqrtSqr(x44, x44)
+  sqrtMul(x44, x44, x22)
+
+  // x88 = a^(2^88 − 1)
+  memory.copy(x88, x44, 32)
+  for (let j: i32 = 0; j < 44; j++) sqrtSqr(x88, x88)
+  sqrtMul(x88, x88, x44)
+
+  // x176 = a^(2^176 − 1)
+  memory.copy(x176, x88, 32)
+  for (let j: i32 = 0; j < 88; j++) sqrtSqr(x176, x176)
+  sqrtMul(x176, x176, x88)
+
+  // x220 = a^(2^220 − 1)
+  memory.copy(x220, x176, 32)
+  for (let j: i32 = 0; j < 44; j++) sqrtSqr(x220, x220)
+  sqrtMul(x220, x220, x44)
+
+  // x223 = a^(2^223 − 1)
+  memory.copy(x223, x220, 32)
+  for (let j: i32 = 0; j < 3; j++) sqrtSqr(x223, x223)
+  sqrtMul(x223, x223, x3)
+
+  // Ensamblado final: 223 + 23, +22, +6, +2 y 2 squarings.
+  memory.copy(t1, x223, 32)
+  for (let j: i32 = 0; j < 23; j++) sqrtSqr(t1, t1)
+  sqrtMul(t1, t1, x22)
+  for (let j: i32 = 0; j < 6; j++) sqrtSqr(t1, t1)
+  sqrtMul(t1, t1, x2)
+  sqrtSqr(t1, t1)
+  sqrtSqr(out32, t1)
+
+  Arena.restore(ctx)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -80,10 +155,10 @@ export function sqrtModP(out32: usize, a32: usize): void {
  * CRYPTO_WORK previo…); los temporales se alojan después (bump, sin solape).
  */
 export function isOnCurveXY(xLimbs32: usize, yLimbs32: usize): bool {
-  const ctx = Memory.save()
-  const lhs = Memory.alloc(32) // Y²
-  const rhs = Memory.alloc(32) // X³ + 7
-  const seven = Memory.alloc(32)
+  const ctx = Arena.save()
+  const lhs = Arena.alloc(32) // Y²
+  const rhs = Arena.alloc(32) // X³ + 7
+  const seven = Arena.alloc(32)
   // lhs = Y²
   sqrMod(lhs, yLimbs32)
   // rhs = X³ + 7
@@ -95,8 +170,47 @@ export function isOnCurveXY(xLimbs32: usize, yLimbs32: usize): bool {
   store<u64>(seven, 0, 24)
   fieldAdd(rhs, rhs, seven)
   const ok: bool = memory.compare(lhs, rhs, 32) == 0
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   return ok
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VALIDACIÓN OPT-IN DE CLAVE PÚBLICA (export independiente)
+// ═══════════════════════════════════════════════════════════════════════════
+/**
+ * Valida formato y pertenencia a la curva de una pubkey (33/65/64 B).
+ *
+ * Es un chequeo EXPLÍCITO: las funciones de dirección ya NO lo ejecutan para
+ * no penalizar el hot path (el sqrt modular de una clave compressed cuesta
+ * ~40–60 µs). Los llamadores que necesiten seguridad estricta lo invocan aquí.
+ *
+ * @returns 1 = válida; 0 = prefijo/longitud inválidos o punto fuera de curva.
+ */
+export function pubkeyValidateRaw(pubPtr: usize, pubLen: u32): i32 {
+  const ctx = Arena.save()
+  const x = Arena.alloc(32)
+  const y = Arena.alloc(32)
+  const xy = pubLen == 65 ? pubPtr + 1 : pubPtr
+  let ok = false
+  if (pubLen == 33) {
+    const prefix = load<u8>(pubPtr)
+    if (prefix == 0x02 || prefix == 0x03) ok = decompressXY(x, y, pubPtr)
+  } else if (pubLen == 65) {
+    if (load<u8>(pubPtr) == 0x04) ok = isOnCurveBytes(x, y, xy)
+  } else if (pubLen == 64) {
+    ok = isOnCurveBytes(x, y, xy)
+  }
+  Arena.restore(ctx)
+  return ok ? 1 : 0
+}
+
+/** X‖Y (64 B BE) → limbs y comprobación Y² ≡ X³+7. */
+// @ts-ignore
+@inline
+function isOnCurveBytes(x: usize, y: usize, xy64: usize): bool {
+  fromBytesPtr(x, xy64)
+  fromBytesPtr(y, xy64 + 32)
+  return isOnCurveXY(x, y)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -113,11 +227,11 @@ export function isOnCurveXY(xLimbs32: usize, yLimbs32: usize): bool {
 export function decompressXY(outX32: usize, outY32: usize, pub33Ptr: usize): bool {
   const prefix = load<u8>(pub33Ptr)
   if (prefix != 0x02 && prefix != 0x03) return false
-  const ctx = Memory.save()
-  const ySq = Memory.alloc(32)
-  const chk = Memory.alloc(32)
-  const seven = Memory.alloc(32)
-  const prime = Memory.alloc(32)
+  const ctx = Arena.save()
+  const ySq = Arena.alloc(32)
+  const chk = Arena.alloc(32)
+  const seven = Arena.alloc(32)
+  const prime = Arena.alloc(32)
   // X directo en la salida
   fromBytesPtr(outX32, pub33Ptr + 1)
   // ySq = X³ + 7 mod P
@@ -134,7 +248,7 @@ export function decompressXY(outX32: usize, outY32: usize, pub33Ptr: usize): boo
   // basura y su cuadrado no coincide con ySq → rechazar.
   sqrMod(chk, outY32)
   if (memory.compare(chk, ySq, 32) != 0) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return false
   }
   // Ajuste de paridad
@@ -147,7 +261,7 @@ export function decompressXY(outX32: usize, outY32: usize, pub33Ptr: usize): boo
     store<u64>(prime, P3, 24)
     fieldSub(outY32, prime, outY32)
   }
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   return true
 }
 
@@ -170,32 +284,32 @@ export function decompressToPoint(outPoint96: usize, pub33Ptr: usize): bool {
 // ═══════════════════════════════════════════════════════════════════════════
 /** priv (32 B BE) → compressed pubkey (33 B) en out33. */
 export function pubkeyFromPrivkey(out33: usize, privPtr32: usize): void {
-  const ctx = Memory.save()
-  const scalar = Memory.alloc(32)
-  const point = Memory.alloc(96)
-  const affine = Memory.alloc(64)
+  const ctx = Arena.save()
+  const scalar = Arena.alloc(32)
+  const point = Arena.alloc(96)
+  const affine = Arena.alloc(64)
   fromBytesPtr(scalar, privPtr32)
   multiplyG(point, scalar)
   toAffine(affine, point)
   const yIsOdd: bool = (load<u64>(affine + 32) & 1) != 0
   store<u8>(out33, yIsOdd ? 0x03 : 0x02)
   toBytesPtr(affine, out33 + 1)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }
 
 /** priv (32 B BE) → uncompressed pubkey (65 B = 0x04‖X‖Y) en out65. */
 export function pubkeyUncompressedFromPrivkey(out65: usize, privPtr32: usize): void {
-  const ctx = Memory.save()
-  const scalar = Memory.alloc(32)
-  const point = Memory.alloc(96)
-  const affine = Memory.alloc(64)
+  const ctx = Arena.save()
+  const scalar = Arena.alloc(32)
+  const point = Arena.alloc(96)
+  const affine = Arena.alloc(64)
   fromBytesPtr(scalar, privPtr32)
   multiplyG(point, scalar)
   toAffine(affine, point)
   store<u8>(out65, 0x04)
   toBytesPtr(affine, out65 + 1)      // X
   toBytesPtr(affine + 32, out65 + 33) // Y
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -213,24 +327,24 @@ export function compressRaw(out33: usize, pubPtr: usize, pubLen: u32): i32 {
     const p = load<u8>(pubPtr)
     if (p != 0x02 && p != 0x03) return -1
     // Re-validación completa: X debe levantar un punto real de la curva
-    const ctx = Memory.save()
-    const x = Memory.alloc(32)
-    const y = Memory.alloc(32)
+    const ctx = Arena.save()
+    const x = Arena.alloc(32)
+    const y = Arena.alloc(32)
     const ok: bool = decompressXY(x, y, pubPtr)
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     if (!ok) return -1
     memory.copy(out33, pubPtr, 33)
     return 33
   }
   if (pubLen != 65 || load<u8>(pubPtr) != 0x04) return -1
   // Validar (X, Y) en la curva ANTES de comprimir
-  const ctx = Memory.save()
-  const x = Memory.alloc(32)
-  const y = Memory.alloc(32)
+  const ctx = Arena.save()
+  const x = Arena.alloc(32)
+  const y = Arena.alloc(32)
   fromBytesPtr(x, pubPtr + 1)  // X (BE → limbs)
   fromBytesPtr(y, pubPtr + 33) // Y (BE → limbs)
   const ok: bool = isOnCurveXY(x, y)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   if (!ok) return -1
   const isOdd: bool = (load<u8>(pubPtr + 64) & 1) != 0
   store<u8>(out33, isOdd ? 0x03 : 0x02)
@@ -247,16 +361,16 @@ export function compressRaw(out33: usize, pubPtr: usize, pubLen: u32): i32 {
 export function uncompressRaw(out65: usize, pub33Ptr: usize): i32 {
   const prefix = load<u8>(pub33Ptr)
   if (prefix != 0x02 && prefix != 0x03) return -1
-  const ctx = Memory.save()
-  const xLimbs = Memory.alloc(32)
-  const yLimbs = Memory.alloc(32)
+  const ctx = Arena.save()
+  const xLimbs = Arena.alloc(32)
+  const yLimbs = Arena.alloc(32)
   if (!decompressXY(xLimbs, yLimbs, pub33Ptr)) {
-    Memory.restore(ctx)
+    Arena.restore(ctx)
     return -1 // ✅ X fuera de la curva
   }
   store<u8>(out65, 0x04)
   toBytesPtr(xLimbs, out65 + 1)  // X → bytes BE
   toBytesPtr(yLimbs, out65 + 33) // Y → bytes BE
-  Memory.restore(ctx)
+  Arena.restore(ctx)
   return 65
 }

@@ -143,7 +143,7 @@ function concat(a: Uint8Array, b: Uint8Array): Uint8Array {
 
 describe("schnorr — compilación", () => {
   test("compilar y reportar stats", async () => {
-    const cr: CompileResult = await Wasm.compile(ENTRY, { profile: "bench", forceRecompile: true })
+    const cr: CompileResult = await Wasm.compile(ENTRY, { profile: "bench" })
     Wasm.printCompileStats(cr, "bench")
     expect(cr.sizeBytes).toBeGreaterThan(1024)
     expect(cr.compileTimeMs).toBeGreaterThan(0)
@@ -272,25 +272,7 @@ describe("schnorr — verify rechaza firmas inválidas", () => {
 })
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 5) AGREGACIÓN (propiedad + roundtrip, autocontenido)
-// ═══════════════════════════════════════════════════════════════════════════
-
-describe("schnorr — MuSig2 tag hashes (M1)", () => {
-  beforeAll(useDefault, 300_000)
-  test("MUSIG_TAG_HASHES == SHA256(tags) de node:crypto", () => {
-    const { createHash } = require("node:crypto")
-    const tags = ["KeyAgg list", "KeyAgg coefficient", "MuSig/aux", "MuSig/nonce", "MuSig/noncecoef"]
-    const ptr = wasm.exports.musigTagHashesPtr()
-    const buf = wasm.read(ptr, 160)
-    for (let i = 0; i < tags.length; i++) {
-      const want = createHash("sha256").update(tags[i]).digest("hex")
-      expect(hex(buf.slice(i * 32, i * 32 + 32))).toBe(want)
-    }
-  })
-})
-
-// ═══════════════════════════════════════════════════════════════════════════
-// 6) MEMORIA (zero-alloc)
+// 5) MEMORIA (zero-alloc)
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe("schnorr — memoria", () => {

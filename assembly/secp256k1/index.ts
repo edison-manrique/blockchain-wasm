@@ -13,7 +13,7 @@
  */
 
 // ── I/O de la arena ────────────────────────────────────────────────────────
-export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../utils/memory"
+export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../utils/arena"
 
 // ── Punto (coordenadas Jacobianas) ────────────────────────────────────────
 export {

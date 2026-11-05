@@ -6,8 +6,6 @@
  *  • Clave distinta por iteración: makeKeyStream() genera una base aleatoria
  *    y la incrementa de 1 en 1 (contador en los últimos 4 bytes).
  *  • End-to-end priv→address: mide priv → getPublicKey → Address.* compuesto.
- *  • MuSig2 (BIP-327): KeyAgg, NonceGen, NonceAgg, SessionInit, PartialSign,
- *    PartialVerify, SigAgg y SignAll.
  *  • Monitoreo de memoria WASM (zero-alloc / sin memory.grow) y heap JS de Bun.
  *
  *  Corre con:  bun test/bench.ts
@@ -20,7 +18,6 @@ import {
   Address,
   Wif,
   Schnorr,
-  Musig2,
   Ecdsa,
   Ecdh,
   Pbkdf2,
@@ -34,7 +31,7 @@ import {
 } from "../src/index"
 
 // ── Resolución del binario (relativo a este archivo) ──────────────────────
-const wasmPath = fileURLToPath(new URL("../dist/blockchain.wasm", import.meta.url))
+const wasmPath = fileURLToPath(new URL("../dist/blockchain-wasm.wasm", import.meta.url))
 const wasmBytes = readFileSync(wasmPath)
 const binaryKB = (statSync(wasmPath).size / 1024).toFixed(1)
 
@@ -138,20 +135,6 @@ async function main(): Promise<void> {
   const ECDSA_TEXT_SIG = Ecdsa.signTextMessage(MSG_TEXT, PRIV, SignatureFormat.Ethereum)
   const MASTER = Bip32.fromSeed(SEED)
 
-  // MuSig2 setup
-  const musigPubs = [PUB, PUB2, PUB3]
-  const musigPrivs = [PRIV, PRIV2, PRIV3]
-  const musigSecrands = [new Uint8Array(32).fill(1), new Uint8Array(32).fill(2), new Uint8Array(32).fill(3)]
-  const { aggregatedPubkey: musigQ, gacc: musigGacc } = Musig2.keyAgg(musigPubs)
-  const musigCoeffs = Musig2.keyAggCoeffs(musigPubs)
-  const musigNonces = musigPrivs.map((sk, i) => Musig2.nonceGen(musigSecrands[i], musigPubs[i], sk, MSG32))
-  const musigAggNonce = Musig2.nonceAgg(musigNonces.map((n) => n.pubNonce))
-  const musigSession = Musig2.sessionInit(musigAggNonce, musigQ, MSG32)
-  const musigPsig1 = Musig2.partialSign(musigSession, musigGacc, musigNonces[0].secNonce, PRIV, musigCoeffs[0])
-  const musigPsigs = musigPrivs.map((sk, i) =>
-    Musig2.partialSign(musigSession, musigGacc, musigNonces[i].secNonce, sk, musigCoeffs[i])
-  )
-
   // ── Secp256k1 (claves) ──
   printSection("Secp256k1 (claves · clave distinta/iter)")
   {
@@ -203,22 +186,6 @@ async function main(): Promise<void> {
   bench("getPublicKey (x-only 32B)", () => Schnorr.getPublicKey(PRIV))
   bench("sign (64B signature)", () => Schnorr.sign(MSG32, PRIV))
   bench("verify (BIP-340 verify)", () => Schnorr.verify(SCHNORR_SIG, MSG32, XONLY))
-  printRows()
-
-  // ── MuSig2 (BIP-327) ──
-  printSection("MuSig2 (BIP-327 Multi-Signature)")
-  bench("keyAgg (3 signers → Q)", () => Musig2.keyAgg(musigPubs))
-  bench("nonceGen (97B sec / 66B pub)", () => Musig2.nonceGen(musigSecrands[0], PUB, PRIV, MSG32))
-  bench("nonceAgg (3 pubnonces → agg)", () => Musig2.nonceAgg(musigNonces.map((n) => n.pubNonce)))
-  bench("sessionInit (97B context)", () => Musig2.sessionInit(musigAggNonce, musigQ, MSG32))
-  bench("partialSign (32B psig)", () =>
-    Musig2.partialSign(musigSession, musigGacc, musigNonces[0].secNonce, PRIV, musigCoeffs[0])
-  )
-  bench("partialVerify", () =>
-    Musig2.partialVerify(musigPsig1, musigSession, musigGacc, musigNonces[0].pubNonce, PUB, musigCoeffs[0])
-  )
-  bench("partialSigAgg (3 psigs → final)", () => Musig2.partialSigAgg(musigPsigs))
-  bench("signAll (end-to-end 3 signers)", () => Musig2.signAll(musigPrivs, MSG32, musigSecrands))
   printRows()
 
   // ── ECDSA ──

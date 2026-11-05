@@ -11,4 +11,4 @@ export {
   bip39_validate_mnemonic
 } from "./bip39"
 
-export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../../utils/memory"
+export { PARAM_IN_PTR, PARAM_OUT_PTR } from "../../utils/arena"

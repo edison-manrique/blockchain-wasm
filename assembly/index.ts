@@ -4,16 +4,13 @@
  * ═══════════════════════════════════════════════════════════════════════════
  *
  * Expone la API pública de ALTO NIVEL. Reglas anti-colisión:
- *   • memory y pubkey se re-exportan UNA vez (fuente canónica).
+ *   • Arena y pubkey se re-exportan UNA vez (fuente canónica).
  *   • Los módulos de alto nivel usan nombres prefijados únicos (bip32_, ecdsa_, …).
  *   • hashing/encoding (sha2/keccak/ripemd/base58/bech32/wif) van con export *.
  *   • secp256k1 de bajo nivel (field/scalar/point/glv/…) NO se re-exporta aquí:
  *       import { ... } from "assembly/secp256k1"   // si lo necesitas
  *
- * M4: los exports musig2_* (BIP-326) entran vía ./signatures/schnorr
- *     (nombres únicos, sin export * → sin colisiones).
- *
- * Los códigos de error (ECDSA_ERR_*, SCHNORR_ERR_*, MUSIG_ERR_*, BIP32_ERR_*, …)
+ * Los códigos de error (ECDSA_ERR_*, SCHNORR_ERR_*, BIP32_ERR_*, …)
  * y los accessors finos (bip32_xkey_*) se importan directo del módulo
  * correspondiente para mantener este barrel enxuto.
  */
@@ -34,8 +31,9 @@ export {
   HASH_WORK_PTR,
   BIP32_WORK_PTR,
   ADDRESS_WORK_PTR,
-  align8
-} from "./utils/memory"
+  align8,
+  secure_wipe
+} from "./utils/arena"
 // ═══════════════════════════════════════════════════════════════════════════
 // 2) CLAVES PÚBLICAS — fuente canónica (NO re-exportar de address/ecdsa/ecdh)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -46,7 +44,8 @@ export {
   pubkeyFromPrivkey,
   pubkeyUncompressedFromPrivkey,
   compressRaw,
-  uncompressRaw
+  uncompressRaw,
+  pubkeyValidateRaw
 } from "./utils/pubkey"
 // ═══════════════════════════════════════════════════════════════════════════
 // 3) HASHING — prefijos propios (sha256_/sha512_/keccak256_/ripemd160_)
@@ -117,45 +116,11 @@ export {
   SCHNORR_ERR_INFINITY,
   SCHNORR_ERR_SIG_LEN,
   SCHNORR_ERR_PUB_LEN,
-  MUSIG_OK,
-  MUSIG_ERR_COUNT,
-  MUSIG_ERR_PUBKEY,
-  MUSIG_ERR_INFINITY,
-  MUSIG_ERR_NONCE,
-  MUSIG_ERR_SIG,
-  // Tags
-  TAG_KEYAGG_LIST,
-  TAG_KEYAGG_COEFF,
-  TAG_MUSIG_AUX,
-  TAG_MUSIG_NONCE,
-  TAG_MUSIG_NONCECOEF,
-  // Errores
-  MUSIG_ERR_PRIVKEY,
-  // Tamaños de layout (Críticos para el Host)
-  MUSIG_PUBNONCE_SIZE,
-  MUSIG_AGGNONCE_SIZE,
-  MUSIG_SECNONCE_SIZE,
-  MUSIG_SESSION_SIZE,
-  MUSIG_MAX_SIGNERS,
   // ── Firma / pubkey ────────────────────────────────────────────────────────
   schnorr_get_pubkey,
   schnorr_sign,
   // ── Verificación ──────────────────────────────────────────────────────────
-  schnorr_verify,
-  // ── MuSig2 (BIP-326) — M4: wiring al barrel ────────────────────────────────
-  musig2_keyagg_list_hash,
-  musig2_keyagg_coeff,
-  musig2_keyagg,
-  // ── Nonces ──
-  musig2_nonce_gen,
-  musig2_nonce_agg,
-  // ── Signing & Verification ──
-  musig2_session_init,
-  musig2_partial_sign,
-  musig2_partial_verify,
-  musig2_partial_sig_agg,
-  musig2_sign_all,
-  musigTagHashesPtr
+  schnorr_verify
 } from "./signatures/schnorr"
 
 // ═══════════════════════════════════════════════════════════════════════════

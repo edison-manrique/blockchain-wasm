@@ -11,7 +11,7 @@
  * versión constant-time (Bernstein–Yang). TODO(security).
  */
 import { N0, N1, N2, N3 } from "../constants"
-import { Memory } from "../../utils/memory"
+import { Arena } from "../../utils/arena"
 import { isZero, shr1Raw, cmp, subRaw } from "../field/raw"
 import { sub, addN_shr1 } from "./addsub"
 
@@ -25,11 +25,11 @@ export function modInverse(res: usize, a: usize): void {
     return
   }
 
-  const ctx = Memory.save()
-  const u = Memory.alloc(32)
-  const v = Memory.alloc(32)
-  const x1 = Memory.alloc(32)
-  const x2 = Memory.alloc(32)
+  const ctx = Arena.save()
+  const u = Arena.alloc(32)
+  const v = Arena.alloc(32)
+  const x1 = Arena.alloc(32)
+  const x2 = Arena.alloc(32)
 
   memory.copy(u, a, 32)
   store<u64>(v, N0)
@@ -75,5 +75,5 @@ export function modInverse(res: usize, a: usize): void {
   }
 
   memory.copy(res, x2, 32)
-  Memory.restore(ctx)
+  Arena.restore(ctx)
 }

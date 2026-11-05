@@ -1,13 +1,13 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- *  memory.ts — Arena global zero-alloc (ÚNICA para toda la librería)
+ *  arena.ts — Arena global zero-alloc (ÚNICA para toda la librería)
  * ═══════════════════════════════════════════════════════════════════════════
  *
  * Reserva TODO en el DATA SEGMENT (`memory.data`): NUNCA heap.alloc, NUNCA
  * memory.grow. Cuatro "mundos" disjuntos que pueden anidarse por construcción:
  *
  *   1) CRYPTO_WORK  → arena bump save/restore (secp256k1: field/point/glv/…).
- *   2) HASH_WORK    → layout fijo SHA2/RIPEMD/Keccak (sin clase Memory).
+ *   2) HASH_WORK    → layout fijo SHA2/RIPEMD/Keccak (sin clase Arena).
  *   3) BIP32_WORK   → layout fijo BIP32 (xkeys, HMAC, IL/IR, pubkey, hash160).
  *   4) ADDRESS_WORK → layout fijo address (hash160, payload, bech32, taproot…).
  *
@@ -18,7 +18,7 @@
  *   HASH_WORK    [73728,77824)  layout fijo SHA2/RIPEMD/Keccak (4 KB)
  *   BIP32_WORK   [77824,78336)  layout fijo BIP32 (512 B)
  *   ADDRESS_WORK [78336,79360)  layout fijo address (1 KB)
- * CONVENCIÓN RAII (mundo 1): toda función que use Memory.alloc hace save() al
+ * CONVENCIÓN RAII (mundo 1): toda función que use Arena.alloc hace save() al
  * entrar y restore() al salir (también en returns tempranos).
  */
 
@@ -65,41 +65,52 @@ export function align8(ptr: usize): usize {
 
 // @ts-ignore
 @final
-export class Memory {
+export class Arena {
   static current: usize = CRYPTO_WORK_PTR
 
   // @ts-ignore
   @inline
   static alloc(size: usize): usize {
-    const ptr = align8(Memory.current)
+    const ptr = align8(Arena.current)
     const next = ptr + size
     if (next > CRYPTO_WORK_PTR + WORK_SIZE) unreachable()
-    Memory.current = next
+    Arena.current = next
     return ptr
   }
 
   // @ts-ignore
   @inline
   static reset(): void {
-    Memory.current = CRYPTO_WORK_PTR
+    Arena.current = CRYPTO_WORK_PTR
   }
 
   // @ts-ignore
   @inline
   static save(): usize {
-    return Memory.current
+    return Arena.current
   }
 
   // @ts-ignore
   @inline
   static restore(savedPtr: usize): void {
-    Memory.current = savedPtr
+    Arena.current = savedPtr
   }
 
   // @ts-ignore
   @inline
   static wipe(): void {
     memory.fill(SCRATCH_BASE, 0, SCRATCH_SIZE)
-    Memory.current = CRYPTO_WORK_PTR
+    Arena.current = CRYPTO_WORK_PTR
   }
+}
+
+/**
+ * Borra TODO el scratch (PARAM_IN, PARAM_OUT y los cuatro work-worlds).
+ *
+ * Export OPT-IN: no se ejecuta automáticamente (coste O(79 KB) + pérdida de
+ * cualquier estado temporal). El wrapper lo expone como `wipeSecrets()` para
+ * encadenarlo cuando el proyecto quiera limpiar claves de la memoria lineal.
+ */
+export function secure_wipe(): void {
+  Arena.wipe()
 }

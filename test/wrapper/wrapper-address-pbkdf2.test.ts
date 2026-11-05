@@ -5,7 +5,7 @@ import { Pbkdf2 } from "../../src/pbkdf2"
 import { bytesToHex, hexToBytes } from "../../src/types"
 import { join } from "path"
 
-const WASM_PATH = join(import.meta.dirname, "../../dist/blockchain.wasm")
+const WASM_PATH = join(import.meta.dirname, "../../dist/blockchain-wasm.wasm")
 const PRIV1 = "0000000000000000000000000000000000000000000000000000000000000001"
 const G_COMP = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
 const G_UNCOMP =

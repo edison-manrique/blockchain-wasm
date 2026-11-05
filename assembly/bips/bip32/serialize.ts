@@ -19,7 +19,7 @@
  *   bip32_serialize_xprv(outPtr, xkeyPtr) → outLen | -1
  *   bip32_deserialize(xkeyPtr, srcPtr, srcLen) → i32
  */
-import { BIP32_WORK_PTR, align8 } from "../../utils/memory"
+import { BIP32_WORK_PTR, align8 } from "../../utils/arena"
 import {
   OFF_DEPTH, OFF_PARENT_FP, OFF_CHILD_IDX, OFF_IS_PRIVATE,
   OFF_CHAIN_CODE, OFF_KEY_DATA,

@@ -26,6 +26,10 @@ export interface AsmExports {
   pubkeyUncompressedFromPrivkey: (out65: number, privPtr32: number) => void
   compressRaw: (out33: number, pubPtr: number, pubLen: number) => number
   uncompressRaw: (out65: number, pub33Ptr: number) => number
+  /** Validación de curva OPT-IN: 1 = válida, 0 = inválida (33/65/64 B). */
+  pubkeyValidateRaw: (pubPtr: number, pubLen: number) => number
+  /** Borra todo el scratch (PARAM_IN/OUT + work worlds). Coste O(79 KB). */
+  secure_wipe: () => void
 
   // ── wif ──
   wif_encode_raw: (outIdxPtr: number, privPtr: number, compressed: number) => number
@@ -66,53 +70,6 @@ export interface AsmExports {
     msgLen: number,
     pubPtr32: number,
     pubLen: number
-  ) => number
-
-  musigTagHashesPtr: () => number
-
-  // ── musig2 (BIP-327) ─────────────────────────────────────────────────────
-  musig2_keyagg_list_hash: (out32: number, pubsPtr: number, count: number) => number
-  musig2_keyagg_coeff: (out32: number, L32: number, pkBE33: number) => number
-  musig2_keyagg: (out_q32: number, out_gacc8: number, pubsPtr: number, count: number) => number
-  musig2_nonce_gen: (
-    out_k97: number,
-    out_r66: number,
-    secrand32: number,
-    skPtr: number,
-    pk33: number,
-    aggotherpkPtr: number,
-    msgPtr: number,
-    msgLen: number,
-    extPtr: number,
-    extLen: number
-  ) => number
-  musig2_nonce_agg: (out_r66: number, noncesPtr: number, count: number) => number
-  musig2_session_init: (out97: number, aggNonce66: number, q32: number, msgPtr: number, msgLen: number) => number
-  musig2_partial_sign: (
-    out_s32: number,
-    session97: number,
-    gacc8: number,
-    secnonce97: number,
-    priv32: number,
-    coeff32: number
-  ) => number
-  musig2_partial_verify: (
-    s32: number,
-    session97: number,
-    gacc8: number,
-    pubnonce66: number,
-    pk33: number,
-    coeff32: number
-  ) => number
-  musig2_partial_sig_agg: (out_s32: number, partialsPtr: number, count: number) => number
-  musig2_sign_all: (
-    out64: number,
-    out_q32: number,
-    privsPtr: number,
-    count: number,
-    msgPtr: number,
-    msgLen: number,
-    secrandPtr: number
   ) => number
 
   // ── ecdh ──
@@ -259,14 +216,6 @@ export const HASH_BYTES = 32
 export const SIG_BYTES = 64
 export const HALF_ZONE = 2048 // mitad de PARAM_IN/OUT (4096): input | aux
 
-// ✅ v3.1: BIP-327 estricto (compressed 33+33)
-export const MUSIG_PUBNONCE_BYTES = 66 // cbytes(R1) ‖ cbytes(R2)
-export const MUSIG_AGGNONCE_BYTES = 66 // cbytes_ext(R1) ‖ cbytes_ext(R2)
-export const MUSIG_SECNONCE_BYTES = 97 // k1 ‖ k2 ‖ pk = 32+32+33 (BIP-327 rc.2+)
-export const MUSIG_SESSION_BYTES = 97  // b ‖ e ‖ Rx ‖ g_R = 32+32+32+1
-export const MUSIG_SIG_BYTES = 64
-export const MUSIG_MAX_SIGNERS = 128
-
 // ── Tipos de dominio ──────────────────────────────────────────────────────
 export interface WifKey {
   privateKey: Uint8Array
@@ -276,24 +225,6 @@ export interface EcdsaSignature {
   r: Uint8Array
   s: Uint8Array
   v: number
-}
-/** ✅ FIX v3.0: Resultado de Musig2.keyAgg */
-export interface Musig2KeyAggResult {
-  aggregatedPubkey: Uint8Array // Q.x (32 B, x-only)
-  gacc: number // 0 = Y par, 1 = Y impar
-}
-
-/** ✅ FIX v3.0: Par de nonces de Musig2.nonceGen */
-export interface Musig2NoncePair {
-  secNonce: Uint8Array // k1‖k2 (64 B — NUNCA compartir)
-  pubNonce: Uint8Array // R1.x‖R2.x (64 B — público)
-}
-
-/** ✅ FIX v3.0: Sesión MuSig2 */
-export interface Musig2Session {
-  data: Uint8Array // 97 B opacos (b‖e‖Rx‖g)
-  aggNonce: Uint8Array
-  aggregatedPubkey: Uint8Array
 }
 export type MessageFormat = 0 | 1 | 2 // Universal | Bitcoin | Ethereum
 export type PrivateKey = Uint8Array
@@ -313,6 +244,9 @@ export function getGlobalValue(val: WebAssembly.Global | number | undefined, fal
 const HEX_LUT: string[] = []
 for (let i = 0; i < 256; i++) HEX_LUT.push(i.toString(16).padStart(2, "0"))
 
+/** Encoder UTF-8 compartido: `TextEncoder` es stateless y reutilizable. */
+const UTF8_ENCODER = new TextEncoder()
+
 export function bytesToHex(bytes: Uint8Array): string {
   let hex = ""
   for (let i = 0; i < bytes.length; i++) hex += HEX_LUT[bytes[i]]
@@ -328,7 +262,24 @@ export function hexToBytes(hex: string): Uint8Array {
 
 /** String (UTF‑8) → Uint8Array; si ya es Uint8Array, la devuelve tal cual. */
 export function toUint8Array(data: string | Uint8Array): Uint8Array {
-  return typeof data === "string" ? new TextEncoder().encode(data) : data
+  return typeof data === "string" ? UTF8_ENCODER.encode(data) : data
+}
+
+/**
+ * Sobrescribe con ceros los buffers indicados (claves/firmas del lado JS).
+ *
+ * Los valores que devuelve el wrapper son copias propias: `wipeSecrets()` limpia
+ * el scratch WASM, pero no esas copias. Encadenable y tolerante a `undefined`:
+ *
+ * ```ts
+ * zeroize(priv, seed, sig) // después de usarlos
+ * ```
+ */
+export function zeroize(...buffers: (Uint8Array | null | undefined)[]): void {
+  for (let i = 0; i < buffers.length; i++) {
+    const b = buffers[i]
+    if (b) b.fill(0)
+  }
 }
 
 export function concatBytes(...parts: Uint8Array[]): Uint8Array {
@@ -369,23 +320,6 @@ export function isValidPrivateKey(privateKey: Uint8Array): boolean {
     if (privateKey[i] > N_BE[i]) return false // k > N
   }
   return false // k == N
-}
-
-/** Calcula (N - k) mod N para un escalar válido 0 < k < N (bytes big-endian). */
-export function negatePrivateKey(privateKey: Uint8Array): Uint8Array {
-  const out = new Uint8Array(32)
-  let borrow = 0
-  for (let i = 31; i >= 0; i--) {
-    let diff = N_BE[i] - privateKey[i] - borrow
-    if (diff < 0) {
-      diff += 256
-      borrow = 1
-    } else {
-      borrow = 0
-    }
-    out[i] = diff
-  }
-  return out
 }
 
 // ── Límite de passphrase BIP39 (E5) ────────────────────────────────────────

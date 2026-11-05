@@ -33,7 +33,7 @@ describe("sha2 — compilación", () => {
     console.log("─".repeat(52))
 
     for (const profile of profiles) {
-      const cr: CompileResult = await Wasm.compile(ENTRY, { profile, forceRecompile: true })
+      const cr: CompileResult = await Wasm.compile(ENTRY, { profile })
       Wasm.printCompileStats(cr, profile)
       // Sanity: el binario debe ser razonable (> 1 KB, < 100 KB)
       expect(cr.sizeBytes).toBeGreaterThan(1024)
