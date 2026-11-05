@@ -1,0 +1,96 @@
+.header {
+  height: 44px;
+  min-height: 44px;
+  background: var(--bg-dark-2);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 100;
+}
+
+.brandContainer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text-main);
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  transition: var(--transition-fast);
+}
+
+.brandContainer:hover {
+  background: var(--bg-dark-3);
+}
+
+.brandLogo {
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, var(--gold-primary), #D49B00);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: var(--bg-dark-0);
+  font-size: 12px;
+  box-shadow: var(--shadow-gold);
+}
+
+.brandTitle {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tag {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--gold-primary);
+  background: var(--gold-muted);
+  border: 1px solid rgba(240, 185, 11, 0.3);
+  padding: 1px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+
+.headerStatus {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wasmBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-dark-3);
+  border: 1px solid var(--border-color);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: var(--transition-fast);
+}
+
+.active {
+  background: var(--green-success);
+  box-shadow: 0 0 6px var(--green-success);
+}

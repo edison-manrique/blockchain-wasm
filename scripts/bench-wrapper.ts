@@ -29,6 +29,7 @@ import {
   Bip44,
   SignatureFormat,
   hexToBytes,
+  bytesToHex,
   toUint8Array
 } from "../dist/index.js"
 
@@ -152,7 +153,8 @@ function overhead(label: string, apiNs: number, rawNs: number): void {
 }
 
 // ── Datos fijos ───────────────────────────────────────────────────────────
-const PRIV = hexToBytes("0000000000000000000000000000000000000000000000000000000000000001")
+const PRIV_HEX = "0000000000000000000000000000000000000000000000000000000000000001"
+const PRIV = hexToBytes(PRIV_HEX)
 const PRIV2 = hexToBytes("0000000000000000000000000000000000000000000000000000000000000002")
 const MNEMONIC = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
 const ENTROPY = new Uint8Array(16)
@@ -272,6 +274,12 @@ async function main(): Promise<void> {
     raw.bip44AccountXpub(SEED, 44, 0, 0)
   )
   bench("Bip44.fromMnemonicDerive", () => Bip44.fromMnemonicDerive(MNEMONIC, "", 44, 0, 0, 0, 0), 500)
+  printRows()
+
+  // ── Utilidades puras (sin WASM) ──
+  section("Utilidades JS (sin WASM)")
+  bench("hexToBytes (32 B)", () => hexToBytes(PRIV_HEX))
+  bench("bytesToHex (32 B)", () => bytesToHex(PRIV))
   printRows()
 
   console.log(`\n✅ Benchmark completado.\n`)

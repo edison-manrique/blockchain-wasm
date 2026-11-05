@@ -1,0 +1,69 @@
+.sidebar {
+  width: 180px;
+  min-width: 180px;
+  background: var(--bg-dark-2);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  padding: 8px 6px;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.sidebarTitle {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  letter-spacing: 0.8px;
+  padding: 6px 10px 4px;
+  margin-top: 4px;
+}
+
+.sidebarItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 12px;
+  transition: var(--transition-fast);
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: none;
+}
+
+.sidebarItem:hover,
+.sidebarItem:focus {
+  background: var(--bg-dark-3);
+  color: var(--text-main);
+}
+
+.active {
+  background: var(--bg-dark-3);
+  color: var(--gold-primary);
+  border-color: rgba(240, 185, 11, 0.2);
+  font-weight: 600;
+}
+
+.inactive {
+  background: none;
+  border-color: transparent;
+}
+
+.itemBadge {
+  font-size: 8px;
+  font-family: var(--font-mono);
+  background: var(--bg-dark-4);
+  color: var(--text-muted);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.active .itemBadge {
+  background: var(--gold-muted);
+  color: var(--gold-primary);
+}

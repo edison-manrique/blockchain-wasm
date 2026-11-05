@@ -1,0 +1,237 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+
+.pageTitle {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pageDescription {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.card {
+  background: var(--bg-dark-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow-main);
+  transition: var(--transition-fast);
+}
+
+.card:hover {
+  border-color: rgba(240, 185, 11, 0.15);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.cardTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.icon {
+  color: var(--gold-primary);
+  font-size: 14px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.formLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.selectCustom, .inputText, .textareaCustom {
+  width: 100%;
+  background: var(--bg-dark-0);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+  transition: var(--transition-fast);
+}
+
+.selectCustom:focus, .inputText:focus, .textareaCustom:focus {
+  border-color: var(--gold-primary);
+  box-shadow: 0 0 0 1px var(--gold-glow);
+}
+
+.textareaCustom {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.btnGroup {
+  display: flex;
+  gap: 6px;
+}
+
+.btn {
+  background: var(--bg-dark-3);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 5px 12px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: var(--transition-fast);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--bg-dark-4);
+  border-color: var(--gold-primary);
+  color: var(--gold-primary);
+}
+
+.btnPrimary {
+  background: var(--gold-primary);
+  color: var(--bg-dark-0);
+  border-color: var(--gold-primary);
+  box-shadow: var(--shadow-gold);
+}
+
+.btnPrimary:hover {
+  background: var(--gold-hover);
+  border-color: var(--gold-hover);
+  color: var(--bg-dark-0);
+}
+
+.btnSecondary {
+  background: var(--bg-dark-4);
+  border-color: var(--border-color);
+}
+
+.btnSm {
+  padding: 3px 8px;
+  font-size: 10px;
+}
+
+.alert {
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid transparent;
+}
+
+.alertSuccess {
+  background: var(--green-glow);
+  border-color: var(--green-success);
+  color: var(--green-success);
+}
+
+.alertError {
+  background: var(--red-glow);
+  border-color: var(--red-error);
+  color: var(--red-error);
+}
+
+.outputBox {
+  background: var(--bg-dark-0);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gold-primary);
+  word-break: break-all;
+  position: relative;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.copyBtn {
+  background: var(--bg-dark-3);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 9px;
+  font-family: var(--font-sans);
+  transition: var(--transition-fast);
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.copyBtn:hover {
+  background: var(--gold-primary);
+  color: var(--bg-dark-0);
+  border-color: var(--gold-primary);
+}
+
+.charCounter {
+  font-size: 11px;
+  float: right;
+  font-family: var(--font-mono);
+}
+
+.valid {
+  color: var(--green-success);
+  font-weight: bold;
+}
+
+.invalid {
+  color: var(--red-error);
+}

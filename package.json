@@ -1,6 +1,6 @@
 {
   "name": "blockchain-wasm",
-  "version": "3.3.0",
+  "version": "4.0.0",
   "description": "Motor criptográfico zero-alloc para wallets Bitcoin y Ethereum: un único binario WebAssembly (AssemblyScript) con un wrapper TypeScript ergonómico de clases de dominio. secp256k1, BIP-32/39/44, Schnorr (BIP-340), ECDSA, ECDH, direcciones P2PKH/P2SH-P2WPKH/P2TR/ETH, WIF y PBKDF2 — sin heap, sin memory.grow, isomórfico (Node, Bun, Deno y navegador).",
   "author": "Edison Manrique",
   "license": "Apache-2.0",

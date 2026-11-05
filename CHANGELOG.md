@@ -1,5 +1,65 @@
 # 📦 CHANGELOG — blockchain-wasm
 
+## [4.0.0] — playground SolidJS + auditoría del wrapper
+
+> **Versión previa:** 3.3.0
+> **Tipo de release:** _major_ — el playground pasa a una SPA SolidJS + Vite y se
+> optimizan dos rutas del wrapper. **Sin cambios en la API pública ni en el binario
+> WASM**; los binarios y firmas de la v3.3.0 siguen siendo válidos.
+
+### 🎨 Playground — reescritura en SolidJS + Vite
+
+- `playground/` deja de ser un conjunto de HTML estáticos y pasa a una SPA:
+  `src/main.tsx` monta `App.tsx` con `@solidjs/router`, componentes (`Header`,
+  `Sidebar`) y una página por dominio (Address, Anvil, BIP-32/39/44, ECDH,
+  ECDSA, Encoding, Hash, HD Visualizer, Message Signing, PBKDF2, Schnorr,
+  Secp256k1, Vanity, WIF).
+- `playground/index.html` solo declara `#root` y `/src/main.tsx`; se eliminan las
+  17 páginas HTML antiguas (`address.html`, `anvil.html`, `bip32.html`, …, `wif.html`)
+  y los assets del playground estático (`css/theme.css`, `js/*.js`, `run.ts`).
+- Tooling del playground: `package.json` con `dev/build/preview/typecheck`,
+  `vite.config.ts` (Solid + alias `@`), `tsconfig.json` y `bun.lock`.
+  Versión alineada con el paquete raíz (**4.0.0**). Verificado con
+  `bun run typecheck` y `bun run build` (68 módulos, ~2,4 s).
+
+### ⚡ Wrapper — auditoría de cuellos de botella JS
+
+- **`hexToBytes` con tabla de nibbles** (`Int8Array[256]`; −1 = inválido) en lugar
+  de `parseInt(substr(i * 2, 2), 16)` por byte. Medición aislada (Bun 1.4.2):
+
+  | Entrada | Antes | Después | Mejora |
+  | --- | ---: | ---: | ---: |
+  | 32 B (privkey) | 2.011 ns | **198 ns** | ×10,2 |
+  | 64 B (seed) | 4.472 ns | **276 ns** | ×16,2 |
+  | 66 B (pubkey) | 7.469 ns | **443 ns** | ×16,9 |
+
+  Conserva el parseo laxo histórico (`"1g"` → `[1]`, `"g1"` → `[0]`). En el
+  bundle compilado, `bench:wrapper` mide **197 ns** (`hexToBytes` 32 B) y
+  **317 ns** (`bytesToHex` 32 B).
+- **`fromBuffer` sin copia**: `WebAssembly.instantiate` acepta `BufferSource`, así
+  que la vista se pasa directamente. Antes se copiaban los ~241 KB del binario a
+  un `ArrayBuffer` nuevo en cada carga (~44 µs y 241 KB de heap por carga).
+- **Descartados tras medir** (no se tocan): fast-path de `isValidPrivateKey`
+  (6,6 → 7,6 ns: la rama extra empeora), `readOutputString` con
+  `String.fromCharCode` (409–816 ns vs 173–230 ns de `TextDecoder`),
+  `bytesToHex` con `Array.join` (1.450 ns vs 365 ns) y el lock `_enter/_leave`
+  (dentro del ruido).
+- **Conclusión A/B**: el overhead de las fachadas es típicamente **< 2 %** en
+  criptografía pesada y **< 1 %** en direcciones/WIF (las diferencias por
+  operación oscilan con el turbo/JIT, incluso negativas). El cuello de botella
+  real está en el WASM (`Schnorr.verify` ~0,36–0,5 ms, `p2tr` ~0,1 ms,
+  PBKDF2 ~3 ms), no en `src/`; no se añadieron validaciones ni copias al hot path.
+
+### 🧪 Verificación
+
+- `test/wrapper/**` → **91 pass / 0 fail** (nuevo `wrapper-utils.test.ts`, 6 casos:
+  hex, escalares, `toUint8Array`, `concatBytes`, `zeroize`).
+- `bun run typecheck` limpio; `bun run bench:wrapper` completo (incluye la nueva
+  sección «Utilidades JS»).
+- `dist/blockchain-wasm.wasm` sin cambios (**241.650 B**); `dist/index.js` ~32 KB.
+
+---
+
 ## [3.3.0] — limpieza MuSig2 + suite de tests ultrarrápida
 
 > **Versión previa:** 3.2.1

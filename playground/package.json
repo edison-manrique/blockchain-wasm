@@ -1,0 +1,21 @@
+{
+  "name": "blockchain-wasm-playground",
+  "version": "4.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "blockchain-wasm": "*",
+    "solid-js": "^1.9.12",
+    "@solidjs/router": "^0.15.4"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.0.10",
+    "vite-plugin-solid": "^2.11.12"
+  }
+}

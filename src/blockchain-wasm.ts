@@ -255,12 +255,10 @@ export class BlockchainWasm {
   ): Promise<BlockchainWasm> {
     return BlockchainWasm._singleFlight("fromBuffer", buffer, async () => {
       const finalImports = BlockchainWasm.buildImports(imports)
-      const buf = (
-        buffer instanceof Uint8Array
-          ? buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
-          : buffer
-      ) as ArrayBuffer
-      const { instance } = await WebAssembly.instantiate(buf, finalImports)
+      // `WebAssembly.instantiate` acepta BufferSource: pasar la vista tal cual
+      // evita copiar el binario completo (~240 KB) en cada carga. El cast cubre
+      // la vista genérica `Uint8Array<ArrayBufferLike>` de TS ≥5.7.
+      const { instance } = await WebAssembly.instantiate(buffer as BufferSource, finalImports)
       BlockchainWasm.instance = new BlockchainWasm(instance.exports as unknown as AsmExports)
       return BlockchainWasm.instance
     })

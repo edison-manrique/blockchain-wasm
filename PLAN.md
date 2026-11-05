@@ -1,7 +1,7 @@
 # Hoja de planeamiento — Refactor global (MuSig2 out + tests ultrarrápidos)
 
-> Estado: **completado** (MuSig2 out, tests rápidos, `arena.ts`, `blockchain-wasm.wasm` y bench del wrapper).
-> Proyecto: `blockchain-wasm` v3.3.0 · Windows x64 · 8 hilos · Bun 1.4.2 · RAM disk `R:\`
+> Estado: **completado** (MuSig2 out, tests rápidos, `arena.ts`, `blockchain-wasm.wasm`, bench del wrapper y playground SolidJS).
+> Proyecto: `blockchain-wasm` v4.0.0 · Windows x64 · 8 hilos · Bun 1.4.2 · RAM disk `R:\`
 
 ---
 
@@ -213,4 +213,26 @@
 - [x] Verificación: `field/point/glv/generator/secp256k1/ecdh/ecdsa/schnorr/address`,
       `2.1.0/{address-v210,curve-validation}` y `test/wrapper/**` →
       **334 pass / 0 fail** (y `test/wrapper/**` **85/85**).
+
+## 13) Auditoría del wrapper para v4.0.0
+
+- [x] **`hexToBytes` con tabla de nibbles** (`Int8Array[256]`, −1 = inválido) en vez
+      de `parseInt(substr(...), 16)` por byte. Medición aislada: 32 B → 2.011 →
+      **198 ns** (×10,2); 64 B → 4.472 → **276 ns** (×16,2); 66 B → 7.469 → **443 ns**
+      (×16,9). Conserva el parseo laxo histórico (`"1g"` → `[1]`, `"g1"` → `[0]`).
+      `bytesToHex` ya era óptimo (LUT de pares; `Array.join` resultó 2–4× más lento).
+- [x] **`fromBuffer` sin copia**: `WebAssembly.instantiate` acepta `BufferSource`,
+      así que se pasa la vista directamente. Antes se copiaban ~240 KB del binario
+      a un `ArrayBuffer` nuevo en cada carga.
+- [x] **Descartados por medición** (no tocar): `isValidPrivateKey` con fast-path
+      del primer byte (6,6 → 7,6 ns, la rama extra empeora), `readOutputString`
+      con `String.fromCharCode` (173–230 ns de `TextDecoder` vs 409–816 ns),
+      `bytesToHex` con `Array.join` (1.450 ns vs 365 ns) y el lock `_enter/_leave`
+      (ya dentro del ruido del benchmark).
+- [x] A/B del wrapper (`bench:wrapper`): overhead de fachada típicamente **< 2 %**
+      en criptografía pesada y **< 1 %** en direcciones/WIF (oscila con el
+      turbo/JIT, incluso negativo); el cuello de botella real es el WASM
+      (p. ej. `Schnorr.verify` ~0,36–0,5 ms, `p2tr` ~0,1 ms), no `src/`.
+- [x] Tests nuevos `test/wrapper/wrapper-utils.test.ts` (6 casos) para hex,
+      escalares, `toUint8Array`, `concatBytes` y `zeroize`.
 
