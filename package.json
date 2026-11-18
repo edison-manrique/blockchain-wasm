@@ -13,7 +13,8 @@
       "types": "./dist/types/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./blockchain-wasm.wasm": "./dist/blockchain-wasm.wasm"
+    "./blockchain-wasm.wasm": "./dist/blockchain-wasm.wasm",
+    "./dist/blockchain-wasm.wasm": "./dist/blockchain-wasm.wasm"
   },
   "files": [
     "dist"
@@ -34,7 +35,8 @@
     "test:cold": "bun run scripts/prebuild-tests.ts --clear --force && bun test",
     "test:watch": "bun test --watch",
     "bench": "bun test/bench.ts",
-    "bench:wrapper": "bun run scripts/bench-wrapper.ts"
+    "bench:wrapper": "bun run scripts/bench-wrapper.ts",
+    "deploy:pages": "node deploy_pages.cjs"
   },
   "keywords": [
     "wasm",
@@ -77,6 +79,9 @@
   },
   "devDependencies": {
     "@noble/curves": "^2.4.0",
-    "@noble/hashes": "^2.4.0"
+    "@noble/hashes": "^2.4.0",
+    "assemblyscript": "0.28.20",
+    "esbuild": "0.25.11",
+    "typescript": "^7.0.2"
   }
 }

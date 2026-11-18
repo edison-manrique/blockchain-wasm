@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 import { Component } from 'solid-js';
-import { Router, Route, RouteSectionProps } from '@solidjs/router';
+import { HashRouter, Route, RouteSectionProps } from '@solidjs/router';
 import { Header } from './components/Header/Header';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { Dashboard } from './pages/Dashboard/Dashboard';
@@ -42,7 +42,7 @@ const AppLayout: Component<RouteSectionProps> = (props) => {
 
 export function App() {
   return (
-    <Router root={AppLayout}>
+    <HashRouter root={AppLayout}>
       <Route path="/" component={Dashboard} />
       <Route path="/anvil" component={AnvilPage} />
       <Route path="/address" component={AddressPage} />
@@ -60,6 +60,6 @@ export function App() {
       <Route path="/secp256k1" component={Secp256k1Page} />
       <Route path="/pbkdf2" component={Pbkdf2Page} />
       <Route path="/wif" component={WifPage} />
-    </Router>
+    </HashRouter>
   );
 }
