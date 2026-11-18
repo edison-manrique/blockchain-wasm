@@ -1,4 +1,4 @@
-name: Deploy Playground to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
@@ -31,21 +31,25 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: bun install
+        run: |
+          bun install
+          cd playground && bun install
 
       - name: Build WASM & Core Library
         run: bun run release
 
-      - name: Install playground dependencies
-        run: bun install --cwd playground
+      - name: Sync Local Core to Playground
+        run: |
+          mkdir -p playground/node_modules/blockchain-wasm
+          cp -r dist playground/node_modules/blockchain-wasm/
+          cp package.json playground/node_modules/blockchain-wasm/
 
       - name: Build Playground
-        run: bun run --cwd playground build
-
-      - name: Prepare Pages artifacts
         run: |
-          touch playground/dist/.nojekyll
-          cp playground/dist/index.html playground/dist/404.html
+          cd playground
+          bun run build
+          touch dist/.nojekyll
+          cp dist/index.html dist/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

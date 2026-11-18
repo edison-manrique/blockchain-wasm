@@ -14,7 +14,8 @@
     "isolatedModules": true,
     "noEmit": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "blockchain-wasm": ["../dist/types/index.d.ts"]
     },
     "types": ["vite/client"]
   },
