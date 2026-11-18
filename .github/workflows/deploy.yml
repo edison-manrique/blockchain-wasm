@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy Playground to GitHub Pages
 
 on:
   push:
@@ -31,18 +31,21 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: |
-          bun install
-          cd playground && bun install
+        run: bun install
 
       - name: Build WASM & Core Library
         run: bun run release
 
+      - name: Install playground dependencies
+        run: bun install --cwd playground
+
       - name: Build Playground
+        run: bun run --cwd playground build
+
+      - name: Prepare Pages artifacts
         run: |
-          cd playground
-          bun run build
-          touch dist/.nojekyll
+          touch playground/dist/.nojekyll
+          cp playground/dist/index.html playground/dist/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
